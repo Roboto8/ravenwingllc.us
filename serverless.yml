@@ -1,0 +1,29 @@
+org: portertoddc
+service: ravenwingllc
+
+custom:
+  stages:
+    dev:
+      distributionFolder: 'client/preview'
+    prod:
+      distributionFolder: 'client/dist'
+  client:
+    bucketName: 'ravenwingllc-frontend-${self:provider.stage}'
+    distributionFolder: ${self:custom.stages.${self:provider.stage}.distributionFolder}
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: dev
+  region: us-east-1
+
+  stackTags:
+    Project: RavenWingLLC
+    OwnerContact: Porter
+
+  deploymentBucket:
+    name: "ravenwingllc-deployment"
+    serverSideEncryption: AES256
+
+plugins:
+  - serverless-finch
