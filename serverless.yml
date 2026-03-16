@@ -2,20 +2,24 @@ org: portertoddc
 service: ravenwingllc
 
 custom:
-  stages:
-    dev:
-      distributionFolder: 'client/preview'
-    prod:
-      distributionFolder: 'client/dist'
+  bucketMap:
+    dev: 'ravenwingllc-frontend-dev'
+    prod: 'ravenwing-frontend'
+  folderMap:
+    dev: 'client/preview'
+    prod: 'client/dist'
   client:
-    bucketName: 'ravenwingllc-frontend-${self:provider.stage}'
-    distributionFolder: ${self:custom.stages.${self:provider.stage}.distributionFolder}
+    bucketName: ${self:custom.bucketMap.${sls:stage}}
+    distributionFolder: ${self:custom.folderMap.${sls:stage}}
+  tableName: fencecalc-${sls:stage}
+  assetsBucket: fencecalc-assets-${sls:stage}
 
 provider:
   name: aws
-  runtime: nodejs20.x
-  stage: dev
+  runtime: nodejs16.x
+  stage: ${opt:stage, 'dev'}
   region: us-east-1
+  timeout: 15
 
   stackTags:
     Project: RavenWingLLC
@@ -24,6 +28,233 @@ provider:
   deploymentBucket:
     name: "ravenwingllc-deployment"
     serverSideEncryption: AES256
+
+  environment:
+    DYNAMODB_TABLE: ${self:custom.tableName}
+    COGNITO_USER_POOL_ID: !Ref CognitoUserPool
+    COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+    ASSETS_BUCKET: ${self:custom.assetsBucket}
+    STRIPE_SECRET_KEY: ${ssm:fencecalc.${sls:stage}.stripe-secret-key, ''}
+    STRIPE_WEBHOOK_SECRET: ${ssm:fencecalc.${sls:stage}.stripe-webhook-secret, ''}
+    STRIPE_PRICE_ID: ${ssm:fencecalc.${sls:stage}.stripe-price-id, ''}
+
+  httpApi:
+    cors:
+      allowedOrigins:
+        - '*'
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+    authorizers:
+      cognitoAuthorizer:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}'
+        audience:
+          - !Ref CognitoUserPoolClient
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+          Resource:
+            - !GetAtt FenceCalcTable.Arn
+            - !Sub '${FenceCalcTable.Arn}/index/*'
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+          Resource:
+            - !Sub 'arn:aws:s3:::${self:custom.assetsBucket}/*'
+
+functions:
+  postConfirmation:
+    handler: handlers/auth.postConfirmation
+
+  getCompany:
+    handler: handlers/company.get
+    events:
+      - httpApi:
+          path: /api/company
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  updateCompany:
+    handler: handlers/company.update
+    events:
+      - httpApi:
+          path: /api/company
+          method: PUT
+          authorizer:
+            name: cognitoAuthorizer
+
+  listEstimates:
+    handler: handlers/estimates.list
+    events:
+      - httpApi:
+          path: /api/estimates
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  createEstimate:
+    handler: handlers/estimates.create
+    events:
+      - httpApi:
+          path: /api/estimates
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+  getEstimate:
+    handler: handlers/estimates.get
+    events:
+      - httpApi:
+          path: /api/estimates/{id}
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  updateEstimate:
+    handler: handlers/estimates.update
+    events:
+      - httpApi:
+          path: /api/estimates/{id}
+          method: PUT
+          authorizer:
+            name: cognitoAuthorizer
+
+  deleteEstimate:
+    handler: handlers/estimates.remove
+    events:
+      - httpApi:
+          path: /api/estimates/{id}
+          method: DELETE
+          authorizer:
+            name: cognitoAuthorizer
+
+  billingCheckout:
+    handler: handlers/billing.checkout
+    events:
+      - httpApi:
+          path: /api/billing/checkout
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+  billingPortal:
+    handler: handlers/billing.portal
+    events:
+      - httpApi:
+          path: /api/billing/portal
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+  billingStatus:
+    handler: handlers/billing.status
+    events:
+      - httpApi:
+          path: /api/billing/status
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  stripeWebhook:
+    handler: handlers/webhook.handler
+    events:
+      - httpApi:
+          path: /api/stripe-webhook
+          method: POST
+
+resources:
+  Resources:
+    FenceCalcTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: fencecalc-${sls:stage}
+        AutoVerifiedAttributes:
+          - email
+        UsernameAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireUppercase: false
+            RequireNumbers: true
+            RequireSymbols: false
+        Schema:
+          - Name: companyName
+            AttributeDataType: String
+            Mutable: true
+
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: fencecalc-client-${sls:stage}
+        UserPoolId: !Ref CognitoUserPool
+        ExplicitAuthFlows:
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+          - ALLOW_USER_PASSWORD_AUTH
+        GenerateSecret: false
+        PreventUserExistenceErrors: ENABLED
+
+    AssetsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.assetsBucket}
+
+  Outputs:
+    UserPoolId:
+      Value: !Ref CognitoUserPool
+    UserPoolClientId:
+      Value: !Ref CognitoUserPoolClient
+    ApiUrl:
+      Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
 
 plugins:
   - serverless-finch

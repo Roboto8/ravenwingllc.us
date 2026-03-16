@@ -1,14 +1,21 @@
 {
   "name": "ravenwingllc-us",
-  "version": "1.0.0",
-  "description": "RavenWing LLC company website",
+  "version": "2.0.0",
+  "description": "FenceCalc - Satellite-powered fence estimates",
   "private": true,
   "scripts": {
     "deploy:dev": "serverless client deploy --stage dev",
-    "deploy:prod": "serverless client deploy --stage prod"
+    "deploy:prod": "serverless client deploy --stage prod",
+    "deploy:backend": "serverless deploy --stage dev",
+    "deploy:all": "serverless deploy --stage dev && serverless client deploy --stage dev"
   },
   "license": "MIT",
   "author": "RavenWing LLC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "stripe": "^17.0.0"
+  },
   "devDependencies": {
     "serverless-finch": "^4.0.4"
   }
