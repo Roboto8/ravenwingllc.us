@@ -283,14 +283,52 @@ function createSegmentLabel(p1, p2, segIndex) {
   var label = L.marker([midLat, midLng], {
     icon: L.divIcon({
       className: 'segment-label',
-      html: '<div class="seg-label seg-clickable" data-seg="' + segIndex + '" onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</div>',
-      iconSize: [60, 20],
+      html: '<div class="seg-label seg-clickable" data-seg="' + segIndex + '">' +
+        '<span onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</span>' +
+        '<button class="seg-delete" onclick="event.stopPropagation(); deleteSegment(' + segIndex + ')" title="Remove segment">&times;</button>' +
+      '</div>',
+      iconSize: [80, 20],
       iconAnchor: [30, 10]
     }),
     interactive: true
   }).addTo(map);
 
   return label;
+}
+
+function deleteSegment(segIndex) {
+  // Remove the second point of this segment
+  // For the closing segment (last index), remove the last point instead
+  var removeIdx;
+  if (segIndex >= fencePoints.length - 1 && fenceClosed) {
+    // Closing segment — open the fence instead
+    openFence();
+    return;
+  } else {
+    removeIdx = segIndex + 1;
+  }
+
+  if (removeIdx < 0 || removeIdx >= fencePoints.length) return;
+  if (fencePoints.length <= 2) {
+    // Would leave 0 or 1 points — just clear
+    fencePoints = [];
+    fenceMarkers.forEach(function(m) { map.removeLayer(m); });
+    fenceMarkers = [];
+  } else {
+    fencePoints.splice(removeIdx, 1);
+    var marker = fenceMarkers.splice(removeIdx, 1)[0];
+    if (marker) map.removeLayer(marker);
+  }
+
+  rebuildAllMarkers();
+  redrawFenceLine();
+  redrawSegmentLabels();
+  updateCloseButton();
+  updateMidpointHandles();
+  updateFootage();
+  recalculate();
+  markUnsaved();
+  updateEmptyMapState();
 }
 
 function editSegmentLength(segIndex, event) {
@@ -431,6 +469,9 @@ function addFencePoint(latlng) {
   });
 
   fenceMarkers.push(marker);
+
+  // Push to undo stack
+  undoStack.push({ type: 'point', sectionIdx: activeSectionIdx });
 
   redrawFenceLine();
   redrawSegmentLabels();
@@ -805,11 +846,12 @@ function updateFootage() {
 
 // === Gates ===
 function addGate(latlng) {
-  const gateId = Date.now();
-  const gate = { id: gateId, latlng, type: 'single', price: 350 };
+  var gateId = Date.now();
+  var gate = { id: gateId, latlng: latlng, type: 'single', price: 350 };
   gates.push(gate);
 
-  const marker = L.marker(latlng, {
+  var marker = L.marker(latlng, {
+    draggable: true,
     icon: L.divIcon({
       className: 'gate-marker',
       html: '<div style="background:#c0622e;color:#fff;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);letter-spacing:0.5px;">GATE</div>',
@@ -817,7 +859,20 @@ function addGate(latlng) {
       iconAnchor: [25, 28]
     })
   }).addTo(map);
-  gateMarkers.push({ id: gateId, marker });
+
+  // Make gate draggable — update position on drag
+  marker.on('dragend', function(e) {
+    var g = gates.find(function(x) { return x.id === gateId; });
+    if (g) {
+      g.latlng = e.target.getLatLng();
+      markUnsaved();
+    }
+  });
+
+  gateMarkers.push({ id: gateId, marker: marker });
+
+  // Push to undo stack
+  undoStack.push({ type: 'gate', id: gateId });
 
   renderGates();
   recalculate();
@@ -875,27 +930,55 @@ function setTool(tool) {
   map.getContainer().style.cursor = tool === 'draw' ? 'crosshair' : tool === 'gate' ? 'cell' : '';
 }
 
+// === Undo Stack ===
+var undoStack = [];
+
 function undoLast() {
+  // If fence is closed, open it first
   if (fenceClosed) {
     openFence();
     return;
   }
-  if (fencePoints.length > 0) {
-    fencePoints.pop();
-    const marker = fenceMarkers.pop();
-    if (marker) map.removeLayer(marker);
 
-    // Rebind drag handlers with correct indices
-    rebindMarkerDrags();
+  if (undoStack.length === 0) return;
 
-    redrawFenceLine();
-    redrawSegmentLabels();
-    updateCloseButton();
-    updateMidpointHandles();
-    updateFootage();
+  var last = undoStack.pop();
+
+  if (last.type === 'gate') {
+    // Undo gate placement
+    var gateId = last.id;
+    var gm = gateMarkers.find(function(g) { return g.id === gateId; });
+    if (gm) {
+      map.removeLayer(gm.marker);
+      gateMarkers = gateMarkers.filter(function(g) { return g.id !== gateId; });
+    }
+    gates = gates.filter(function(g) { return g.id !== gateId; });
+    renderGates();
     recalculate();
     markUnsaved();
-    updateEmptyMapState();
+    showToast('Gate removed');
+
+  } else if (last.type === 'point') {
+    // Undo fence point — switch to the right section if needed
+    if (last.sectionIdx !== activeSectionIdx) {
+      switchSection(last.sectionIdx);
+    }
+
+    if (fencePoints.length > 0) {
+      fencePoints.pop();
+      var marker = fenceMarkers.pop();
+      if (marker) map.removeLayer(marker);
+
+      rebindMarkerDrags();
+      redrawFenceLine();
+      redrawSegmentLabels();
+      updateCloseButton();
+      updateMidpointHandles();
+      updateFootage();
+      recalculate();
+      markUnsaved();
+      updateEmptyMapState();
+    }
   }
 }
 
@@ -940,6 +1023,9 @@ function clearAll() {
 
   midpointMarkers.forEach(function(m) { map.removeLayer(m); });
   midpointMarkers = [];
+
+  // Clear undo stack
+  undoStack = [];
 
   // Start fresh with one section
   addNewSection();
@@ -2465,12 +2551,54 @@ document.addEventListener('keydown', function(e) {
     return;
   }
 
+  // N: New section
+  if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    addNewSection();
+    return;
+  }
+
+  // L: Close/loop fence
+  if (e.key === 'l' || e.key === 'L') {
+    e.preventDefault();
+    if (fenceClosed) { openFence(); } else { closeFence(); }
+    return;
+  }
+
+  // P: Save as PDF
+  if (e.key === 'p' || e.key === 'P') {
+    e.preventDefault();
+    generatePDF();
+    return;
+  }
+
+  // E: Share estimate
+  if (e.key === 'e' || e.key === 'E') {
+    e.preventDefault();
+    shareEstimate();
+    return;
+  }
+
   // S: Save estimate
   if (e.key === 's' || e.key === 'S') {
     if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
       e.preventDefault();
       saveEstimate();
     }
+    return;
+  }
+
+  // M: My Estimates
+  if (e.key === 'm' || e.key === 'M') {
+    e.preventDefault();
+    if (typeof showEstimatesList === 'function') showEstimatesList();
+    return;
+  }
+
+  // R: Reset/New estimate
+  if (e.key === 'r' || e.key === 'R') {
+    e.preventDefault();
+    resetEstimate();
     return;
   }
 

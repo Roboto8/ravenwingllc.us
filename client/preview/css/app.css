@@ -762,9 +762,32 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   cursor: pointer;
   pointer-events: auto !important;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 .seg-clickable:hover {
   background: var(--accent);
+}
+.seg-clickable span {
+  cursor: pointer;
+}
+.seg-delete {
+  display: none;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+.seg-clickable:hover .seg-delete {
+  display: inline;
+}
+.seg-delete:hover {
+  color: #fff;
 }
 .seg-editing {
   background: var(--accent) !important;

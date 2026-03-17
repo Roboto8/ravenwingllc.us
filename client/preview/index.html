@@ -126,10 +126,10 @@
       <span class="nav-tagline">Satellite fence estimates</span>
     </div>
     <div class="nav-right">
-      <button class="btn btn-sm btn-outline" onclick="resetEstimate()">New</button>
-      <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none">Save</button>
-      <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none">My Estimates</button>
-      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none">Account</button>
+      <button class="btn btn-sm btn-outline" onclick="resetEstimate()" title="New estimate (R)">New</button>
+      <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none" title="Save estimate (S)">Save</button>
+      <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none" title="My Estimates (M)">My Estimates</button>
+      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none" title="Account settings">Account</button>
       <button class="btn btn-sm" id="btn-logout" onclick="handleLogout()" style="display:none">Log Out</button>
       <button class="btn btn-sm" id="btn-signin" onclick="showAuthUI(); showLogin(); document.getElementById('auth-close').style.display='block';" style="display:none">Sign In</button>
     </div>
@@ -164,7 +164,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
           Curve
         </button>
-        <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="Start a new fence section">
+        <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="New section (N)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           Section
         </button>
@@ -357,10 +357,10 @@
         </div>
 
         <div class="panel-actions">
-          <button class="btn btn-full" onclick="shareEstimate()">
+          <button class="btn btn-full" onclick="shareEstimate()" title="Share estimate link (E)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>Share Estimate
           </button>
-          <button class="btn btn-full btn-outline" style="margin-top:6px" onclick="generatePDF()">Save as PDF</button>
+          <button class="btn btn-full btn-outline" style="margin-top:6px" onclick="generatePDF()" title="Download PDF estimate (P)">Save as PDF</button>
         </div>
 
         <div class="panel-footer">
@@ -406,13 +406,19 @@
       <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Keyboard Shortcuts</p>
         <div class="shortcuts-list">
-          <span class="shortcut-key">Ctrl+Z</span><span class="shortcut-desc">Undo last point</span>
-          <span class="shortcut-key">Ctrl+Shift+Z</span><span class="shortcut-desc">Clear all</span>
           <span class="shortcut-key">D</span><span class="shortcut-desc">Draw tool</span>
           <span class="shortcut-key">G</span><span class="shortcut-desc">Gate tool</span>
           <span class="shortcut-key">C</span><span class="shortcut-desc">Toggle curve mode</span>
-          <span class="shortcut-key">Esc</span><span class="shortcut-desc">Cancel / close modals</span>
+          <span class="shortcut-key">N</span><span class="shortcut-desc">New section</span>
+          <span class="shortcut-key">L</span><span class="shortcut-desc">Close / open loop</span>
+          <span class="shortcut-key">Ctrl+Z</span><span class="shortcut-desc">Undo (points &amp; gates)</span>
+          <span class="shortcut-key">Ctrl+Shift+Z</span><span class="shortcut-desc">Clear all</span>
+          <span class="shortcut-key">R</span><span class="shortcut-desc">New estimate</span>
           <span class="shortcut-key">S</span><span class="shortcut-desc">Save estimate</span>
+          <span class="shortcut-key">M</span><span class="shortcut-desc">My Estimates</span>
+          <span class="shortcut-key">E</span><span class="shortcut-desc">Share estimate</span>
+          <span class="shortcut-key">P</span><span class="shortcut-desc">Save as PDF</span>
+          <span class="shortcut-key">Esc</span><span class="shortcut-desc">Cancel / close</span>
         </div>
       </div>
 
