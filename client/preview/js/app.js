@@ -2024,7 +2024,10 @@ document.getElementById('address-input').addEventListener('keydown', function(e)
 
 // === Share / Approval Workflow ===
 async function shareEstimate() {
-  if (typeof requireAuth === 'function' && !requireAuth('share estimates')) return;
+  if (typeof Auth !== 'undefined' && !Auth.isLoggedIn()) {
+    if (typeof requireAuth === 'function') requireAuth('share estimates');
+    return;
+  }
 
   // If we have a saved estimate loaded, use the approval workflow
   if (typeof activeEstimateId !== 'undefined' && activeEstimateId) {
@@ -2358,7 +2361,10 @@ function captureMap() {
 
 // === PDF Generation ===
 async function generatePDF() {
-  if (typeof requireAuth === 'function' && !requireAuth('download PDF estimates')) return;
+  if (typeof Auth !== 'undefined' && !Auth.isLoggedIn()) {
+    if (typeof requireAuth === 'function') requireAuth('download PDF estimates');
+    return;
+  }
   try {
   showToast(t('toast_generating_pdf'));
 
