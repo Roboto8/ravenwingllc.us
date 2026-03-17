@@ -85,6 +85,11 @@ provider:
             - s3:DeleteObject
           Resource:
             - !Sub 'arn:aws:s3:::${self:custom.assetsBucket}/*'
+            - 'arn:aws:s3:::fencetrace-email-us-east-1/*'
+        - Effect: Allow
+          Action:
+            - ses:SendRawEmail
+          Resource: '*'
 
 functions:
   postConfirmation:
@@ -362,6 +367,10 @@ functions:
           method: POST
           authorizer:
             name: cognitoAuthorizer
+
+  emailForwarder:
+    handler: handlers/email-forwarder.handler
+    timeout: 30
 
   stripeWebhook:
     handler: handlers/webhook.handler
