@@ -49,7 +49,7 @@ function addNewSection() {
   updateEmptyMapState();
 
   if (sections.length > 1) {
-    showToast('Section ' + sections.length + ' started — click the map to draw');
+    showToast(t('toast_section_started', {n: sections.length}));
   }
 }
 
@@ -145,7 +145,7 @@ function deleteSection(idx) {
   updateMidpointHandles();
   updateFootage();
   recalculate();
-  showToast('Section removed');
+  showToast(t('toast_section_removed'));
 }
 
 function updateSectionTabs() {
@@ -287,10 +287,10 @@ function initMap() {
     var feetPerPixel = metersPerPixel * 3.28084;
     var accuracy;
     var color;
-    if (zoom >= 20) { accuracy = 'Excellent'; color = '#2d6e28'; }
-    else if (zoom >= 18) { accuracy = 'Good'; color = '#2d6e28'; }
-    else if (zoom >= 16) { accuracy = 'Fair'; color = '#d4870e'; }
-    else { accuracy = 'Low'; color = '#b93a2a'; }
+    if (zoom >= 20) { accuracy = t('accuracy_excellent'); color = '#2d6e28'; }
+    else if (zoom >= 18) { accuracy = t('accuracy_good'); color = '#2d6e28'; }
+    else if (zoom >= 16) { accuracy = t('accuracy_fair'); color = '#d4870e'; }
+    else { accuracy = t('accuracy_low'); color = '#b93a2a'; }
 
     div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + feetPerPixel.toFixed(1) + ' ft/px';
     div.title = 'Zoom ' + zoom + ' — each pixel ≈ ' + feetPerPixel.toFixed(1) + ' feet. Zoom in for more precise placement.';
@@ -373,7 +373,7 @@ function handleDroneUpload(input) {
   if (!input.files || !input.files[0]) return;
   var file = input.files[0];
   if (file.size > 50 * 1024 * 1024) {
-    showToast('Image too large (max 50MB)');
+    showToast(t('toast_image_too_large'));
     input.value = '';
     return;
   }
@@ -487,17 +487,17 @@ function removeDroneOverlay() {
   document.getElementById('drone-banner').style.display = 'none';
   document.getElementById('drone-btn').classList.remove('active');
   markUnsaved();
-  showToast('Drone photo removed');
+  showToast(t('toast_drone_removed'));
 }
 
 function onMapClick(e) {
   // Warn if zoomed too far out for accurate placement
   if (map.getZoom() < 16 && (currentTool === 'draw' || currentTool === 'gate')) {
-    showToast('Zoom in closer for accurate placement');
+    showToast(t('toast_zoom_closer'));
     return;
   }
   if (map.getZoom() < 18 && currentTool === 'draw' && fencePoints.length === 0) {
-    showToast('Tip: zoom to 18+ for best accuracy (~0.5 ft/pixel)');
+    showToast(t('toast_zoom_tip'));
   }
   if (currentTool === 'draw' && !fenceClosed) {
     addFencePoint(e.latlng);
@@ -657,7 +657,7 @@ function applySegmentLength(segIndex, value) {
   updateFootage();
   recalculate();
 
-  showToast('Segment set to ' + newFeet + ' ft');
+  showToast(t('toast_segment_set', {n: newFeet}));
 }
 
 function redrawSegmentLabels() {
@@ -1947,9 +1947,33 @@ document.getElementById('address-input').addEventListener('keydown', function(e)
   if (e.key === 'Enter') searchAddress();
 });
 
-// === Share Link ===
-function shareEstimate() {
+// === Share / Approval Workflow ===
+async function shareEstimate() {
   if (typeof requireAuth === 'function' && !requireAuth('share estimates')) return;
+
+  // If we have a saved estimate loaded, use the approval workflow
+  if (typeof activeEstimateId !== 'undefined' && activeEstimateId) {
+    try {
+      showToast('Generating approval link...');
+      const result = await API.shareEstimate(activeEstimateId);
+      const url = result.link;
+
+      if (navigator.share) {
+        navigator.share({ title: 'Fence Estimate — Review & Approve', url: url }).catch(() => {
+          copyToClipboard(url);
+        });
+      } else {
+        copyToClipboard(url);
+      }
+      showToast('Approval link copied!');
+      return;
+    } catch (e) {
+      showToast('Could not generate approval link: ' + e.message);
+      return;
+    }
+  }
+
+  // Fallback: no saved estimate — use the old base64 share link
   const data = {
     p: fencePoints.map(p => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6]),
     g: gates.map(g => ({ t: g.type, lt: Math.round(g.latlng.lat * 1e6) / 1e6, ln: Math.round(g.latlng.lng * 1e6) / 1e6 })),
@@ -2506,6 +2530,15 @@ async function generatePDF() {
 
   y += 40;
 
+  // Photos note
+  if (typeof activeEstimatePhotos !== 'undefined' && activeEstimatePhotos.length > 0) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(activeEstimatePhotos.length + ' photo' + (activeEstimatePhotos.length === 1 ? '' : 's') + ' attached to this estimate (see online version)', margin, y);
+    y += 20;
+  }
+
   // Footer
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
@@ -2545,6 +2578,13 @@ function resetEstimate() {
   clearUnsaved();
   nextEstimateNumber();
   updateEmptyMapState();
+
+  // Clear photos state
+  if (typeof activeEstimateId !== 'undefined') {
+    activeEstimateId = null;
+    activeEstimatePhotos = [];
+    renderPhotoGrid();
+  }
 }
 
 // === Panel Toggle (mobile) ===

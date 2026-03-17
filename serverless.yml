@@ -82,6 +82,7 @@ provider:
           Action:
             - s3:PutObject
             - s3:GetObject
+            - s3:DeleteObject
           Resource:
             - !Sub 'arn:aws:s3:::${self:custom.assetsBucket}/*'
 
@@ -169,6 +170,29 @@ functions:
           method: POST
           authorizer:
             name: cognitoAuthorizer
+
+  shareEstimate:
+    handler: handlers/approval.share
+    events:
+      - httpApi:
+          path: /api/estimates/{id}/share
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+  getPublicEstimate:
+    handler: handlers/approval.getPublic
+    events:
+      - httpApi:
+          path: /api/public/estimate/{token}
+          method: GET
+
+  respondEstimate:
+    handler: handlers/approval.respond
+    events:
+      - httpApi:
+          path: /api/public/estimate/{token}/respond
+          method: POST
 
   billingCheckout:
     handler: handlers/billing.checkout
@@ -294,6 +318,51 @@ functions:
           authorizer:
             name: cognitoAuthorizer
 
+  getPhotoUploadUrl:
+    handler: handlers/photos.getUploadUrl
+    events:
+      - httpApi:
+          path: /api/estimates/{id}/photos
+          method: PUT
+          authorizer:
+            name: cognitoAuthorizer
+
+  deletePhoto:
+    handler: handlers/photos.deletePhoto
+    events:
+      - httpApi:
+          path: /api/estimates/{id}/photos/{key}
+          method: DELETE
+          authorizer:
+            name: cognitoAuthorizer
+
+  reportsDashboard:
+    handler: handlers/reports.dashboard
+    events:
+      - httpApi:
+          path: /api/reports/dashboard
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  listNotifications:
+    handler: handlers/notifications.list
+    events:
+      - httpApi:
+          path: /api/notifications
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  markNotificationsRead:
+    handler: handlers/notifications.markRead
+    events:
+      - httpApi:
+          path: /api/notifications/read
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
   stripeWebhook:
     handler: handlers/webhook.handler
     events:
@@ -331,6 +400,9 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: expiresAt
+          Enabled: true
 
     CognitoUserPool:
       Type: AWS::Cognito::UserPool

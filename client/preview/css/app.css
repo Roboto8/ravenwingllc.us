@@ -978,10 +978,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   top: 0; right: 0; bottom: 0; left: 0;
   background: rgba(44, 36, 23, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 9000;
   padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top, 0));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.twa-mode .modal-overlay {
+  padding-top: 48px;
 }
 
 .modal {
@@ -990,7 +997,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   padding: 32px 28px;
   width: 100%;
   max-width: 400px;
+  max-height: none;
   box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  margin: auto 0;
 }
 
 .modal-title {

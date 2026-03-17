@@ -52,27 +52,27 @@
       <div class="onboarding-card onboarding-card-search">
         <div class="onboarding-arrow onboarding-arrow-up"></div>
         <div class="onboarding-step-num">1 / 3</div>
-        <h3 class="onboarding-title">Search for a property address</h3>
-        <p class="onboarding-desc">Type an address into the search bar to fly to any property on the satellite map.</p>
-        <button class="btn btn-sm onboarding-next" onclick="onboardNext()">Next</button>
+        <h3 class="onboarding-title" data-i18n="onboard_step1_title">Search for a property address</h3>
+        <p class="onboarding-desc" data-i18n="onboard_step1_desc">Type an address into the search bar to fly to any property on the satellite map.</p>
+        <button class="btn btn-sm onboarding-next" onclick="onboardNext()" data-i18n="onboard_next">Next</button>
       </div>
     </div>
     <div class="onboarding-step" data-step="2" style="display:none">
       <div class="onboarding-card onboarding-card-map">
         <div class="onboarding-arrow onboarding-arrow-up"></div>
         <div class="onboarding-step-num">2 / 3</div>
-        <h3 class="onboarding-title">Click the map to draw fence lines</h3>
-        <p class="onboarding-desc">Click points on the map to trace the fence. Each segment shows its length in feet.</p>
-        <button class="btn btn-sm onboarding-next" onclick="onboardNext()">Next</button>
+        <h3 class="onboarding-title" data-i18n="onboard_step2_title">Click the map to draw fence lines</h3>
+        <p class="onboarding-desc" data-i18n="onboard_step2_desc">Click points on the map to trace the fence. Each segment shows its length in feet.</p>
+        <button class="btn btn-sm onboarding-next" onclick="onboardNext()" data-i18n="onboard_next">Next</button>
       </div>
     </div>
     <div class="onboarding-step" data-step="3" style="display:none">
       <div class="onboarding-card onboarding-card-panel">
         <div class="onboarding-arrow onboarding-arrow-left"></div>
         <div class="onboarding-step-num">3 / 3</div>
-        <h3 class="onboarding-title">Review your estimate and share it</h3>
-        <p class="onboarding-desc">Pick materials, add extras, then share or save your estimate as a PDF.</p>
-        <button class="btn btn-sm onboarding-next" onclick="onboardFinish()">Got it</button>
+        <h3 class="onboarding-title" data-i18n="onboard_step3_title">Review your estimate and share it</h3>
+        <p class="onboarding-desc" data-i18n="onboard_step3_desc">Pick materials, add extras, then share or save your estimate as a PDF.</p>
+        <button class="btn btn-sm onboarding-next" onclick="onboardFinish()" data-i18n="onboard_got_it">Got it</button>
       </div>
     </div>
   </div>
@@ -83,27 +83,27 @@
       <button class="auth-close" id="auth-close" onclick="hideAuthUI()" style="display:none">&times;</button>
       <h2 class="modal-title">Fence<span class="accent">Trace</span></h2>
       <p class="auth-gate-msg" id="auth-gate-msg" style="display:none"></p>
-      <p class="modal-sub">14-day free trial. No card required.</p>
+      <p class="modal-sub" data-i18n="auth_subtitle">14-day free trial. No card required.</p>
 
       <div id="auth-login" class="auth-form">
-        <div class="form-group"><input type="email" id="login-email" placeholder="Email"></div>
-        <div class="form-group"><input type="password" id="login-password" placeholder="Password"></div>
-        <button class="btn btn-full" onclick="handleLogin()">Log In</button>
-        <p class="auth-switch">No account? <a href="#" onclick="showSignup(); return false;">Sign up</a></p>
+        <div class="form-group"><input type="email" id="login-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="password" id="login-password" placeholder="Password" data-i18n="placeholder_password" data-i18n-attr="placeholder"></div>
+        <button class="btn btn-full" onclick="handleLogin()" data-i18n="auth_login_btn">Log In</button>
+        <p class="auth-switch"><span data-i18n="auth_no_account">No account?</span> <a href="#" onclick="showSignup(); return false;" data-i18n="auth_sign_up">Sign up</a></p>
       </div>
 
       <div id="auth-signup" class="auth-form" style="display:none">
-        <div class="form-group"><input type="text" id="signup-company" placeholder="Company name"></div>
-        <div class="form-group"><input type="email" id="signup-email" placeholder="Email"></div>
-        <div class="form-group"><input type="password" id="signup-password" placeholder="Password (8+ chars, 1 number)"></div>
-        <button class="btn btn-full" onclick="handleSignup()">Start Free Trial</button>
-        <p class="auth-switch">Have an account? <a href="#" onclick="showLogin(); return false;">Log in</a></p>
+        <div class="form-group"><input type="text" id="signup-company" placeholder="Company name" data-i18n="placeholder_company" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="email" id="signup-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="password" id="signup-password" placeholder="Password (8+ chars, 1 number)" data-i18n="placeholder_password_hint" data-i18n-attr="placeholder"></div>
+        <button class="btn btn-full" onclick="handleSignup()" data-i18n="auth_signup_btn">Start Free Trial</button>
+        <p class="auth-switch"><span data-i18n="auth_have_account">Have an account?</span> <a href="#" onclick="showLogin(); return false;" data-i18n="auth_log_in">Log in</a></p>
       </div>
 
       <div id="auth-confirm" class="auth-form" style="display:none">
-        <p class="auth-info">Check your email for a verification code.</p>
-        <div class="form-group"><input type="text" id="confirm-code" placeholder="Verification code"></div>
-        <button class="btn btn-full" onclick="handleConfirm()">Verify</button>
+        <p class="auth-info" data-i18n="auth_check_email">Check your email for a verification code.</p>
+        <div class="form-group"><input type="text" id="confirm-code" placeholder="Verification code" data-i18n="placeholder_verification" data-i18n-attr="placeholder"></div>
+        <button class="btn btn-full" onclick="handleConfirm()" data-i18n="auth_verify_btn">Verify</button>
       </div>
 
       <p class="auth-error" id="auth-error"></p>
@@ -113,16 +113,16 @@
   <!-- Trial Banner -->
   <div class="trial-banner" id="trial-banner" style="display:none">
     <span id="trial-text"></span>
-    <button class="btn btn-sm" onclick="handleUpgrade()">Subscribe</button>
+    <button class="btn btn-sm" onclick="handleUpgrade()" data-i18n="trial_subscribe_btn">Subscribe</button>
     <button class="banner-close" onclick="this.parentElement.style.display='none'">&times;</button>
   </div>
 
   <!-- Paywall -->
   <div class="modal-overlay" id="paywall-modal" style="display:none">
     <div class="modal">
-      <h2 class="modal-title">Trial Expired</h2>
-      <p class="modal-sub">Subscribe to keep creating estimates.</p>
-      <button class="btn btn-full" onclick="handleUpgrade()">Subscribe — $49/mo</button>
+      <h2 class="modal-title" data-i18n="trial_expired">Trial Expired</h2>
+      <p class="modal-sub" data-i18n="trial_subscribe_msg">Subscribe to keep creating estimates.</p>
+      <button class="btn btn-full" onclick="handleUpgrade()" data-i18n="trial_subscribe_price">Subscribe — $49/mo</button>
       <p class="auth-switch" style="margin-top:12px"><a href="#" onclick="Auth.logout(); location.reload(); return false;">Log out</a></p>
     </div>
   </div>
@@ -130,15 +130,35 @@
   <nav class="nav">
     <div class="nav-left">
       <span class="nav-brand">Fence<span class="accent">Trace</span></span>
-      <span class="nav-tagline">Satellite fence estimates</span>
+      <span class="nav-tagline" data-i18n="nav_tagline">Satellite fence estimates</span>
     </div>
     <div class="nav-right">
-      <button class="btn btn-sm btn-outline" onclick="resetEstimate()" title="New estimate (R)">New</button>
-      <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none" title="Save estimate (S)">Save</button>
-      <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none" title="My Estimates (M)">My Estimates</button>
-      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none" title="Account, team, pricing, shortcuts">Account</button>
-      <button class="btn btn-sm" id="btn-logout" onclick="handleLogout()" style="display:none">Log Out</button>
-      <button class="btn btn-sm" id="btn-signin" onclick="showAuthUI(); showLogin(); document.getElementById('auth-close').style.display='block';" style="display:none">Sign In</button>
+      <select id="lang-select" class="lang-select" onchange="setLang(this.value)" title="Language" style="padding:4px 6px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;cursor:pointer;min-width:auto">
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+      </select>
+      <button class="btn btn-sm btn-outline" onclick="resetEstimate()" title="New estimate (R)" data-i18n="btn_new">New</button>
+      <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none" title="Save estimate (S)" data-i18n="btn_save">Save</button>
+      <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none" title="My Estimates (M)" data-i18n="btn_my_estimates">My Estimates</button>
+      <button class="btn btn-sm btn-outline" id="btn-reports" onclick="showReportsPanel()" style="display:none" title="Reports dashboard">Reports</button>
+      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none" title="Account, team, pricing, shortcuts" data-i18n="btn_account">Account</button>
+      <div id="notif-wrapper" style="display:none;position:relative">
+        <button class="btn btn-sm btn-outline" id="btn-notif" onclick="toggleNotifPanel()" title="Notifications" style="padding:4px 8px;position:relative">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:0.6rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;line-height:1">0</span>
+        </button>
+        <div id="notif-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;width:320px;max-height:400px;overflow-y:auto;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:9001;border:1px solid var(--surface-2)">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--surface-2)">
+            <span style="font-weight:700;font-size:0.85rem;color:var(--text)">Notifications</span>
+            <button class="btn btn-sm btn-outline" style="font-size:0.68rem;padding:2px 8px" onclick="markAllNotifRead()">Mark all read</button>
+          </div>
+          <div id="notif-list" style="padding:4px 0">
+            <p style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.82rem">No notifications</p>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-sm" id="btn-logout" onclick="handleLogout()" style="display:none" data-i18n="btn_logout">Log Out</button>
+      <button class="btn btn-sm" id="btn-signin" onclick="showAuthUI(); showLogin(); document.getElementById('auth-close').style.display='block';" style="display:none" data-i18n="btn_signin">Sign In</button>
     </div>
   </nav>
 
@@ -147,15 +167,15 @@
     <div class="map-panel">
       <div class="search-bar">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="address-input" placeholder="Search address..." autocomplete="off">
-        <button class="search-btn" onclick="searchAddress()">Go</button>
+        <input type="text" id="address-input" placeholder="Search address..." autocomplete="off" data-i18n="search_placeholder" data-i18n-attr="placeholder">
+        <button class="search-btn" onclick="searchAddress()" data-i18n="search_go">Go</button>
       </div>
       <div id="map"></div>
       <div class="map-layers">
-        <button class="layer-btn active" data-layer="satellite" onclick="setMapLayer('satellite')">Satellite</button>
-        <button class="layer-btn" data-layer="hybrid" onclick="setMapLayer('hybrid')">Hybrid</button>
-        <button class="layer-btn" data-layer="streets" onclick="setMapLayer('streets')">Streets</button>
-        <button class="layer-btn" data-layer="topo" onclick="setMapLayer('topo')">Topo</button>
+        <button class="layer-btn active" data-layer="satellite" onclick="setMapLayer('satellite')" data-i18n="layer_satellite">Satellite</button>
+        <button class="layer-btn" data-layer="hybrid" onclick="setMapLayer('hybrid')" data-i18n="layer_hybrid">Hybrid</button>
+        <button class="layer-btn" data-layer="streets" onclick="setMapLayer('streets')" data-i18n="layer_streets">Streets</button>
+        <button class="layer-btn" data-layer="topo" onclick="setMapLayer('topo')" data-i18n="layer_topo">Topo</button>
         <button class="layer-btn" id="drone-btn" onclick="toggleDronePhoto()" title="Add or remove a drone/aerial photo overlay">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
           Drone
@@ -163,165 +183,177 @@
       </div>
       <input type="file" id="drone-input" accept="image/*" style="display:none" onchange="handleDroneUpload(this)">
       <div id="drone-banner" style="display:none;position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:1001;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:12px 16px;font-size:0.82rem;max-width:340px;text-align:center;line-height:1.4">
-        <p style="font-weight:700;margin-bottom:6px;color:var(--accent)">Drone Photo Overlay</p>
-        <p style="margin-bottom:8px;color:var(--text-mid)">Drag the <b>orange corners</b> to align the photo with the property. Use the slider to adjust transparency.</p>
+        <p style="font-weight:700;margin-bottom:6px;color:var(--accent)" data-i18n="drone_title">Drone Photo Overlay</p>
+        <p style="margin-bottom:8px;color:var(--text-mid)" data-i18n="drone_desc" data-i18n-attr="innerHTML">Drag the <b>orange corners</b> to align the photo with the property. Use the slider to adjust transparency.</p>
         <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:0.75rem;white-space:nowrap;color:var(--text-muted)">See-through</span>
+          <span style="font-size:0.75rem;white-space:nowrap;color:var(--text-muted)" data-i18n="drone_see_through">See-through</span>
           <input type="range" id="drone-opacity" min="10" max="100" value="70" oninput="setDroneOpacity(this.value)" style="flex:1">
         </label>
         <div style="display:flex;gap:6px;justify-content:center">
-          <button class="btn btn-sm" onclick="closeDroneBanner()">Got it</button>
-          <button class="btn btn-sm btn-outline" style="color:var(--red);border-color:var(--red)" onclick="removeDroneOverlay()">Remove Photo</button>
+          <button class="btn btn-sm" onclick="closeDroneBanner()" data-i18n="drone_got_it">Got it</button>
+          <button class="btn btn-sm btn-outline" style="color:var(--red);border-color:var(--red)" onclick="removeDroneOverlay()" data-i18n="drone_remove">Remove Photo</button>
         </div>
       </div>
       <div class="section-tabs" id="section-tabs" style="display:none"></div>
       <div class="map-toolbar">
         <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')" title="Draw tool (D)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
-          Draw
+          <span data-i18n="tool_draw">Draw</span>
         </button>
         <button class="tool-btn" id="gate-btn" onclick="setTool('gate')" title="Gate tool (G)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
-          Gate
+          <span data-i18n="tool_gate">Gate</span>
         </button>
         <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
-          Curve
+          <span data-i18n="tool_curve">Curve</span>
         </button>
         <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="New section (N)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          Section
+          <span data-i18n="tool_section">Section</span>
         </button>
         <button class="tool-btn" id="close-btn" style="display:none" onclick="closeFence()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-          Close
+          <span data-i18n="tool_close">Close</span>
         </button>
         <button class="tool-btn" id="undo-btn" onclick="undoLast()" title="Undo last point (Ctrl+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6.69 3L3 13"/></svg>
-          Undo
+          <span data-i18n="tool_undo">Undo</span>
         </button>
         <button class="tool-btn danger" id="clear-btn" onclick="clearAll()" title="Clear all (Ctrl+Shift+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
-          Clear
+          <span data-i18n="tool_clear">Clear</span>
         </button>
         <div class="tool-divider"></div>
         <div class="footage-display">
-          <span class="footage-label">Total</span>
+          <span class="footage-label" data-i18n="footage_label">Total</span>
           <span class="footage-value" id="total-feet">0</span>
-          <span class="footage-unit">ft</span>
+          <span class="footage-unit" data-i18n="footage_unit">ft</span>
         </div>
       </div>
     </div>
 
     <div class="estimate-panel" id="estimate-panel">
       <button class="panel-toggle" id="panel-toggle" onclick="togglePanel()">
-        <span class="toggle-label">Show Estimate</span>
+        <span class="toggle-label" data-i18n="panel_show_estimate">Show Estimate</span>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="panel-scroll">
 
         <div class="panel-section">
-          <h3 class="section-title">Customer <span class="estimate-number" id="estimate-number">#1</span></h3>
+          <h3 class="section-title"><span data-i18n="section_customer">Customer</span> <span class="estimate-number" id="estimate-number">#1</span></h3>
           <div class="form-group">
-            <input type="text" id="cust-name" placeholder="Name">
+            <input type="text" id="cust-name" placeholder="Name" data-i18n="placeholder_name" data-i18n-attr="placeholder">
           </div>
           <div class="form-group">
-            <input type="text" id="cust-phone" placeholder="Phone">
+            <input type="text" id="cust-phone" placeholder="Phone" data-i18n="placeholder_phone" data-i18n-attr="placeholder">
           </div>
           <div class="form-group">
-            <input type="text" id="cust-address" placeholder="Address">
+            <input type="text" id="cust-address" placeholder="Address" data-i18n="placeholder_address" data-i18n-attr="placeholder">
           </div>
+        </div>
+
+        <div class="panel-section" id="photos-section">
+          <h3 class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+            Photos <span id="photo-count" style="font-size:0.78rem;color:var(--text-muted);font-weight:400"></span>
+          </h3>
+          <div id="photo-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px"></div>
+          <label class="btn btn-sm btn-outline" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Add Photo
+            <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this.files)">
+          </label>
         </div>
 
         <div class="panel-section" style="padding-bottom:8px">
           <h3 class="section-title" style="display:flex;align-items:center;justify-content:space-between">
-            Region
+            <span data-i18n="section_region">Region</span>
             <select id="main-region-select" onchange="saveRegion(this.value)" title="Set your region to adjust material prices" style="padding:4px 8px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.78rem;max-width:200px"></select>
           </h3>
         </div>
 
         <div class="panel-section">
-          <h3 class="section-title">Material</h3>
+          <h3 class="section-title" data-i18n="section_material">Material</h3>
           <div class="fence-types">
             <button class="fence-type-btn active" onclick="selectFence(this, 'wood')" data-type="wood" data-price="25">
               <span class="fence-icon">W</span>
-              <span>Wood</span>
+              <span data-i18n="fence_wood">Wood</span>
               <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'wood')">$25/ft</span>
             </button>
             <button class="fence-type-btn" onclick="selectFence(this, 'vinyl')" data-type="vinyl" data-price="35">
               <span class="fence-icon">V</span>
-              <span>Vinyl</span>
+              <span data-i18n="fence_vinyl">Vinyl</span>
               <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'vinyl')">$35/ft</span>
             </button>
             <button class="fence-type-btn" onclick="selectFence(this, 'chain-link')" data-type="chain-link" data-price="15">
               <span class="fence-icon">C</span>
-              <span>Chain Link</span>
+              <span data-i18n="fence_chain_link">Chain Link</span>
               <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'chain-link')">$15/ft</span>
             </button>
             <button class="fence-type-btn" onclick="selectFence(this, 'aluminum')" data-type="aluminum" data-price="40">
               <span class="fence-icon">A</span>
-              <span>Aluminum</span>
+              <span data-i18n="fence_aluminum">Aluminum</span>
               <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'aluminum')">$40/ft</span>
             </button>
             <button class="fence-type-btn" onclick="selectFence(this, 'iron')" data-type="iron" data-price="55">
               <span class="fence-icon">I</span>
-              <span>Iron</span>
+              <span data-i18n="fence_iron">Iron</span>
               <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'iron')">$55/ft</span>
             </button>
           </div>
         </div>
 
         <div class="panel-section">
-          <h3 class="section-title">Height</h3>
+          <h3 class="section-title" data-i18n="section_height">Height</h3>
           <div class="height-options">
             <button class="height-btn" onclick="selectHeight(this, 4)">4 ft</button>
             <button class="height-btn active" onclick="selectHeight(this, 6)">6 ft</button>
             <button class="height-btn" onclick="selectHeight(this, 8)">8 ft</button>
             <div class="custom-height-wrap">
-              <input type="number" id="custom-height" class="custom-height-input" placeholder="Custom" min="1" max="20" step="0.5" onchange="setCustomHeight(this.value)" onfocus="clearHeightButtons()">
+              <input type="number" id="custom-height" class="custom-height-input" placeholder="Custom" min="1" max="20" step="0.5" onchange="setCustomHeight(this.value)" onfocus="clearHeightButtons()" data-i18n="height_custom" data-i18n-attr="placeholder">
               <span class="custom-height-unit">ft</span>
             </div>
           </div>
         </div>
 
         <div class="panel-section">
-          <h3 class="section-title">Extras</h3>
+          <h3 class="section-title" data-i18n="section_extras">Extras</h3>
           <label class="addon-row">
             <input type="checkbox" id="addon-removal" onchange="recalculate()">
-            <span>Remove old fence</span>
+            <span data-i18n="addon_removal">Remove old fence</span>
             <span class="addon-price">$3/ft</span>
           </label>
           <label class="addon-row">
             <input type="checkbox" id="addon-permit" onchange="recalculate()">
-            <span>Permit</span>
+            <span data-i18n="addon_permit">Permit</span>
             <span class="addon-price">$150</span>
           </label>
           <label class="addon-row">
             <input type="checkbox" id="addon-stain" onchange="recalculate()">
-            <span>Stain / seal</span>
+            <span data-i18n="addon_stain">Stain / seal</span>
             <span class="addon-price">$4/ft</span>
           </label>
         </div>
 
         <div class="panel-section">
-          <h3 class="section-title">Ground</h3>
+          <h3 class="section-title" data-i18n="section_ground">Ground</h3>
           <div class="height-options">
-            <button class="height-btn active" onclick="selectTerrain(this, 1.0)">Flat</button>
-            <button class="height-btn" onclick="selectTerrain(this, 1.15)">Slope</button>
-            <button class="height-btn" onclick="selectTerrain(this, 1.3)">Rocky</button>
+            <button class="height-btn active" onclick="selectTerrain(this, 1.0)" data-i18n="terrain_flat">Flat</button>
+            <button class="height-btn" onclick="selectTerrain(this, 1.15)" data-i18n="terrain_slope">Slope</button>
+            <button class="height-btn" onclick="selectTerrain(this, 1.3)" data-i18n="terrain_rocky">Rocky</button>
           </div>
         </div>
 
         <div class="panel-section">
-          <h3 class="section-title">Gates</h3>
+          <h3 class="section-title" data-i18n="section_gates">Gates</h3>
           <div id="gates-list" class="gates-list">
-            <p class="empty-state">Place gates by clicking the map</p>
+            <p class="empty-state" data-i18n="gates_empty">Place gates by clicking the map</p>
           </div>
         </div>
 
         <div class="panel-section">
           <h3 class="section-title">
-            Material Breakdown
+            <span data-i18n="section_bom">Material Breakdown</span>
             <span style="display:flex;gap:4px;align-items:center">
               <button class="bom-toggle" onclick="showPricingEditor()" title="Edit prices">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
@@ -333,65 +365,65 @@
           </h3>
           <div class="bom-content">
             <div id="bom-list">
-              <p class="empty-state">Draw fence to see materials</p>
+              <p class="empty-state" data-i18n="bom_empty">Draw fence to see materials</p>
             </div>
             <div class="bom-total-row">
-              <span>Materials Total</span>
+              <span data-i18n="bom_materials_total">Materials Total</span>
               <span id="bom-total">$0</span>
             </div>
           </div>
         </div>
 
         <div class="panel-section">
-          <h3 class="section-title">Custom Items</h3>
+          <h3 class="section-title" data-i18n="section_custom_items">Custom Items</h3>
           <div id="custom-items-list"></div>
           <button class="add-custom-btn" onclick="addCustomItem()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Add labor, delivery, or other costs
+            <span data-i18n="custom_add_btn">Add labor, delivery, or other costs</span>
           </button>
         </div>
 
         <div class="panel-section summary">
-          <h3 class="section-title">Estimate</h3>
+          <h3 class="section-title" data-i18n="section_estimate">Estimate</h3>
           <div class="summary-row">
-            <span><span id="sum-type">Wood</span> fence, <span id="sum-height">6</span>ft</span>
+            <span><span id="sum-type">Wood</span> <span data-i18n="summary_fence">fence</span>, <span id="sum-height">6</span>ft</span>
             <span id="sum-fence">$0</span>
           </div>
           <div class="summary-row" id="row-gates" style="display:none">
-            <span>Gates (<span id="sum-gate-count">0</span>)</span>
+            <span><span data-i18n="summary_gates">Gates</span> (<span id="sum-gate-count">0</span>)</span>
             <span id="sum-gates">$0</span>
           </div>
           <div class="summary-row" id="row-removal" style="display:none">
-            <span>Removal</span>
+            <span data-i18n="summary_removal">Removal</span>
             <span id="sum-removal">$0</span>
           </div>
           <div class="summary-row" id="row-permit" style="display:none">
-            <span>Permit</span>
+            <span data-i18n="summary_permit">Permit</span>
             <span>$150</span>
           </div>
           <div class="summary-row" id="row-stain" style="display:none">
-            <span>Stain / seal</span>
+            <span data-i18n="summary_stain">Stain / seal</span>
             <span id="sum-stain">$0</span>
           </div>
           <div class="summary-row" id="row-terrain" style="display:none">
-            <span>Terrain</span>
+            <span data-i18n="summary_terrain">Terrain</span>
             <span id="sum-terrain">+0%</span>
           </div>
           <div class="summary-row" id="row-custom" style="display:none">
-            <span>Custom items</span>
+            <span data-i18n="summary_custom">Custom items</span>
             <span id="sum-custom">$0</span>
           </div>
           <div class="summary-total">
-            <span>Total</span>
+            <span data-i18n="summary_total">Total</span>
             <span id="sum-total">$0</span>
           </div>
         </div>
 
         <div class="panel-actions">
           <button class="btn btn-full" onclick="shareEstimate()" title="Share estimate link (E)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>Share Estimate
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg><span data-i18n="btn_share">Share Estimate</span>
           </button>
-          <button class="btn btn-full btn-outline" style="margin-top:6px" onclick="generatePDF()" title="Download PDF estimate (P)">Save as PDF</button>
+          <button class="btn btn-full btn-outline" style="margin-top:6px" onclick="generatePDF()" title="Download PDF estimate (P)" data-i18n="btn_pdf">Save as PDF</button>
         </div>
 
         <div class="panel-footer">
@@ -407,31 +439,31 @@
   <div class="modal-overlay" id="account-modal" style="display:none" onclick="if(event.target===this)hideAccountPanel()">
     <div class="modal" style="position:relative;max-width:440px">
       <button class="auth-close" onclick="hideAccountPanel()">&times;</button>
-      <h2 class="modal-title" style="font-size:1.2rem">Account</h2>
+      <h2 class="modal-title" style="font-size:1.2rem" data-i18n="account_title">Account</h2>
 
       <div id="account-info" style="margin-top:16px">
         <div class="account-row">
-          <span class="account-label">Email</span>
+          <span class="account-label" data-i18n="account_email">Email</span>
           <span id="account-email">—</span>
         </div>
         <div class="account-row">
-          <span class="account-label">Status</span>
+          <span class="account-label" data-i18n="account_status">Status</span>
           <span id="account-status">—</span>
         </div>
         <div class="account-row" id="account-next-row" style="display:none">
-          <span class="account-label">Next billing</span>
+          <span class="account-label" data-i18n="account_next_billing">Next billing</span>
           <span id="account-next">—</span>
         </div>
         <div class="account-row" id="account-amount-row" style="display:none">
-          <span class="account-label">Plan</span>
+          <span class="account-label" data-i18n="account_plan">Plan</span>
           <span id="account-amount">—</span>
         </div>
       </div>
 
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px">
-        <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none">Manage Subscription</button>
-        <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="handleUpgrade()" style="display:none">Subscribe — $49/mo</button>
-        <button class="btn btn-full btn-outline" onclick="handleExportData()">Export My Data</button>
+        <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none" data-i18n="account_manage_sub">Manage Subscription</button>
+        <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="handleUpgrade()" style="display:none" data-i18n="trial_subscribe_price">Subscribe — $49/mo</button>
+        <button class="btn btn-full btn-outline" onclick="handleExportData()" data-i18n="account_export">Export My Data</button>
       </div>
 
       <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
@@ -522,10 +554,57 @@
   <!-- Pricing Editor Modal -->
   <div class="modal-overlay" id="pricing-modal" style="display:none" onclick="if(event.target===this)closePricingEditor()">
     <div class="modal">
-      <h2 class="modal-title" style="font-size:1.1rem">Edit Material Prices</h2>
-      <p class="modal-sub">Set your actual supplier costs</p>
+      <h2 class="modal-title" style="font-size:1.1rem" data-i18n="pricing_edit_title">Edit Material Prices</h2>
+      <p class="modal-sub" data-i18n="pricing_edit_sub">Set your actual supplier costs</p>
       <div id="pricing-editor-body"></div>
-      <button class="btn btn-full" style="margin-top:16px" onclick="closePricingEditor()">Done</button>
+      <button class="btn btn-full" style="margin-top:16px" onclick="closePricingEditor()" data-i18n="pricing_done">Done</button>
+    </div>
+  </div>
+
+  <!-- Reports Dashboard Modal -->
+  <div class="modal-overlay" id="reports-modal" style="display:none" onclick="if(event.target===this)hideReportsPanel()">
+    <div class="modal" style="position:relative;max-width:640px;width:100%">
+      <button class="auth-close" onclick="hideReportsPanel()">&times;</button>
+      <h2 class="modal-title" style="font-size:1.2rem">Reports Dashboard</h2>
+      <div style="display:flex;gap:6px;justify-content:center;margin:12px 0 16px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-outline rpt-period active" data-period="30d" onclick="loadReports('30d')">30 Days</button>
+        <button class="btn btn-sm btn-outline rpt-period" data-period="90d" onclick="loadReports('90d')">90 Days</button>
+        <button class="btn btn-sm btn-outline rpt-period" data-period="12m" onclick="loadReports('12m')">12 Months</button>
+        <button class="btn btn-sm btn-outline rpt-period" data-period="all" onclick="loadReports('all')">All Time</button>
+      </div>
+      <div id="reports-loading" style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem">Loading...</div>
+      <div id="reports-content" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+          <div style="background:var(--surface-2);border-radius:var(--radius);padding:14px;text-align:center">
+            <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:4px">Total Estimates</div>
+            <div id="rpt-total" style="font-size:1.6rem;font-weight:800;color:var(--text)">0</div>
+          </div>
+          <div style="background:var(--surface-2);border-radius:var(--radius);padding:14px;text-align:center">
+            <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:4px">Revenue (Approved)</div>
+            <div id="rpt-revenue" style="font-size:1.6rem;font-weight:800;color:var(--accent)">$0</div>
+          </div>
+          <div style="background:var(--surface-2);border-radius:var(--radius);padding:14px;text-align:center">
+            <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:4px">Conversion Rate</div>
+            <div id="rpt-conversion" style="font-size:1.6rem;font-weight:800;color:var(--text)">0%</div>
+          </div>
+          <div style="background:var(--surface-2);border-radius:var(--radius);padding:14px;text-align:center">
+            <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:4px">Avg Estimate Value</div>
+            <div id="rpt-avg" style="font-size:1.6rem;font-weight:800;color:var(--text)">$0</div>
+          </div>
+        </div>
+        <div style="margin-bottom:20px">
+          <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px">By Status</p>
+          <div id="rpt-status" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div style="margin-bottom:20px">
+          <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px">Estimates by Month</p>
+          <div id="rpt-monthly" style="display:flex;align-items:flex-end;gap:4px;height:120px;padding:4px 0;overflow-x:auto"></div>
+        </div>
+        <div>
+          <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px">Top Materials</p>
+          <table id="rpt-materials" style="width:100%;font-size:0.82rem;border-collapse:collapse"></table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -533,20 +612,21 @@
   <div class="drawer-overlay" id="drawer-overlay" style="display:none" onclick="hideEstimatesList()"></div>
   <div class="drawer" id="estimates-drawer" style="display:none">
     <div class="drawer-header">
-      <h3 id="drawer-title">Saved Estimates</h3>
+      <h3 id="drawer-title" data-i18n="drawer_title">Saved Estimates</h3>
       <button class="gate-remove" onclick="hideEstimatesList()">&times;</button>
     </div>
     <div class="drawer-tabs">
-      <button class="drawer-tab active" id="tab-estimates" onclick="showDrawerTab('estimates')">Estimates</button>
-      <button class="drawer-tab" id="tab-trash" onclick="showDrawerTab('trash')">Trash</button>
+      <button class="drawer-tab active" id="tab-estimates" onclick="showDrawerTab('estimates')" data-i18n="drawer_estimates_tab">Estimates</button>
+      <button class="drawer-tab" id="tab-trash" onclick="showDrawerTab('trash')" data-i18n="drawer_trash_tab">Trash</button>
     </div>
     <div class="drawer-body" id="estimates-list-body">
-      <p class="empty-state">No saved estimates yet</p>
+      <p class="empty-state" data-i18n="drawer_empty">No saved estimates yet</p>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
   <script src="js/regions.js"></script>
@@ -556,11 +636,19 @@
     const FC_CONFIG = {
       userPoolId: 'us-east-1_iia5EKofI',
       clientId: '4d2u5tft5g3i5h5jg0tde3dp5e',
-      apiUrl: 'https://88g2oyyl0l.execute-api.us-east-1.amazonaws.com'
+      apiUrl: 'https://88g2oyyl0l.execute-api.us-east-1.amazonaws.com',
+      assetsBucket: 'fencecalc-assets-dev'
     };
 
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
     API.configure(FC_CONFIG.apiUrl);
+
+    // === i18n: set language selector and apply translations ===
+    (function() {
+      var langSel = document.getElementById('lang-select');
+      if (langSel) langSel.value = getLang();
+    })();
+    applyTranslations();
 
     // === Hide loading screen ===
     document.getElementById('loading-screen').style.display = 'none';
@@ -1088,6 +1176,14 @@
       var editor = document.getElementById('role-editor');
       editor.style.display = '';
 
+      // Scroll the role editor into view
+      setTimeout(function() {
+        editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Extra nudge to make sure there's room at the top
+        var overlay = document.getElementById('account-modal');
+        if (overlay.scrollTop > 0) overlay.scrollTop = Math.max(0, overlay.scrollTop - 40);
+      }, 100);
+
       if (existingName) {
         var role = allRoles.find(function(r) { return r.name === existingName; });
         document.getElementById('role-name-input').value = role ? role.name : '';
@@ -1189,7 +1285,7 @@
       const bom = calculateBOM(feet, selectedFence.type, selectedHeight);
 
       try {
-        await API.createEstimate({
+        var result = await API.createEstimate({
           customerName: document.getElementById('cust-name').value,
           customerPhone: document.getElementById('cust-phone').value,
           customerAddress: document.getElementById('cust-address').value,
@@ -1211,6 +1307,11 @@
           materialsCost: bom ? bom.materialTotal : 0,
           droneOverlay: droneOverlayData ? { bounds: droneOverlayData.bounds } : null
         });
+        if (result && result.id) {
+          activeEstimateId = result.id;
+          activeEstimatePhotos = [];
+          renderPhotoGrid();
+        }
         showToast('Estimate saved');
         clearUnsaved();
       } catch (e) { showToast(e.message); }
@@ -1284,10 +1385,16 @@
           body.innerHTML = '<p class="empty-state">No saved estimates yet</p>';
           return;
         }
-        body.innerHTML = estimates.map(function(e) { return '' +
+        body.innerHTML = estimates.map(function(e) {
+          var as = e.approvalStatus || 'draft';
+          var bLabels = { draft: 'Draft', sent: 'Sent', approved: 'Approved', changes_requested: 'Changes Requested' };
+          var bColors = { draft: '#6b6052', sent: '#1a56db', approved: '#2d6e28', changes_requested: '#d4870e' };
+          var bBgs = { draft: '#ede8e2', sent: '#e8f0fe', approved: 'rgba(61,139,55,0.08)', changes_requested: 'rgba(212,135,14,0.08)' };
+          var badge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-left:6px;background:' + (bBgs[as]||bBgs.draft) + ';color:' + (bColors[as]||bColors.draft) + '">' + (bLabels[as]||as) + '</span>';
+          return '' +
           '<div class="est-list-item">' +
             '<div class="est-list-content" onclick="loadSavedEstimate(\'' + e.id + '\')">' +
-              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + '</div>' +
+              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + badge + '</div>' +
               '<div class="est-list-detail">' + (e.customerAddress || 'No address') + '</div>' +
               '<div class="est-list-detail">' + e.fenceType + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
               '<div class="est-list-date">' + new Date(e.createdAt).toLocaleDateString() + '</div>' +
@@ -1395,9 +1502,99 @@
           renderGates();
         }
 
+        // Load photos
+        activeEstimateId = est.id;
+        activeEstimatePhotos = est.photos || [];
+        renderPhotoGrid();
+
         recalculate();
         showToast('Estimate loaded');
       } catch (e) { showToast('Could not load estimate'); }
+    }
+
+    // === Photos ===
+    var activeEstimateId = null;
+    var activeEstimatePhotos = [];
+
+    function renderPhotoGrid() {
+      var grid = document.getElementById('photo-grid');
+      var countEl = document.getElementById('photo-count');
+      if (!grid) return;
+
+      if (!activeEstimateId || activeEstimatePhotos.length === 0) {
+        grid.innerHTML = '';
+        countEl.textContent = '';
+        return;
+      }
+
+      countEl.textContent = '(' + activeEstimatePhotos.length + ')';
+      var bucket = FC_CONFIG.assetsBucket || '';
+      var region = 'us-east-1';
+      grid.innerHTML = activeEstimatePhotos.map(function(p) {
+        var thumbUrl = 'https://' + bucket + '.s3.' + region + '.amazonaws.com/' + p.key;
+        return '<div style="position:relative;aspect-ratio:1;border-radius:4px;overflow:hidden;background:var(--surface-2)">' +
+          '<img src="' + thumbUrl + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">' +
+          '<button onclick="removePhoto(\'' + p.key.replace(/'/g, "\\'") + '\')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:14px;line-height:1;cursor:pointer" title="Delete photo">&times;</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function handlePhotoUpload(files) {
+      if (!activeEstimateId) {
+        showToast('Save the estimate first to attach photos');
+        document.getElementById('photo-input').value = '';
+        return;
+      }
+      if (!files || files.length === 0) return;
+
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (!file.type.startsWith('image/')) {
+          showToast(file.name + ' is not an image');
+          continue;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          showToast(file.name + ' is too large (max 10 MB)');
+          continue;
+        }
+
+        try {
+          showToast('Uploading ' + file.name + '...');
+          var resp = await API.getPhotoUploadUrl(activeEstimateId, file.name, file.type);
+
+          // PUT the file directly to S3 using the presigned URL
+          var uploadResp = await fetch(resp.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': file.type },
+            body: file
+          });
+          if (!uploadResp.ok) throw new Error('Upload failed');
+
+          // Add to local photos array and persist to estimate
+          activeEstimatePhotos.push({ key: resp.key, filename: file.name, contentType: file.type });
+          await API.updateEstimate(activeEstimateId, { photos: activeEstimatePhotos });
+          renderPhotoGrid();
+        } catch (e) {
+          showToast('Failed to upload ' + file.name + ': ' + e.message);
+        }
+      }
+
+      document.getElementById('photo-input').value = '';
+      showToast(files.length === 1 ? 'Photo uploaded' : files.length + ' photos uploaded');
+    }
+
+    async function removePhoto(key) {
+      if (!activeEstimateId) return;
+      if (!confirm('Delete this photo?')) return;
+
+      try {
+        await API.deletePhoto(activeEstimateId, key);
+        activeEstimatePhotos = activeEstimatePhotos.filter(function(p) { return p.key !== key; });
+        renderPhotoGrid();
+        showToast('Photo deleted');
+      } catch (e) {
+        showToast('Failed to delete photo: ' + e.message);
+      }
     }
 
     // === Init Auth ===

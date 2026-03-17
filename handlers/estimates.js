@@ -50,7 +50,10 @@ module.exports.create = async (event) => {
     totalCost: body.totalCost || 0,
     materialsCost: body.materialsCost || 0,
     droneOverlay: body.droneOverlay || null,
+    photos: body.photos || [],
     status: 'draft',
+    approvalStatus: 'draft',
+    customerEmail: body.customerEmail || '',
     createdAt: now,
     updatedAt: now
   };
@@ -82,10 +85,11 @@ module.exports.update = async (event) => {
 
   const body = JSON.parse(event.body || '{}');
   const allowed = [
-    'customerName', 'customerPhone', 'customerAddress',
+    'customerName', 'customerPhone', 'customerAddress', 'customerEmail',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
     'fencePoints', 'fenceClosed', 'gates', 'addons', 'bom',
-    'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay'
+    'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos',
+    'approvalStatus', 'shareToken', 'approvalHistory'
   ];
 
   const updates = {};
