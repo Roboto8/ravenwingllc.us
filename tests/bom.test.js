@@ -329,7 +329,7 @@ describe('calculateBOM', () => {
     test('uses fallback when no custom pricing set', () => {
       const bom = calculateBOM(100, 'wood', 6, { customPricing: {} });
       const postItem = bom.items.find(i => i.name.includes('posts'));
-      expect(postItem.unitCost).toBe(14); // default
+      expect(postItem.unitCost).toBe(16); // default
     });
 
     test('custom pricing changes materialTotal', () => {

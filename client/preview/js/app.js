@@ -412,7 +412,7 @@ function renderGates() {
       <select onchange="updateGateType(${g.id}, this.value)">
         <option value="single" ${g.type === 'single' ? 'selected' : ''}>Single ($350)</option>
         <option value="double" ${g.type === 'double' ? 'selected' : ''}>Double ($550)</option>
-        <option value="sliding" ${g.type === 'sliding' ? 'selected' : ''}>Sliding ($800)</option>
+        <option value="sliding" ${g.type === 'sliding' ? 'selected' : ''}>Sliding ($1,200)</option>
       </select>
       <button class="gate-remove" onclick="removeGate(${g.id})">&#x2715;</button>
     </div>
@@ -423,7 +423,7 @@ function updateGateType(id, type) {
   const gate = gates.find(g => g.id === id);
   if (gate) {
     gate.type = type;
-    gate.price = type === 'single' ? 350 : type === 'double' ? 550 : 800;
+    gate.price = type === 'single' ? 350 : type === 'double' ? 550 : 1200;
     recalculate();
   }
 }
@@ -547,69 +547,69 @@ const BOM = {
         screwsPerPicket: 4, concreteBags: 2, brackets: 2
       },
       6: {
-        postLength: '4x4x8 PT', postCost: 14, rails: 3, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '4x4x8 PT', postCost: 16, rails: 3, railDesc: '2x4x8 PT', railCost: 6,
         pickets: 17, picketDesc: '1x6x6 dog ear PT', picketCost: 3,
         screwsPerPicket: 6, concreteBags: 2, brackets: 3
       },
       8: {
-        postLength: '6x6x12 PT', postCost: 32, rails: 4, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '6x6x12 PT', postCost: 42, rails: 4, railDesc: '2x4x8 PT', railCost: 6,
         pickets: 17, picketDesc: '1x6x8 dog ear PT', picketCost: 5.50,
         screwsPerPicket: 8, concreteBags: 4, brackets: 4
       }
     },
-    extras: { postCapCost: 4, concreteBagCost: 6, screwBoxCost: 10, screwsPerBox: 100, bracketCost: 3 }
+    extras: { postCapCost: 4, concreteBagCost: 6, screwBoxCost: 10, screwsPerBox: 100, bracketCost: 1.50 }
   },
   vinyl: {
     postSpacing: 8,
     heights: {
       4: {
         postLength: '5x5x7 vinyl', postCost: 24, rails: 2, railDesc: 'Vinyl rail', railCost: 0,
-        panels: 1, panelDesc: '4ft privacy panel (8ft)', panelCost: 42,
+        panels: 1, panelDesc: '4ft privacy panel (8ft)', panelCost: 50,
         concreteBags: 2, screws: 6
       },
       6: {
         postLength: '5x5x9 vinyl', postCost: 29, rails: 0, railDesc: '', railCost: 0,
-        panels: 1, panelDesc: '6ft privacy panel (8ft)', panelCost: 52,
+        panels: 1, panelDesc: '6ft privacy panel (8ft)', panelCost: 65,
         concreteBags: 2, screws: 6
       },
       8: {
         postLength: '5x5x11 vinyl', postCost: 38, rails: 0, railDesc: '', railCost: 0,
-        panels: 1, panelDesc: '8ft privacy panel (8ft)', panelCost: 78,
+        panels: 1, panelDesc: '8ft privacy panel (8ft)', panelCost: 105,
         concreteBags: 3, screws: 8
       }
     },
-    extras: { postCapCost: 3.50, concreteBagCost: 6, screwBoxCost: 8, screwsPerBox: 50, stiffenerCost: 18, stiffenerDesc: 'Aluminum post stiffener' }
+    extras: { postCapCost: 3.50, concreteBagCost: 6, screwBoxCost: 8, screwsPerBox: 50, stiffenerCost: 25, stiffenerDesc: 'Aluminum post stiffener' }
   },
   'chain-link': {
     postSpacing: 10,
     heights: {
       4: {
-        linePostDesc: '1-5/8" x 6ft line post', linePostCost: 12,
-        termPostDesc: '2-3/8" x 6ft terminal post', termPostCost: 18,
+        linePostDesc: '1-5/8" x 6ft line post', linePostCost: 16,
+        termPostDesc: '2-3/8" x 6ft terminal post', termPostCost: 22,
         topRailDesc: '1-3/8" top rail (21ft)', topRailCost: 16, topRailLength: 21,
         fabricDesc: '4ft x 50ft 11.5ga galv mesh', fabricCost: 95, fabricLength: 50,
         tensionBandsPerTerm: 3, braceBandsPerTerm: 2, concreteBags: 2,
         tieWiresPerPost: 4, tieWiresPerRailFt: 0.5
       },
       6: {
-        linePostDesc: '1-7/8" x 8ft line post', linePostCost: 16,
-        termPostDesc: '2-3/8" x 8ft terminal post', termPostCost: 24,
-        topRailDesc: '1-3/8" top rail (21ft)', topRailCost: 16, topRailLength: 21,
+        linePostDesc: '1-7/8" x 8ft line post', linePostCost: 20,
+        termPostDesc: '2-3/8" x 8ft terminal post', termPostCost: 28,
+        topRailDesc: '1-3/8" top rail (21ft)', topRailCost: 20, topRailLength: 21,
         fabricDesc: '6ft x 50ft 11ga galv mesh', fabricCost: 160, fabricLength: 50,
         tensionBandsPerTerm: 5, braceBandsPerTerm: 2, concreteBags: 2,
         tieWiresPerPost: 5, tieWiresPerRailFt: 0.5
       },
       8: {
-        linePostDesc: '1-7/8" x 10ft line post', linePostCost: 22,
-        termPostDesc: '2-3/8" x 10ft terminal post', termPostCost: 30,
-        topRailDesc: '1-3/8" top rail (21ft)', topRailCost: 16, topRailLength: 21,
-        fabricDesc: '8ft x 50ft 11ga galv mesh', fabricCost: 280, fabricLength: 50,
+        linePostDesc: '1-7/8" x 10ft line post', linePostCost: 26,
+        termPostDesc: '2-3/8" x 10ft terminal post', termPostCost: 35,
+        topRailDesc: '1-3/8" top rail (21ft)', topRailCost: 20, topRailLength: 21,
+        fabricDesc: '8ft x 50ft 11ga galv mesh', fabricCost: 350, fabricLength: 50,
         tensionBandsPerTerm: 7, braceBandsPerTerm: 2, concreteBags: 3,
         tieWiresPerPost: 7, tieWiresPerRailFt: 0.5
       }
     },
     extras: {
-      tensionBarCost: 6, tensionBandCost: 1.50, braceBandCost: 2, railEndCost: 3,
+      tensionBarCost: 6, tensionBandCost: 1.50, braceBandCost: 2, railEndCost: 2.50,
       loopCapCost: 1.50, domeCapCost: 2, tieWireCost: 0.15,
       carriageBoltCost: 0.50, concreteBagCost: 6, tensionWireCost: 0.25
     }
@@ -619,38 +619,38 @@ const BOM = {
     heights: {
       4: {
         postDesc: '2x2 x 6.5ft aluminum', postCost: 28,
-        panelDesc: '4ft x 6ft aluminum panel', panelCost: 65,
+        panelDesc: '4ft x 6ft aluminum panel', panelCost: 85,
         screws: 4, concreteBags: 1
       },
       6: {
         postDesc: '2x2 x 8.5ft aluminum', postCost: 36,
-        panelDesc: '6ft x 6ft aluminum panel', panelCost: 95,
+        panelDesc: '6ft x 6ft aluminum panel', panelCost: 140,
         screws: 4, concreteBags: 2
       },
       8: {
         postDesc: '2x2 x 10.5ft aluminum', postCost: 48,
-        panelDesc: '8ft x 6ft aluminum panel', panelCost: 145,
+        panelDesc: '8ft x 6ft aluminum panel', panelCost: 195,
         screws: 4, concreteBags: 2
       }
     },
-    extras: { postCapCost: 5, concreteBagCost: 6, screwCost: 0.25, bracketCost: 4, bracketsPerPanel: 4 }
+    extras: { postCapCost: 8, concreteBagCost: 6, screwCost: 0.25, bracketCost: 4, bracketsPerPanel: 4 }
   },
   iron: {
     postSpacing: 8,
     heights: {
       4: {
         postDesc: '2x2 x 7ft steel', postCost: 35,
-        panelDesc: '4ft x 8ft iron panel', panelCost: 110,
+        panelDesc: '4ft x 8ft iron panel', panelCost: 250,
         screws: 8, concreteBags: 2
       },
       6: {
         postDesc: '2.5x2.5 x 9ft steel', postCost: 48,
-        panelDesc: '6ft x 8ft iron panel', panelCost: 165,
+        panelDesc: '6ft x 8ft iron panel', panelCost: 400,
         screws: 10, concreteBags: 3
       },
       8: {
         postDesc: '2.5x2.5 x 11ft steel', postCost: 62,
-        panelDesc: '8ft x 8ft iron panel', panelCost: 240,
+        panelDesc: '8ft x 8ft iron panel', panelCost: 550,
         screws: 12, concreteBags: 3
       }
     },
@@ -769,6 +769,9 @@ function calculateBOM(feet, fenceType, height) {
   return { items: filtered, materialTotal: Math.round(materialTotal) };
 }
 
+// Track manual qty overrides
+var bomQtyOverrides = {};
+
 function renderBOM(bom) {
   const container = document.getElementById('bom-list');
   if (!bom || bom.items.length === 0) {
@@ -777,14 +780,41 @@ function renderBOM(bom) {
     return;
   }
 
-  container.innerHTML = bom.items.map(i =>
-    `<div class="bom-row">
-      <span class="bom-name">${i.qty} ${i.unit} — ${i.name}</span>
-      <span class="bom-cost">$${i.total.toLocaleString()}</span>
-    </div>`
-  ).join('');
+  // Apply qty overrides
+  bom.items.forEach(function(i) {
+    if (bomQtyOverrides[i.name] !== undefined) {
+      i.qty = bomQtyOverrides[i.name];
+      i.total = Math.round(i.qty * i.unitCost * 100) / 100;
+    }
+  });
+
+  // Recalc total
+  bom.materialTotal = bom.items.reduce(function(sum, i) { return sum + i.total; }, 0);
+  bom.materialTotal = Math.round(bom.materialTotal);
+
+  container.innerHTML = bom.items.map(function(i) {
+    var isOverridden = bomQtyOverrides[i.name] !== undefined;
+    return '<div class="bom-row">' +
+      '<span class="bom-name">' + i.name + '</span>' +
+      '<input type="number" class="bom-qty" value="' + i.qty + '" min="0" ' +
+        'onchange="updateBomQty(\'' + i.name.replace(/'/g, "\\'") + '\', this.value)" ' +
+        'title="' + i.qty + ' ' + i.unit + (isOverridden ? ' (edited)' : '') + '">' +
+      '<span class="bom-cost">$' + i.total.toLocaleString() + '</span>' +
+    '</div>';
+  }).join('');
 
   document.getElementById('bom-total').textContent = '$' + bom.materialTotal.toLocaleString();
+}
+
+function updateBomQty(name, value) {
+  var qty = parseInt(value) || 0;
+  bomQtyOverrides[name] = qty;
+  recalculate();
+}
+
+function resetBomOverrides() {
+  bomQtyOverrides = {};
+  recalculate();
 }
 
 // === Custom Line Items ===
@@ -1107,7 +1137,7 @@ function loadFromURL() {
         const gate = gates[gates.length - 1];
         if (g.t && g.t !== 'single') {
           gate.type = g.t;
-          gate.price = g.t === 'double' ? 550 : g.t === 'sliding' ? 800 : 350;
+          gate.price = g.t === 'double' ? 550 : g.t === 'sliding' ? 1200 : 350;
         }
       });
       renderGates();

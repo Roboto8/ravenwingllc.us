@@ -494,14 +494,30 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .bom-row {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 5px 0;
+  align-items: center;
+  padding: 4px 0;
   font-size: 0.88rem;
   border-bottom: 1px solid var(--surface-2);
+  gap: 6px;
 }
 .bom-row:last-child { border-bottom: none; }
-.bom-name { color: var(--text-mid); flex: 1; padding-right: 8px; }
-.bom-cost { color: var(--text); font-weight: 600; white-space: nowrap; }
+.bom-name { color: var(--text-mid); flex: 1; font-size: 0.82rem; }
+.bom-qty {
+  width: 52px;
+  padding: 4px 6px;
+  min-height: 32px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  text-align: right;
+  outline: none;
+  flex-shrink: 0;
+}
+.bom-qty:focus { border-color: var(--accent); }
+.bom-cost { color: var(--text); font-weight: 600; white-space: nowrap; min-width: 55px; text-align: right; }
 
 .bom-total-row {
   display: flex;
