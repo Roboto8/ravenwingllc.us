@@ -77,9 +77,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 @media (max-width: 600px) {
-  .nav { padding: 4px 8px; gap: 4px; }
-  .nav-right { gap: 3px; }
-  .nav-right .btn-sm { padding: 6px 8px; font-size: 0.72rem; min-height: 32px; }
+  .nav { padding: 4px 8px; gap: 4px; min-height: 44px; }
+  .nav-brand { font-size: 1rem; }
+  .nav-right { gap: 4px; }
+  .nav-right .btn-sm { padding: 8px 10px; font-size: 0.78rem; min-height: 36px; }
+  .search-bar { top: 8px; left: 8px; right: 8px; padding: 6px 10px; }
+  .search-bar input { font-size: 0.9rem; min-height: 32px; }
+  .search-btn { padding: 6px 12px; min-height: 36px; font-size: 0.82rem; }
+  .map-layers { padding: 6px 8px; gap: 4px; flex-wrap: wrap; }
+  .layer-btn { padding: 6px 10px; font-size: 0.78rem; min-height: 36px; }
+  .map-toolbar { padding: 6px 8px; gap: 4px; flex-wrap: wrap; }
+  .tool-btn { padding: 8px 10px; font-size: 0.78rem; min-height: 36px; }
+  .drone-banner, #drone-banner { max-width: 280px; font-size: 0.78rem; }
 }
 
 .nav-left {
@@ -163,7 +172,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   top: 14px;
   left: 14px;
   right: 14px;
-  z-index: 1000;
+  z-index: 800;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1450,25 +1459,37 @@ body.twa-mode .modal-overlay {
   .search-bar { top: 10px; left: 10px; right: 10px; }
 }
 
-/* Small phones */
+/* Small phones (iPhone SE, Galaxy S series) */
 @media (max-width: 480px) {
-  .nav { padding: 0 10px; }
-  .nav-right { gap: 4px; }
-  .btn-sm { padding: 8px 10px; font-size: 0.82rem; }
-
-  .modal { padding: 24px 18px; }
-
-  .panel-scroll { padding: 14px 14px; }
-
+  .nav { padding: 2px 6px; }
+  .nav-brand { font-size: 0.95rem; }
+  .modal { padding: 20px 16px; }
+  .modal-title { font-size: 1.2rem; }
+  .panel-scroll { padding: 12px 12px; }
   .seg-label { font-size: 10px; padding: 2px 5px; }
+  .section-title { font-size: 0.82rem; }
+  .zoom-indicator { font-size: 0.65rem; padding: 3px 6px; }
 }
 
-/* Very small phones */
+/* Very small phones (iPhone SE 1st gen, Galaxy A series, older devices 320px) */
 @media (max-width: 360px) {
-  .fence-types { grid-template-columns: 1fr 1fr; gap: 6px; }
-  .fence-type-btn { padding: 10px 4px; font-size: 0.82rem; }
-  .tool-btn { padding: 8px 8px; font-size: 0.82rem; }
+  .nav-brand { font-size: 0.88rem; }
+  .fence-types { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .fence-type-btn { padding: 8px 4px; font-size: 0.78rem; }
+  .fence-icon { font-size: 0.85rem; width: 24px; height: 24px; }
+  .tool-btn { padding: 6px 6px; font-size: 0.75rem; }
   .tool-btn svg { display: none; }
+  .height-btn { padding: 8px 10px; font-size: 0.82rem; min-height: 36px; }
+  .map-layers { gap: 2px; }
+  .layer-btn { padding: 5px 8px; font-size: 0.72rem; }
+  .panel-scroll { padding: 10px 10px; }
+}
+
+/* Tall narrow phones (Galaxy Fold outer screen, 280px) */
+@media (max-width: 300px) {
+  .nav-brand { font-size: 0.82rem; }
+  .fence-types { grid-template-columns: 1fr; }
+  .map-toolbar { flex-wrap: wrap; justify-content: center; }
 }
 
 /* === Contextual Hints === */
@@ -1691,18 +1712,23 @@ body.twa-mode .modal-overlay {
   .nav-hamburger { display: flex; }
   .nav-overflow {
     display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
+    position: fixed;
+    top: 48px;
+    right: 8px;
     background: var(--surface);
     border: 1.5px solid var(--border);
-    border-radius: 0 0 var(--radius) var(--radius);
-    box-shadow: var(--shadow-md);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
     flex-direction: column;
-    padding: 6px;
+    padding: 8px;
     gap: 4px;
-    z-index: 1001;
-    min-width: 180px;
+    z-index: 9500;
+    min-width: 200px;
+    max-height: calc(100dvh - 60px);
+    overflow-y: auto;
+  }
+  body.twa-mode .nav-overflow {
+    top: 76px;
   }
   .nav-overflow.open {
     display: flex;
@@ -1711,9 +1737,15 @@ body.twa-mode .modal-overlay {
     width: 100%;
     text-align: left;
     justify-content: flex-start;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    min-height: 44px;
   }
   .nav-overflow .lang-select {
     width: 100%;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    min-height: 44px;
   }
 }
 

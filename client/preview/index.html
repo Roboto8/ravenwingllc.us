@@ -140,7 +140,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:0.6rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;line-height:1">0</span>
         </button>
-        <div id="notif-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;width:320px;max-height:400px;overflow-y:auto;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:9001;border:1px solid var(--surface-2)">
+        <div id="notif-dropdown" style="display:none;position:fixed;top:52px;right:8px;width:min(320px,calc(100vw - 16px));max-height:min(400px,calc(100dvh - 70px));overflow-y:auto;background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 30px rgba(0,0,0,0.2);z-index:9500;border:1px solid var(--surface-2)">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--surface-2)">
             <span style="font-weight:700;font-size:0.85rem;color:var(--text)">Notifications</span>
             <button class="btn btn-sm btn-outline" style="font-size:0.68rem;padding:2px 8px" onclick="markAllNotifRead()">Mark all read</button>
