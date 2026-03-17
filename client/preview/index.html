@@ -359,6 +359,19 @@
           </div>
         </div>
 
+        <div class="panel-section" data-section="concrete">
+          <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span>Concrete Bag Size</h3>
+          <div class="section-body collapsed">
+          <div class="height-options">
+            <button class="height-btn" onclick="setConcreteWeight(40); document.querySelectorAll('[data-section=concrete] .height-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active')">40 lb</button>
+            <button class="height-btn active" onclick="setConcreteWeight(50); document.querySelectorAll('[data-section=concrete] .height-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active')">50 lb</button>
+            <button class="height-btn" onclick="setConcreteWeight(60); document.querySelectorAll('[data-section=concrete] .height-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active')">60 lb</button>
+            <button class="height-btn" onclick="setConcreteWeight(80); document.querySelectorAll('[data-section=concrete] .height-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active')">80 lb</button>
+            <button class="height-btn" onclick="setConcreteWeight(90); document.querySelectorAll('[data-section=concrete] .height-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active')">90 lb</button>
+          </div>
+          </div>
+        </div>
+
         <div class="panel-section" data-section="gates">
           <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span><span data-i18n="section_gates">Gates</span></h3>
           <div class="section-body collapsed">

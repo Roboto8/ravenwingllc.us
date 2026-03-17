@@ -1573,6 +1573,22 @@ function getNearestHeight(spec, height) {
   return { data: spec.heights[nearest], multiplier: multiplier, nearestHeight: nearest };
 }
 
+// Concrete bag weight options: weight in lbs, quantity multiplier vs 50lb, cost per bag
+var CONCRETE_OPTIONS = {
+  40:  { label: '40lb', qtyMult: 1.25, cost: 4.50 },
+  50:  { label: '50lb', qtyMult: 1.00, cost: 6.00 },
+  60:  { label: '60lb', qtyMult: 0.83, cost: 7.00 },
+  80:  { label: '80lb', qtyMult: 0.625, cost: 8.50 },
+  90:  { label: '90lb', qtyMult: 0.56, cost: 9.50 }
+};
+var selectedConcreteWeight = parseInt(localStorage.getItem('fc_concrete_weight') || '50');
+
+function setConcreteWeight(weight) {
+  selectedConcreteWeight = parseInt(weight);
+  localStorage.setItem('fc_concrete_weight', selectedConcreteWeight);
+  recalculate();
+}
+
 function calculateBOM(feet, fenceType, height) {
   const spec = BOM[fenceType];
   if (!spec) return null;
@@ -1608,7 +1624,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: picketLabel, qty: totalPickets, unit: 'ea', unitCost: Math.round(p('picketCost', h.picketCost) * heightScale * 100) / 100 });
     items.push({ name: 'Rail brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
     items.push({ name: 'Exterior deck screws (box)', qty: screwBoxes, unit: 'boxes', unitCost: pe('screwBoxCost', ex.screwBoxCost) });
   }
   else if (fenceType === 'vinyl') {
@@ -1620,7 +1638,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: h.panelDesc, qty: sections, unit: 'ea', unitCost: p('panelCost', h.panelCost) });
     items.push({ name: ex.stiffenerDesc, qty: posts, unit: 'ea', unitCost: pe('stiffenerCost', ex.stiffenerCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
     items.push({ name: 'Self-tapping screws (box)', qty: screwBoxes, unit: 'boxes', unitCost: pe('screwBoxCost', ex.screwBoxCost) });
   }
   else if (fenceType === 'chain-link') {
@@ -1653,7 +1673,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: 'Dome caps (terminal)', qty: domeCaps, unit: 'ea', unitCost: pe('domeCapCost', ex.domeCapCost) });
     items.push({ name: '5/16" carriage bolts', qty: bolts, unit: 'ea', unitCost: pe('carriageBoltCost', ex.carriageBoltCost) });
     items.push({ name: 'Tie wires', qty: tieWires, unit: 'ea', unitCost: pe('tieWireCost', ex.tieWireCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
   }
   else if (fenceType === 'aluminum') {
     const totalBrackets = sections * ex.bracketsPerPanel;
@@ -1665,7 +1687,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: 'Mounting brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
     items.push({ name: 'SS self-tapping screws', qty: totalScrews, unit: 'ea', unitCost: pe('screwCost', ex.screwCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
   }
   else if (fenceType === 'iron') {
     const totalBrackets = sections * ex.bracketsPerPanel;
@@ -1677,7 +1701,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: 'Mounting brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
     items.push({ name: 'Bolts/screws', qty: totalScrews, unit: 'ea', unitCost: pe('screwCost', ex.screwCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
   }
 
   // Filter out zero-qty items and calculate totals
