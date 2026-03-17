@@ -47,10 +47,61 @@ const API = {
   deleteEstimate(id) { return this._fetch('/api/estimates/' + id, { method: 'DELETE' }); },
   getTrash() { return this._fetch('/api/estimates/trash'); },
   restoreEstimate(id) { return this._fetch('/api/estimates/' + id + '/restore', { method: 'POST' }); },
+  shareEstimate(id) { return this._fetch('/api/estimates/' + id + '/share', { method: 'POST' }); },
+
+  // Public (no auth) — approval workflow
+  getPublicEstimate(token) {
+    return fetch(this.baseUrl + '/api/public/estimate/' + token)
+      .then(r => r.json()).then(d => { if (d.error) throw new Error(d.error); return d; });
+  },
+  respondEstimate(token, action, message) {
+    return fetch(this.baseUrl + '/api/public/estimate/' + token + '/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, message: message || '' })
+    }).then(r => r.json()).then(d => { if (d.error) throw new Error(d.error); return d; });
+  },
+
+  // Photos
+  getPhotoUploadUrl(estId, filename, contentType) {
+    return this._fetch('/api/estimates/' + estId + '/photos', {
+      method: 'PUT',
+      body: JSON.stringify({ filename, contentType })
+    });
+  },
+  deletePhoto(estId, key) {
+    return this._fetch('/api/estimates/' + estId + '/photos/' + encodeURIComponent(key), { method: 'DELETE' });
+  },
+
+  // Team
+  getTeam() { return this._fetch('/api/team'); },
+  inviteMember(email) { return this._fetch('/api/team/invite', { method: 'POST', body: JSON.stringify({ email }) }); },
+  revokeInvite(token) { return this._fetch('/api/team/invite/' + token, { method: 'DELETE' }); },
+  removeMember(email) { return this._fetch('/api/team/' + encodeURIComponent(email), { method: 'DELETE' }); },
+
+  // Roles
+  getRoles() { return this._fetch('/api/roles'); },
+  createRole(data) { return this._fetch('/api/roles', { method: 'POST', body: JSON.stringify(data) }); },
+  updateRole(name, data) { return this._fetch('/api/roles/' + name, { method: 'PUT', body: JSON.stringify(data) }); },
+  deleteRole(name) { return this._fetch('/api/roles/' + name, { method: 'DELETE' }); },
+  assignRole(email, role) { return this._fetch('/api/roles/assign', { method: 'POST', body: JSON.stringify({ email, role }) }); },
 
   // Billing
   getStatus() { return this._fetch('/api/billing/status'); },
   createCheckout(returnUrl) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
   createPortal(returnUrl) { return this._fetch('/api/billing/portal', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
-  exportData() { return this._fetch('/api/billing/export'); }
+  exportData() { return this._fetch('/api/billing/export'); },
+
+  // Reports
+  getReports(period) {
+    const q = period ? '?period=' + period : '';
+    return this._fetch('/api/reports/dashboard' + q);
+  },
+
+  // Notifications
+  getNotifications() { return this._fetch('/api/notifications'); },
+  markNotificationsRead(ids) {
+    const body = ids ? { ids } : { all: true };
+    return this._fetch('/api/notifications/read', { method: 'POST', body: JSON.stringify(body) });
+  }
 };

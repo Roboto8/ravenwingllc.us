@@ -1,4 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="6" fill="#c0622e"/>
-  <text x="16" y="22.5" font-size="16" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="700" fill="white" text-anchor="middle" letter-spacing="-0.5">FC</text>
+  <rect x="5" y="8" width="3" height="12" rx="1" fill="white"/>
+  <rect x="10" y="10" width="3" height="10" rx="1" fill="white"/>
+  <rect x="15" y="8" width="3" height="12" rx="1" fill="white"/>
+  <rect x="20" y="10" width="3" height="10" rx="1" fill="white"/>
+  <rect x="25" y="8" width="3" height="12" rx="1" fill="white"/>
+  <rect x="4" y="12" width="25" height="2" rx="1" fill="white" opacity="0.7"/>
+  <rect x="4" y="17" width="25" height="2" rx="1" fill="white" opacity="0.7"/>
+  <path d="M4 26 L10 24.5 L16 26 L22 24 L28 25.5" stroke="white" stroke-width="1.5" fill="none" stroke-dasharray="3,2" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="4" cy="26" r="1.5" fill="white"/>
+  <circle cx="16" cy="26" r="1.5" fill="white"/>
+  <circle cx="28" cy="25.5" r="1.5" fill="white"/>
 </svg>

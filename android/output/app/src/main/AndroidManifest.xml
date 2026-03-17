@@ -32,7 +32,7 @@
     <application
         android:name="Application"
         android:allowBackup="true"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/appName"
         
@@ -146,7 +146,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="http"
+                <data android:scheme="https"
                     android:host="@string/hostName"
                 
                 />

@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="0" fill="#f5f0eb"/>
+
+  <g transform="translate(256, 195)">
+    <!-- Neck/chest - liver roan ticked pattern -->
+    <ellipse cx="0" cy="60" rx="45" ry="35" fill="#8a8a8a"/>
+    <ellipse cx="-10" cy="55" rx="12" ry="18" fill="#b0b0b0" opacity="0.4"/>
+    <ellipse cx="12" cy="62" rx="10" ry="14" fill="#b8b8b8" opacity="0.3"/>
+
+    <!-- Head - dark liver/grey-brown, slightly scruffy shape -->
+    <ellipse cx="0" cy="-15" rx="55" ry="52" fill="#5a4a42"/>
+    <!-- Lighter grey-brown patches on face -->
+    <ellipse cx="-15" cy="-5" rx="18" ry="20" fill="#6d5d55" opacity="0.6"/>
+    <ellipse cx="15" cy="-5" rx="18" ry="20" fill="#6d5d55" opacity="0.6"/>
+
+    <!-- Wild wiry fur on top of head (Annie's signature!) -->
+    <path d="M-20,-58 L-18,-78 L-12,-62 L-8,-80 L-2,-60 L4,-82 L10,-62 L16,-76 L20,-58"
+          stroke="#4a3a32" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M-15,-55 L-10,-72 L-4,-58 L2,-75 L8,-56 L14,-70 L18,-55"
+          stroke="#6d5d55" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Extra tufts sticking out to the sides -->
+    <path d="M-30,-45 L-40,-60 L-28,-50" stroke="#5a4a42" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M30,-45 L40,-58 L28,-48" stroke="#5a4a42" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+    <!-- Ears - floppy, dark liver, slightly scruffy edges -->
+    <ellipse cx="-50" cy="-5" rx="20" ry="35" fill="#4a3a32" transform="rotate(-10, -50, -5)"/>
+    <ellipse cx="50" cy="-5" rx="20" ry="35" fill="#4a3a32" transform="rotate(10, 50, -5)"/>
+    <!-- Ear inner highlight -->
+    <ellipse cx="-50" cy="0" rx="13" ry="24" fill="#5a4a42" transform="rotate(-10, -50, 0)"/>
+    <ellipse cx="50" cy="0" rx="13" ry="24" fill="#5a4a42" transform="rotate(10, 50, 0)"/>
+    <!-- Scruffy ear edges -->
+    <path d="M-62,-20 L-68,-18 M-65,-10 L-72,-8 M-63,5 L-70,8" stroke="#4a3a32" stroke-width="2" stroke-linecap="round"/>
+    <path d="M62,-20 L68,-18 M65,-10 L72,-8 M63,5 L70,8" stroke="#4a3a32" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Snout - slightly lighter liver brown -->
+    <ellipse cx="0" cy="18" rx="30" ry="20" fill="#6d5d55"/>
+
+    <!-- Scruffy beard/mustache (big and wild like Annie's) -->
+    <ellipse cx="0" cy="32" rx="28" ry="16" fill="#7d6d65"/>
+    <ellipse cx="-14" cy="28" rx="16" ry="12" fill="#8a7a72"/>
+    <ellipse cx="14" cy="28" rx="16" ry="12" fill="#8a7a72"/>
+    <!-- Beard wisps -->
+    <path d="M-18,38 L-22,48 M-8,40 L-10,50 M0,42 L0,52 M8,40 L10,50 M18,38 L22,48"
+          stroke="#7d6d65" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Nose - dark liver -->
+    <ellipse cx="0" cy="12" rx="13" ry="10" fill="#2c2018"/>
+    <ellipse cx="-3" cy="10" rx="3.5" ry="2" fill="#3d3028" opacity="0.5"/>
+    <ellipse cx="3" cy="10" rx="3.5" ry="2" fill="#3d3028" opacity="0.5"/>
+
+    <!-- Eyes - amber/hazel like Annie's -->
+    <ellipse cx="-18" cy="-25" rx="10" ry="11" fill="#2c2018"/>
+    <ellipse cx="18" cy="-25" rx="10" ry="11" fill="#2c2018"/>
+    <!-- Iris - amber -->
+    <ellipse cx="-18" cy="-25" rx="7" ry="8" fill="#8B6914"/>
+    <ellipse cx="18" cy="-25" rx="7" ry="8" fill="#8B6914"/>
+    <!-- Pupil -->
+    <circle cx="-18" cy="-25" r="4" fill="#1a1008"/>
+    <circle cx="18" cy="-25" r="4" fill="#1a1008"/>
+    <!-- Eye shine -->
+    <circle cx="-15" cy="-27" r="2.5" fill="white" opacity="0.75"/>
+    <circle cx="21" cy="-27" r="2.5" fill="white" opacity="0.75"/>
+
+    <!-- Bushy eyebrows (very GWP) -->
+    <path d="M-28,-36 Q-18,-42 -8,-36" stroke="#5a4a42" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M8,-36 Q18,-42 28,-36" stroke="#5a4a42" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- Extra brow wisps -->
+    <path d="M-26,-38 L-30,-44 M-12,-38 L-10,-45" stroke="#4a3a32" stroke-width="2" stroke-linecap="round"/>
+    <path d="M26,-38 L30,-44 M12,-38 L10,-45" stroke="#4a3a32" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Big open mouth (Annie's birthday yawn/smile!) -->
+    <path d="M-20,22 Q0,42 20,22" fill="#d4756a"/>
+    <path d="M-16,22 Q0,18 16,22" fill="#c4655a"/>
+    <!-- Tongue hanging out -->
+    <ellipse cx="3" cy="36" rx="10" ry="14" fill="#e8877c"/>
+    <ellipse cx="3" cy="38" rx="7" ry="10" fill="#f0978c"/>
+    <!-- Teeth hints -->
+    <rect x="-12" y="20" width="4" height="5" rx="1" fill="white" opacity="0.8"/>
+    <rect x="8" y="20" width="4" height="5" rx="1" fill="white" opacity="0.8"/>
+  </g>
+
+  <!-- Collar - FenceTrace orange -->
+  <rect x="222" y="248" width="68" height="10" rx="4" fill="#c0622e"/>
+  <circle cx="256" cy="260" r="5" fill="#d4a020"/>
+
+  <!-- FenceTrace text -->
+  <text x="256" y="335" font-size="42" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="800" fill="#2c2417" text-anchor="middle" letter-spacing="-1">
+    Fence<tspan fill="#c0622e">Trace</tspan>
+  </text>
+
+  <text x="256" y="362" font-size="14" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="500" fill="#6b6052" text-anchor="middle" letter-spacing="0.5">
+    Satellite fence estimates
+  </text>
+
+  <!-- Small fence silhouette at bottom -->
+  <g transform="translate(256, 420)" opacity="0.2">
+    <rect x="-100" y="0" width="6" height="30" fill="#2c2417"/>
+    <rect x="-70" y="4" width="6" height="26" fill="#2c2417"/>
+    <rect x="-40" y="0" width="6" height="30" fill="#2c2417"/>
+    <rect x="-10" y="4" width="6" height="26" fill="#2c2417"/>
+    <rect x="20" y="0" width="6" height="30" fill="#2c2417"/>
+    <rect x="50" y="4" width="6" height="26" fill="#2c2417"/>
+    <rect x="80" y="0" width="6" height="30" fill="#2c2417"/>
+    <polygon points="-100,0 -97,-10 -94,0" fill="#2c2417"/>
+    <polygon points="-70,4 -67,-6 -64,4" fill="#2c2417"/>
+    <polygon points="-40,0 -37,-10 -34,0" fill="#2c2417"/>
+    <polygon points="-10,4 -7,-6 -4,4" fill="#2c2417"/>
+    <polygon points="20,0 23,-10 26,0" fill="#2c2417"/>
+    <polygon points="50,4 53,-6 56,4" fill="#2c2417"/>
+    <polygon points="80,0 83,-10 86,0" fill="#2c2417"/>
+    <rect x="-104" y="8" width="192" height="4" rx="1" fill="#2c2417"/>
+    <rect x="-104" y="20" width="192" height="4" rx="1" fill="#2c2417"/>
+  </g>
+</svg>

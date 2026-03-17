@@ -22,7 +22,7 @@ plugins {
 
 def twaManifest = [
     applicationId: 'com.ravenwingllc.fencetrace',
-    hostName: 'ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com', // The domain being opened in the TWA.
+    hostName: 'fencetrace.com', // The domain being opened in the TWA.
     launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
     name: 'FenceTrace', // The application name.
     launcherName: 'FenceTrace', // The name shown on the Android Launcher.
@@ -45,7 +45,7 @@ def twaManifest = [
     generatorApp: '@nicolo-ribaudo/nicolo-ribaudo', // Application that generated the Android Project
     // The fallback strategy for when Trusted Web Activity is not available. Possible values are
     // 'customtabs' and 'webview'.
-    fallbackType: 'webview',
+    fallbackType: 'customtabs',
     enableSiteSettingsShortcut: 'true',
     orientation: 'default',
 ]
@@ -67,7 +67,7 @@ android {
         resValue "string", "launcherName", twaManifest.launcherName
 
         // The URL that will be used when launching the TWA from the Android Launcher
-        def launchUrl = "http://" + twaManifest.hostName + twaManifest.launchUrl
+        def launchUrl = "https://" + twaManifest.hostName + twaManifest.launchUrl
         resValue "string", "launchUrl", launchUrl
 
         

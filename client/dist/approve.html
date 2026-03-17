@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review Estimate | FenceTrace</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f0eb;
+      --surface: #fff;
+      --surface-2: #ede8e2;
+      --border: #d4cdc4;
+      --text: #2c2417;
+      --text-mid: #4a4030;
+      --text-muted: #6b6052;
+      --accent: #c0622e;
+      --accent-hover: #a8521f;
+      --green: #2d6e28;
+      --green-light: rgba(61, 139, 55, 0.08);
+      --orange: #d4870e;
+      --orange-light: rgba(212, 135, 14, 0.08);
+      --red: #b93a2a;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, sans-serif;
+      --radius: 6px;
+      --shadow-sm: 0 1px 3px rgba(44,36,23,0.06);
+      --shadow-md: 0 4px 16px rgba(44,36,23,0.1);
+    }
+
+    html, body {
+      min-height: 100vh;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      font-size: 15px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .header .company-name {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 0.9rem;
+    }
+    .detail-row + .detail-row {
+      border-top: 1px solid var(--surface-2);
+    }
+    .detail-row .label {
+      color: var(--text-mid);
+    }
+    .detail-row .value {
+      font-weight: 500;
+    }
+
+    .bom-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .bom-table th {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-mid);
+      padding: 6px 0;
+      border-bottom: 2px solid var(--border);
+    }
+    .bom-table td {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--surface-2);
+    }
+    .bom-table td:last-child,
+    .bom-table th:last-child {
+      text-align: right;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      border-top: 2px solid var(--border);
+      margin-top: 8px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .status-draft { background: var(--surface-2); color: var(--text-muted); }
+    .status-sent { background: #e8f0fe; color: #1a56db; }
+    .status-approved { background: var(--green-light); color: var(--green); }
+    .status-changes_requested { background: var(--orange-light); color: var(--orange); }
+
+    .actions {
+      margin-top: 24px;
+    }
+    .actions textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 60px;
+      margin-bottom: 12px;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .actions textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
+    }
+    .actions textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-approve {
+      background: var(--green);
+      color: #fff;
+    }
+    .btn-changes {
+      background: var(--orange);
+      color: #fff;
+    }
+
+    .confirmation {
+      text-align: center;
+      padding: 32px 20px;
+    }
+    .confirmation .icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+    .confirmation h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--text);
+    }
+    .confirmation p {
+      color: var(--text-mid);
+      font-size: 0.95rem;
+    }
+
+    .loading, .error-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .error-state { color: var(--red); }
+
+    .footer {
+      text-align: center;
+      padding: 24px 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    @media (max-width: 480px) {
+      .btn-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div id="loading" class="loading">Loading estimate...</div>
+  <div id="error" class="error-state" style="display:none"></div>
+  <div id="content" style="display:none">
+
+    <div class="header">
+      <h1>Fence Estimate</h1>
+      <div class="company-name" id="company-name"></div>
+    </div>
+
+    <!-- Status -->
+    <div style="text-align:center;margin-bottom:16px">
+      <span class="status-badge" id="status-badge"></span>
+    </div>
+
+    <!-- Customer Info -->
+    <div class="card">
+      <h2>Customer</h2>
+      <div class="detail-row"><span class="label">Name</span><span class="value" id="cust-name"></span></div>
+      <div class="detail-row"><span class="label">Phone</span><span class="value" id="cust-phone"></span></div>
+      <div class="detail-row"><span class="label">Address</span><span class="value" id="cust-address"></span></div>
+    </div>
+
+    <!-- Fence Details -->
+    <div class="card">
+      <h2>Fence Details</h2>
+      <div class="detail-row"><span class="label">Type</span><span class="value" id="fence-type"></span></div>
+      <div class="detail-row"><span class="label">Height</span><span class="value" id="fence-height"></span></div>
+      <div class="detail-row"><span class="label">Total Length</span><span class="value" id="fence-feet"></span></div>
+    </div>
+
+    <!-- Gates -->
+    <div class="card" id="gates-card" style="display:none">
+      <h2>Gates</h2>
+      <div id="gates-list"></div>
+    </div>
+
+    <!-- Addons -->
+    <div class="card" id="addons-card" style="display:none">
+      <h2>Additional Services</h2>
+      <div id="addons-list"></div>
+    </div>
+
+    <!-- BOM -->
+    <div class="card" id="bom-card" style="display:none">
+      <h2>Materials Breakdown</h2>
+      <table class="bom-table">
+        <thead>
+          <tr><th>Item</th><th>Qty</th><th>Cost</th></tr>
+        </thead>
+        <tbody id="bom-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Total -->
+    <div class="card">
+      <div class="total-row">
+        <span>Total Estimate</span>
+        <span id="total-cost"></span>
+      </div>
+    </div>
+
+    <!-- Response Actions -->
+    <div id="actions-section" class="actions">
+      <div class="card">
+        <h2>Your Response</h2>
+        <textarea id="response-message" placeholder="Optional message or notes..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-approve" id="btn-approve" onclick="respondApprove()">Approve Estimate</button>
+          <button class="btn btn-changes" id="btn-changes" onclick="respondChanges()">Request Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation (hidden initially) -->
+    <div id="confirmation" class="card" style="display:none"></div>
+
+    <div class="footer">
+      Powered by <a href="/">FenceTrace</a> &middot; &copy; 2026 RavenWing LLC
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+
+  if (!token) {
+    showError('No estimate token provided. Please use the link from your contractor.');
+    return;
+  }
+
+  // Determine API base URL from current location or config
+  const apiUrl = window.FENCETRACE_API_URL || window.location.origin;
+  API.configure(apiUrl);
+
+  let estimateData = null;
+
+  loadEstimate();
+
+  async function loadEstimate() {
+    try {
+      estimateData = await API.getPublicEstimate(token);
+      render(estimateData);
+    } catch (e) {
+      showError('Could not load estimate. The link may be invalid or expired.');
+    }
+  }
+
+  function render(est) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    // Company
+    if (est.companyName) {
+      document.getElementById('company-name').textContent = 'From ' + est.companyName;
+    }
+
+    // Status badge
+    const badge = document.getElementById('status-badge');
+    const statusLabels = {
+      draft: 'Draft', sent: 'Sent', approved: 'Approved', changes_requested: 'Changes Requested'
+    };
+    badge.textContent = statusLabels[est.approvalStatus] || est.approvalStatus;
+    badge.className = 'status-badge status-' + est.approvalStatus;
+
+    // Customer
+    document.getElementById('cust-name').textContent = est.customerName || '-';
+    document.getElementById('cust-phone').textContent = est.customerPhone || '-';
+    document.getElementById('cust-address').textContent = est.customerAddress || '-';
+
+    // Fence details
+    const typeLabel = (est.fenceType || '').replace(/-/g, ' ');
+    document.getElementById('fence-type').textContent = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
+    document.getElementById('fence-height').textContent = (est.fenceHeight || 6) + ' ft';
+    document.getElementById('fence-feet').textContent = (est.totalFeet || 0).toLocaleString() + ' ft';
+
+    // Gates
+    if (est.gates && est.gates.length > 0) {
+      document.getElementById('gates-card').style.display = 'block';
+      document.getElementById('gates-list').innerHTML = est.gates.map(function(g) {
+        return '<div class="detail-row"><span class="label">' + (g.type || 'Gate') + '</span><span class="value">$' + (g.price || 0) + '</span></div>';
+      }).join('');
+    }
+
+    // Addons
+    const addonLabels = { removal: 'Old Fence Removal', permit: 'Permit Fee', stain: 'Stain/Seal' };
+    if (est.addons) {
+      const activeAddons = Object.keys(est.addons).filter(function(k) { return est.addons[k]; });
+      if (activeAddons.length > 0) {
+        document.getElementById('addons-card').style.display = 'block';
+        document.getElementById('addons-list').innerHTML = activeAddons.map(function(k) {
+          return '<div class="detail-row"><span class="label">' + (addonLabels[k] || k) + '</span><span class="value">Included</span></div>';
+        }).join('');
+      }
+    }
+
+    // BOM
+    if (est.bom && est.bom.length > 0) {
+      document.getElementById('bom-card').style.display = 'block';
+      document.getElementById('bom-body').innerHTML = est.bom.map(function(item) {
+        var name = item.name || item.item || item.description || '-';
+        var qty = item.qty || item.quantity || 0;
+        var cost = item.cost || item.total || item.unitCost || 0;
+        return '<tr><td>' + name + '</td><td>' + qty + '</td><td>$' + Number(cost).toLocaleString() + '</td></tr>';
+      }).join('');
+    }
+
+    // Total
+    var totalStr = est.totalCost;
+    if (typeof totalStr === 'number') totalStr = '$' + totalStr.toLocaleString();
+    document.getElementById('total-cost').textContent = totalStr || '$0';
+
+    // If already responded, show confirmation instead of action buttons
+    if (est.approvalStatus === 'approved' || est.approvalStatus === 'changes_requested') {
+      document.getElementById('actions-section').style.display = 'none';
+      showConfirmation(est.approvalStatus);
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('error').textContent = msg;
+  }
+
+  function showConfirmation(status) {
+    var conf = document.getElementById('confirmation');
+    conf.style.display = 'block';
+    if (status === 'approved') {
+      conf.innerHTML = '<div class="confirmation"><div class="icon">&#10003;</div><h2>Estimate Approved</h2><p>Thank you! Your contractor has been notified.</p></div>';
+    } else {
+      conf.innerHTML = '<div class="confirmation"><div class="icon">&#9998;</div><h2>Changes Requested</h2><p>Your contractor has been notified and will follow up with a revised estimate.</p></div>';
+    }
+  }
+
+  window.respondApprove = async function() {
+    await sendResponse('approved');
+  };
+
+  window.respondChanges = async function() {
+    await sendResponse('changes_requested');
+  };
+
+  async function sendResponse(action) {
+    var msg = document.getElementById('response-message').value.trim();
+    var approveBtn = document.getElementById('btn-approve');
+    var changesBtn = document.getElementById('btn-changes');
+    approveBtn.disabled = true;
+    changesBtn.disabled = true;
+
+    try {
+      await API.respondEstimate(token, action, msg);
+      document.getElementById('actions-section').style.display = 'none';
+
+      // Update badge
+      var badge = document.getElementById('status-badge');
+      var statusLabels = {
+        approved: 'Approved', changes_requested: 'Changes Requested'
+      };
+      badge.textContent = statusLabels[action];
+      badge.className = 'status-badge status-' + action;
+
+      showConfirmation(action);
+    } catch (e) {
+      approveBtn.disabled = false;
+      changesBtn.disabled = false;
+      alert('Failed to submit response. Please try again.');
+    }
+  }
+})();
+</script>
+</body>
+</html>

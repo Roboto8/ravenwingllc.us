@@ -13,12 +13,20 @@ let fenceLine = null;
 let fenceMarkers = [];
 let segmentLabels = [];
 let fenceClosed = false;
-let closingLine = null;
-let closingLabel = null;
 
 let gates = [];
 let gateMarkers = [];
 let customItems = [];
+
+// Debounced recalculate for drag handlers — limits to once per animation frame
+let _dragRecalcRAF = 0;
+function recalculateDrag() {
+  if (_dragRecalcRAF) return;
+  _dragRecalcRAF = requestAnimationFrame(function() {
+    _dragRecalcRAF = 0;
+    recalculate();
+  });
+}
 
 function initSections() {
   sections = [];
@@ -49,7 +57,7 @@ function addNewSection() {
   updateEmptyMapState();
 
   if (sections.length > 1) {
-    showToast('Section ' + sections.length + ' started — click the map to draw');
+    showToast(t('toast_section_started', {n: sections.length}));
   }
 }
 
@@ -112,7 +120,6 @@ function switchSection(idx) {
   updateSectionTabs();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -143,9 +150,8 @@ function deleteSection(idx) {
   updateSectionTabs();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
-  showToast('Section removed');
+  showToast(t('toast_section_removed'));
 }
 
 function updateSectionTabs() {
@@ -200,7 +206,38 @@ function getTotalFootageAllSections() {
   });
   return Math.round(totalMeters * 3.28084);
 }
+var baseFencePrices = { wood: 25, vinyl: 35, 'chain-link': 15, aluminum: 40, iron: 55 };
 let selectedFence = { type: 'wood', price: 25 };
+
+function updateFencePricesForRegion() {
+  var mult = (typeof REGIONS !== 'undefined' && typeof companyRegion !== 'undefined' && REGIONS[companyRegion])
+    ? REGIONS[companyRegion].multiplier : 1;
+
+  // Load any custom per-foot prices from pricebook
+  var pb = (typeof companyPricebook !== 'undefined') ? companyPricebook : {};
+  Object.keys(pb).forEach(function(k) {
+    if (k.startsWith('perFoot.')) {
+      var type = k.replace('perFoot.', '');
+      baseFencePrices[type] = pb[k];
+    }
+  });
+
+  document.querySelectorAll('.fence-type-btn').forEach(function(btn) {
+    var type = btn.dataset.type;
+    if (!type) return;
+    var base = baseFencePrices[type] || 25;
+    // Only apply regional multiplier if there's no custom per-foot price
+    var hasCustom = pb['perFoot.' + type] !== undefined;
+    var adjusted = hasCustom ? base : Math.round(base * mult);
+    btn.dataset.price = adjusted;
+    var priceEl = btn.querySelector('.fence-price');
+    if (priceEl) priceEl.textContent = '$' + adjusted + '/ft';
+  });
+  // Update selectedFence price too
+  var hasCustomSelected = pb['perFoot.' + selectedFence.type] !== undefined;
+  var adjPrice = hasCustomSelected ? baseFencePrices[selectedFence.type] : Math.round((baseFencePrices[selectedFence.type] || 25) * mult);
+  selectedFence.price = adjPrice;
+}
 let selectedHeight = 6;
 let terrainMultiplier = 1.0;
 
@@ -226,6 +263,61 @@ function initMap() {
     zoom: 18,
     zoomControl: false
   });
+
+  // Scale bar — shows real-world distance on the map
+  L.control.scale({
+    imperial: true,
+    metric: false,
+    position: 'bottomleft',
+    maxWidth: 150
+  }).addTo(map);
+
+  // Zoom indicator with accuracy info
+  var zoomIndicator = L.control({ position: 'bottomright' });
+  zoomIndicator.onAdd = function() {
+    var div = L.DomUtil.create('div', 'zoom-indicator');
+    div.id = 'zoom-indicator';
+    updateZoomIndicator(div, map.getZoom());
+    return div;
+  };
+  zoomIndicator.addTo(map);
+
+  map.on('zoomend', function() {
+    var div = document.getElementById('zoom-indicator');
+    if (div) updateZoomIndicator(div, map.getZoom());
+  });
+
+  function updateZoomIndicator(div, zoom) {
+    // Approximate feet per pixel at equator, adjusted for typical US latitudes (~38°)
+    var metersPerPixel = 156543.03 * Math.cos(38 * Math.PI / 180) / Math.pow(2, zoom);
+    var feetPerPixel = metersPerPixel * 3.28084;
+    var accuracy;
+    var color;
+    if (zoom >= 20) { accuracy = t('accuracy_excellent'); color = '#2d6e28'; }
+    else if (zoom >= 18) { accuracy = t('accuracy_good'); color = '#2d6e28'; }
+    else if (zoom >= 16) { accuracy = t('accuracy_fair'); color = '#d4870e'; }
+    else { accuracy = t('accuracy_low'); color = '#b93a2a'; }
+
+    div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + feetPerPixel.toFixed(1) + ' ft/px';
+    div.title = 'Zoom ' + zoom + ' — each pixel ≈ ' + feetPerPixel.toFixed(1) + ' feet. Zoom in for more precise placement.';
+  }
+
+  // Detect TWA / standalone mode and add padding for "Not Secure" bar
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      document.referrer.includes('android-app://') ||
+      navigator.standalone === true) {
+    document.body.classList.add('twa-mode');
+  }
+
+  // Handle viewport resize (browser chrome, "Not Secure" bar, keyboard, etc.)
+  function handleResize() {
+    document.body.style.height = (window.visualViewport ? window.visualViewport.height : window.innerHeight) + 'px';
+    map.invalidateSize();
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleResize);
+  }
+  window.addEventListener('resize', function() { setTimeout(handleResize, 100); });
 
   baseLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 22,
@@ -265,7 +357,154 @@ function setMapLayer(layerName) {
   if (btn) btn.classList.add('active');
 }
 
+// === Drone Photo Overlay ===
+var droneOverlay = null;
+var droneOverlayData = null;
+
+function toggleDronePhoto() {
+  // If overlay exists, remove it
+  if (droneOverlay) {
+    removeDroneOverlay();
+    return;
+  }
+  // Otherwise, open file picker
+  document.getElementById('drone-input').click();
+}
+
+function closeDroneBanner() {
+  document.getElementById('drone-banner').style.display = 'none';
+}
+
+function handleDroneUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 50 * 1024 * 1024) {
+    showToast(t('toast_image_too_large'));
+    input.value = '';
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      // Place overlay centered on current map view, sized to fit
+      var center = map.getCenter();
+      var bounds = map.getBounds();
+      var aspect = img.width / img.height;
+
+      // Make the overlay cover roughly 60% of the current view
+      var latSpan = (bounds.getNorth() - bounds.getSouth()) * 0.6;
+      var lngSpan = latSpan * aspect;
+
+      var overlayBounds = L.latLngBounds(
+        [center.lat - latSpan / 2, center.lng - lngSpan / 2],
+        [center.lat + latSpan / 2, center.lng + lngSpan / 2]
+      );
+
+      // Remove old overlay
+      if (droneOverlay) map.removeLayer(droneOverlay);
+
+      droneOverlay = L.imageOverlay(e.target.result, overlayBounds, {
+        opacity: 0.7,
+        interactive: false
+      }).addTo(map);
+
+      // Make it draggable and resizable via corner handles
+      makeDroneAdjustable(overlayBounds);
+
+      droneOverlayData = {
+        dataUrl: e.target.result,
+        bounds: [[overlayBounds.getSouth(), overlayBounds.getWest()],
+                 [overlayBounds.getNorth(), overlayBounds.getEast()]]
+      };
+
+      document.getElementById('drone-banner').style.display = '';
+      document.getElementById('drone-btn').classList.add('active');
+      markUnsaved();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+var droneCorners = [];
+
+function makeDroneAdjustable(bounds) {
+  // Remove old corners
+  droneCorners.forEach(function(m) { map.removeLayer(m); });
+  droneCorners = [];
+
+  var corners = [
+    bounds.getSouthWest(),
+    bounds.getNorthWest(),
+    bounds.getNorthEast(),
+    bounds.getSouthEast()
+  ];
+
+  corners.forEach(function(latlng, idx) {
+    var marker = L.marker(latlng, {
+      draggable: true,
+      icon: L.divIcon({
+        className: 'drone-handle',
+        html: '<div style="width:14px;height:14px;background:#c0622e;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:move"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      })
+    }).addTo(map);
+
+    marker.on('drag', function() {
+      updateDroneFromCorners();
+    });
+    marker.on('dragend', function() {
+      updateDroneFromCorners();
+      markUnsaved();
+    });
+
+    droneCorners.push(marker);
+  });
+}
+
+function updateDroneFromCorners() {
+  if (droneCorners.length < 4 || !droneOverlay) return;
+  var lats = droneCorners.map(function(m) { return m.getLatLng().lat; });
+  var lngs = droneCorners.map(function(m) { return m.getLatLng().lng; });
+  var newBounds = L.latLngBounds(
+    [Math.min.apply(null, lats), Math.min.apply(null, lngs)],
+    [Math.max.apply(null, lats), Math.max.apply(null, lngs)]
+  );
+  droneOverlay.setBounds(newBounds);
+  if (droneOverlayData) {
+    droneOverlayData.bounds = [[newBounds.getSouth(), newBounds.getWest()],
+                                [newBounds.getNorth(), newBounds.getEast()]];
+  }
+}
+
+function setDroneOpacity(val) {
+  if (droneOverlay) droneOverlay.setOpacity(val / 100);
+}
+
+function removeDroneOverlay() {
+  if (droneOverlay) { map.removeLayer(droneOverlay); droneOverlay = null; }
+  droneCorners.forEach(function(m) { map.removeLayer(m); });
+  droneCorners = [];
+  droneOverlayData = null;
+  document.getElementById('drone-banner').style.display = 'none';
+  document.getElementById('drone-btn').classList.remove('active');
+  markUnsaved();
+  showToast(t('toast_drone_removed'));
+}
+
 function onMapClick(e) {
+  // Warn if zoomed too far out for accurate placement
+  if (map.getZoom() < 16 && (currentTool === 'draw' || currentTool === 'gate')) {
+    showToast(t('toast_zoom_closer'));
+    return;
+  }
+  if (map.getZoom() < 18 && currentTool === 'draw' && fencePoints.length === 0) {
+    showToast(t('toast_zoom_tip'));
+  }
   if (currentTool === 'draw' && !fenceClosed) {
     addFencePoint(e.latlng);
   } else if (currentTool === 'gate') {
@@ -283,14 +522,51 @@ function createSegmentLabel(p1, p2, segIndex) {
   var label = L.marker([midLat, midLng], {
     icon: L.divIcon({
       className: 'segment-label',
-      html: '<div class="seg-label seg-clickable" data-seg="' + segIndex + '" onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</div>',
-      iconSize: [60, 20],
+      html: '<div class="seg-label seg-clickable" data-seg="' + segIndex + '">' +
+        '<span onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</span>' +
+        '<button class="seg-delete" onclick="event.stopPropagation(); deleteSegment(' + segIndex + ')" title="Remove segment">&times;</button>' +
+      '</div>',
+      iconSize: [80, 20],
       iconAnchor: [30, 10]
     }),
     interactive: true
   }).addTo(map);
 
   return label;
+}
+
+function deleteSegment(segIndex) {
+  // Remove the second point of this segment
+  // For the closing segment (last index), remove the last point instead
+  var removeIdx;
+  if (segIndex >= fencePoints.length - 1 && fenceClosed) {
+    // Closing segment — open the fence instead
+    openFence();
+    return;
+  } else {
+    removeIdx = segIndex + 1;
+  }
+
+  if (removeIdx < 0 || removeIdx >= fencePoints.length) return;
+  if (fencePoints.length <= 2) {
+    // Would leave 0 or 1 points — just clear
+    fencePoints = [];
+    fenceMarkers.forEach(function(m) { map.removeLayer(m); });
+    fenceMarkers = [];
+  } else {
+    fencePoints.splice(removeIdx, 1);
+    var marker = fenceMarkers.splice(removeIdx, 1)[0];
+    if (marker) map.removeLayer(marker);
+  }
+
+  rebuildAllMarkers();
+  redrawFenceLine();
+  redrawSegmentLabels();
+  updateCloseButton();
+  updateMidpointHandles();
+  recalculate();
+  markUnsaved();
+  updateEmptyMapState();
 }
 
 function editSegmentLength(segIndex, event) {
@@ -383,10 +659,9 @@ function applySegmentLength(segIndex, value) {
   redrawFenceLine();
   redrawSegmentLabels();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 
-  showToast('Segment set to ' + newFeet + ' ft');
+  showToast(t('toast_segment_set', {n: newFeet}));
 }
 
 function redrawSegmentLabels() {
@@ -420,23 +695,23 @@ function addFencePoint(latlng) {
     fencePoints[idx] = e.target.getLatLng();
     redrawFenceLine();
     redrawSegmentLabels();
-    updateFootage();
-    recalculate();
+    recalculateDrag();
   });
 
   marker.on('dragend', function() {
     redrawSegmentLabels();
-    updateFootage();
     recalculate();
   });
 
   fenceMarkers.push(marker);
 
+  // Push to undo stack
+  undoStack.push({ type: 'point', sectionIdx: activeSectionIdx });
+
   redrawFenceLine();
   redrawSegmentLabels();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
   markUnsaved();
   updateEmptyMapState();
@@ -490,7 +765,7 @@ function showMergePrompt(otherIdx, whichEnd) {
 
   if (activeType !== otherType || activeHeight !== otherHeight) {
     // Different materials — don't offer merge
-    showToast('Sections use different materials (' + activeType + ' vs ' + otherType + ') — keeping separate');
+    showToast(t('toast_sections_diff_material', {a: activeType, b: otherType}));
     return;
   }
 
@@ -502,7 +777,7 @@ function showMergePrompt(otherIdx, whichEnd) {
   var toast = document.createElement('div');
   toast.id = 'merge-toast';
   toast.className = 'undo-toast';
-  toast.innerHTML = '<span>Sections overlap</span><button onclick="mergeSections()">Join</button><button onclick="dismissMerge()" style="color:var(--text-muted)">Ignore</button>';
+  toast.innerHTML = '<span>' + t('toast_sections_overlap') + '</span><button onclick="mergeSections()">' + t('toast_merge_join') + '</button><button onclick="dismissMerge()" style="color:var(--text-muted)">' + t('toast_merge_ignore') + '</button>';
   document.body.appendChild(toast);
   requestAnimationFrame(function() { toast.classList.add('visible'); });
 
@@ -584,11 +859,10 @@ function mergeSections() {
   });
 
   updateSectionTabs();
-  updateFootage();
   recalculate();
 
   dismissMerge();
-  showToast('Sections joined');
+  showToast(t('toast_sections_joined'));
 }
 
 // === Curve Interpolation (Catmull-Rom spline) ===
@@ -647,7 +921,6 @@ function toggleCurve() {
   if (btn) btn.classList.toggle('active', curveMode);
   redrawFenceLine();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -667,7 +940,6 @@ function insertMidpoint(afterIndex) {
   redrawFenceLine();
   redrawSegmentLabels();
   updateCloseButton();
-  updateFootage();
   recalculate();
 }
 
@@ -689,13 +961,11 @@ function rebuildAllMarkers() {
       fencePoints[idx] = e.target.getLatLng();
       redrawFenceLine();
       redrawSegmentLabels();
-      updateFootage();
-      recalculate();
+      recalculateDrag();
     });
 
     marker.on('dragend', function() {
       redrawSegmentLabels();
-      updateFootage();
       recalculate();
     });
 
@@ -743,7 +1013,6 @@ function updateMidpointHandles() {
       redrawSegmentLabels();
       updateMidpointHandles();
       updateCloseButton();
-      updateFootage();
       recalculate();
     });
 
@@ -761,7 +1030,6 @@ function closeFence() {
 
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -771,7 +1039,6 @@ function openFence() {
   redrawSegmentLabels();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -786,10 +1053,10 @@ function updateCloseButton() {
 
   btn.style.display = 'flex';
   if (fenceClosed) {
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Open';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> ' + t('tool_open');
     btn.onclick = openFence;
   } else {
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Close';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> ' + t('tool_close');
     btn.onclick = closeFence;
   }
 }
@@ -805,19 +1072,33 @@ function updateFootage() {
 
 // === Gates ===
 function addGate(latlng) {
-  const gateId = Date.now();
-  const gate = { id: gateId, latlng, type: 'single', price: 350 };
+  var gateId = Date.now();
+  var gate = { id: gateId, latlng: latlng, type: 'single', price: 350 };
   gates.push(gate);
 
-  const marker = L.marker(latlng, {
+  var marker = L.marker(latlng, {
+    draggable: true,
     icon: L.divIcon({
       className: 'gate-marker',
-      html: '<div style="background:#c0622e;color:#fff;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);letter-spacing:0.5px;">GATE</div>',
+      html: '<div style="background:#c0622e;color:#fff;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);letter-spacing:0.5px;">' + t('gate_marker_label') + '</div>',
       iconSize: [50, 20],
       iconAnchor: [25, 28]
     })
   }).addTo(map);
-  gateMarkers.push({ id: gateId, marker });
+
+  // Make gate draggable — update position on drag
+  marker.on('dragend', function(e) {
+    var g = gates.find(function(x) { return x.id === gateId; });
+    if (g) {
+      g.latlng = e.target.getLatLng();
+      markUnsaved();
+    }
+  });
+
+  gateMarkers.push({ id: gateId, marker: marker });
+
+  // Push to undo stack
+  undoStack.push({ type: 'gate', id: gateId });
 
   renderGates();
   recalculate();
@@ -829,16 +1110,16 @@ function addGate(latlng) {
 function renderGates() {
   const list = document.getElementById('gates-list');
   if (gates.length === 0) {
-    list.innerHTML = '<p class="empty-state">Place gates by clicking the map</p>';
+    list.innerHTML = '<p class="empty-state">' + t('gates_empty') + '</p>';
     return;
   }
   list.innerHTML = gates.map((g, i) => `
     <div class="gate-item">
-      <span>Gate ${i + 1}</span>
+      <span>${t('gate_label')} ${i + 1}</span>
       <select onchange="updateGateType(${g.id}, this.value)">
-        <option value="single" ${g.type === 'single' ? 'selected' : ''}>Single ($350)</option>
-        <option value="double" ${g.type === 'double' ? 'selected' : ''}>Double ($550)</option>
-        <option value="sliding" ${g.type === 'sliding' ? 'selected' : ''}>Sliding ($1,200)</option>
+        <option value="single" ${g.type === 'single' ? 'selected' : ''}>${t('gate_single')} ($350)</option>
+        <option value="double" ${g.type === 'double' ? 'selected' : ''}>${t('gate_double')} ($550)</option>
+        <option value="sliding" ${g.type === 'sliding' ? 'selected' : ''}>${t('gate_sliding')} ($1,200)</option>
       </select>
       <button class="gate-remove" onclick="removeGate(${g.id})">&#x2715;</button>
     </div>
@@ -875,27 +1156,54 @@ function setTool(tool) {
   map.getContainer().style.cursor = tool === 'draw' ? 'crosshair' : tool === 'gate' ? 'cell' : '';
 }
 
+// === Undo Stack ===
+var undoStack = [];
+
 function undoLast() {
+  // If fence is closed, open it first
   if (fenceClosed) {
     openFence();
     return;
   }
-  if (fencePoints.length > 0) {
-    fencePoints.pop();
-    const marker = fenceMarkers.pop();
-    if (marker) map.removeLayer(marker);
 
-    // Rebind drag handlers with correct indices
-    rebindMarkerDrags();
+  if (undoStack.length === 0) return;
 
-    redrawFenceLine();
-    redrawSegmentLabels();
-    updateCloseButton();
-    updateMidpointHandles();
-    updateFootage();
+  var last = undoStack.pop();
+
+  if (last.type === 'gate') {
+    // Undo gate placement
+    var gateId = last.id;
+    var gm = gateMarkers.find(function(g) { return g.id === gateId; });
+    if (gm) {
+      map.removeLayer(gm.marker);
+      gateMarkers = gateMarkers.filter(function(g) { return g.id !== gateId; });
+    }
+    gates = gates.filter(function(g) { return g.id !== gateId; });
+    renderGates();
     recalculate();
     markUnsaved();
-    updateEmptyMapState();
+    showToast(t('toast_gate_removed'));
+
+  } else if (last.type === 'point') {
+    // Undo fence point — switch to the right section if needed
+    if (last.sectionIdx !== activeSectionIdx) {
+      switchSection(last.sectionIdx);
+    }
+
+    if (fencePoints.length > 0) {
+      fencePoints.pop();
+      var marker = fenceMarkers.pop();
+      if (marker) map.removeLayer(marker);
+
+      rebindMarkerDrags();
+      redrawFenceLine();
+      redrawSegmentLabels();
+      updateCloseButton();
+      updateMidpointHandles();
+      recalculate();
+      markUnsaved();
+      updateEmptyMapState();
+    }
   }
 }
 
@@ -907,12 +1215,10 @@ function rebindMarkerDrags() {
       fencePoints[idx] = e.target.getLatLng();
       redrawFenceLine();
       redrawSegmentLabels();
-      updateFootage();
-      recalculate();
+      recalculateDrag();
     });
     marker.on('dragend', function() {
       redrawSegmentLabels();
-      updateFootage();
       recalculate();
     });
   });
@@ -941,12 +1247,14 @@ function clearAll() {
   midpointMarkers.forEach(function(m) { map.removeLayer(m); });
   midpointMarkers = [];
 
+  // Clear undo stack
+  undoStack = [];
+
   // Start fresh with one section
   addNewSection();
 
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
   updateEmptyMapState();
 }
@@ -959,6 +1267,56 @@ function selectFence(btn, type) {
   recalculate();
   markUnsaved();
   hintFenceType();
+}
+
+function editFencePrice(e, type) {
+  e.stopPropagation();
+  var priceEl = e.target;
+  var btn = priceEl.closest('.fence-type-btn');
+  var current = parseInt(btn.dataset.price);
+
+  var input = document.createElement('input');
+  input.type = 'number';
+  input.min = '1';
+  input.step = '1';
+  input.value = current;
+  input.style.cssText = 'width:48px;padding:2px 4px;font-size:0.75rem;font-weight:700;text-align:center;border:1.5px solid var(--accent);border-radius:3px;background:var(--bg);color:var(--text);outline:none;';
+
+  priceEl.textContent = '';
+  priceEl.appendChild(document.createTextNode('$'));
+  priceEl.appendChild(input);
+  priceEl.appendChild(document.createTextNode('/ft'));
+  input.focus();
+  input.select();
+
+  function save() {
+    var val = parseInt(input.value) || current;
+    btn.dataset.price = val;
+    priceEl.textContent = '$' + val + '/ft';
+    baseFencePrices[type] = val;
+
+    // Save to pricebook
+    if (typeof companyPricebook !== 'undefined') {
+      companyPricebook['perFoot.' + type] = val;
+      localStorage.setItem('fc_pricebook', JSON.stringify(companyPricebook));
+      if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+        API.updateCompany({ pricebook: companyPricebook }).catch(function() {});
+      }
+    }
+
+    // Update selected fence if this is the active type
+    if (selectedFence.type === type) {
+      selectedFence.price = val;
+    }
+    recalculate();
+    markUnsaved();
+  }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter') { input.blur(); }
+    if (ev.key === 'Escape') { input.value = current; input.blur(); }
+  });
 }
 
 function selectHeight(btn, height) {
@@ -1215,6 +1573,22 @@ function getNearestHeight(spec, height) {
   return { data: spec.heights[nearest], multiplier: multiplier, nearestHeight: nearest };
 }
 
+// Concrete bag weight options: weight in lbs, quantity multiplier vs 50lb, cost per bag
+var CONCRETE_OPTIONS = {
+  40:  { label: '40lb', qtyMult: 1.25, cost: 4.50 },
+  50:  { label: '50lb', qtyMult: 1.00, cost: 6.00 },
+  60:  { label: '60lb', qtyMult: 0.83, cost: 7.00 },
+  80:  { label: '80lb', qtyMult: 0.625, cost: 8.50 },
+  90:  { label: '90lb', qtyMult: 0.56, cost: 9.50 }
+};
+var selectedConcreteWeight = parseInt(localStorage.getItem('fc_concrete_weight') || '50');
+
+function setConcreteWeight(weight) {
+  selectedConcreteWeight = parseInt(weight);
+  localStorage.setItem('fc_concrete_weight', selectedConcreteWeight);
+  recalculate();
+}
+
 function calculateBOM(feet, fenceType, height) {
   const spec = BOM[fenceType];
   if (!spec) return null;
@@ -1227,6 +1601,9 @@ function calculateBOM(feet, fenceType, height) {
   const posts = sections + 1;
   const items = [];
   let materialTotal = 0;
+
+  // Get regional + pricebook pricing
+  var customPricing = (typeof getEffectivePricing === 'function') ? getEffectivePricing() : {};
 
   // Helper to get price with custom override
   function p(key, fallback) { const path = fenceType+'.'+height+'.'+key; return customPricing[path] !== undefined ? customPricing[path] : fallback; }
@@ -1247,7 +1624,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: picketLabel, qty: totalPickets, unit: 'ea', unitCost: Math.round(p('picketCost', h.picketCost) * heightScale * 100) / 100 });
     items.push({ name: 'Rail brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
     items.push({ name: 'Exterior deck screws (box)', qty: screwBoxes, unit: 'boxes', unitCost: pe('screwBoxCost', ex.screwBoxCost) });
   }
   else if (fenceType === 'vinyl') {
@@ -1259,7 +1638,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: h.panelDesc, qty: sections, unit: 'ea', unitCost: p('panelCost', h.panelCost) });
     items.push({ name: ex.stiffenerDesc, qty: posts, unit: 'ea', unitCost: pe('stiffenerCost', ex.stiffenerCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
     items.push({ name: 'Self-tapping screws (box)', qty: screwBoxes, unit: 'boxes', unitCost: pe('screwBoxCost', ex.screwBoxCost) });
   }
   else if (fenceType === 'chain-link') {
@@ -1292,7 +1673,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: 'Dome caps (terminal)', qty: domeCaps, unit: 'ea', unitCost: pe('domeCapCost', ex.domeCapCost) });
     items.push({ name: '5/16" carriage bolts', qty: bolts, unit: 'ea', unitCost: pe('carriageBoltCost', ex.carriageBoltCost) });
     items.push({ name: 'Tie wires', qty: tieWires, unit: 'ea', unitCost: pe('tieWireCost', ex.tieWireCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
   }
   else if (fenceType === 'aluminum') {
     const totalBrackets = sections * ex.bracketsPerPanel;
@@ -1304,7 +1687,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: 'Mounting brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
     items.push({ name: 'SS self-tapping screws', qty: totalScrews, unit: 'ea', unitCost: pe('screwCost', ex.screwCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
   }
   else if (fenceType === 'iron') {
     const totalBrackets = sections * ex.bracketsPerPanel;
@@ -1316,7 +1701,9 @@ function calculateBOM(feet, fenceType, height) {
     items.push({ name: 'Mounting brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
     items.push({ name: 'Bolts/screws', qty: totalScrews, unit: 'ea', unitCost: pe('screwCost', ex.screwCost) });
-    items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
+    var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
+    var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
+    items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
   }
 
   // Filter out zero-qty items and calculate totals
@@ -1335,7 +1722,7 @@ var bomQtyOverrides = {};
 function renderBOM(bom) {
   const container = document.getElementById('bom-list');
   if (!bom || bom.items.length === 0) {
-    container.innerHTML = '<p class="empty-state">Draw fence to see materials</p>';
+    container.innerHTML = '<p class="empty-state">' + t('bom_empty') + '</p>';
     document.getElementById('bom-total').textContent = '$0';
     return;
   }
@@ -1515,7 +1902,8 @@ function recalculate() {
   const total = fenceCost + gateCost + removal + permit + stain + customTotal;
 
   // Update summary
-  document.getElementById('sum-type').textContent = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1);
+  var fenceTypeKey = 'fence_' + selectedFence.type.replace('-', '_');
+  document.getElementById('sum-type').textContent = t(fenceTypeKey);
   document.getElementById('sum-height').textContent = selectedHeight;
   document.getElementById('sum-fence').textContent = '$' + Math.round(fenceCost).toLocaleString();
 
@@ -1565,19 +1953,43 @@ function searchAddress() {
         map.setView([lat, lon], 19);
         document.getElementById('cust-address').value = query;
       } else {
-        showToast('Address not found. Try being more specific.');
+        showToast(t('toast_addr_not_found'));
       }
     })
-    .catch(function() { showToast('Search failed. Check your connection.'); });
+    .catch(function() { showToast(t('toast_search_failed')); });
 }
 
 document.getElementById('address-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') searchAddress();
 });
 
-// === Share Link ===
-function shareEstimate() {
+// === Share / Approval Workflow ===
+async function shareEstimate() {
   if (typeof requireAuth === 'function' && !requireAuth('share estimates')) return;
+
+  // If we have a saved estimate loaded, use the approval workflow
+  if (typeof activeEstimateId !== 'undefined' && activeEstimateId) {
+    try {
+      showToast('Generating approval link...');
+      const result = await API.shareEstimate(activeEstimateId);
+      const url = result.link;
+
+      if (navigator.share) {
+        navigator.share({ title: 'Fence Estimate — Review & Approve', url: url }).catch(() => {
+          copyToClipboard(url);
+        });
+      } else {
+        copyToClipboard(url);
+      }
+      showToast('Approval link copied!');
+      return;
+    } catch (e) {
+      showToast('Could not generate approval link: ' + e.message);
+      return;
+    }
+  }
+
+  // Fallback: no saved estimate — use the old base64 share link
   const data = {
     p: fencePoints.map(p => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6]),
     g: gates.map(g => ({ t: g.type, lt: Math.round(g.latlng.lat * 1e6) / 1e6, ln: Math.round(g.latlng.lng * 1e6) / 1e6 })),
@@ -1613,7 +2025,7 @@ function copyToClipboard(text) {
   // Try modern API first, fall back to textarea hack for HTTP
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(() => {
-      showToast('Link copied to clipboard');
+      showToast(t('toast_link_copied'));
     }).catch(() => fallbackCopy(text));
   } else {
     fallbackCopy(text);
@@ -1861,13 +2273,14 @@ function captureMap() {
         var x = toX(g.latlng.lng);
         var y = toY(g.latlng.lat);
         ctx.font = 'bold 10px sans-serif';
-        var tw = ctx.measureText('GATE').width;
+        var gateLabel = t('gate_marker_label');
+        var tw = ctx.measureText(gateLabel).width;
         ctx.fillStyle = '#c0622e';
         ctx.fillRect(x - tw / 2 - 5, y - 10, tw + 10, 18);
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('GATE', x, y - 1);
+        ctx.fillText(gateLabel, x, y - 1);
       });
 
       // Title
@@ -1875,7 +2288,7 @@ function captureMap() {
       ctx.fillStyle = '#2c2417';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText('Fence Layout — ' + updateFootage() + ' linear ft', 12, 10);
+      ctx.fillText(t('pdf_fence_layout') + ' — ' + updateFootage() + ' ' + t('pdf_linear_ft'), 12, 10);
 
       resolve(canvas.toDataURL('image/jpeg', 0.9));
     } catch (e) {
@@ -1888,7 +2301,7 @@ function captureMap() {
 async function generatePDF() {
   if (typeof requireAuth === 'function' && !requireAuth('download PDF estimates')) return;
   try {
-  showToast('Generating PDF...');
+  showToast(t('toast_generating_pdf'));
 
   // Capture map screenshot
   var mapImage = null;
@@ -1899,7 +2312,7 @@ async function generatePDF() {
   }
 
   if (!window.jspdf) {
-    showToast('PDF library not loaded. Try refreshing.');
+    showToast(t('toast_pdf_lib_error'));
     return;
   }
   var jsPDF = window.jspdf.jsPDF;
@@ -1921,7 +2334,7 @@ async function generatePDF() {
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(192, 98, 46);
-  doc.text('FenceCalc', margin, y);
+  doc.text('FenceTrace', margin, y);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(140, 127, 110);
@@ -2134,19 +2547,28 @@ async function generatePDF() {
 
   y += 40;
 
+  // Photos note
+  if (typeof activeEstimatePhotos !== 'undefined' && activeEstimatePhotos.length > 0) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(activeEstimatePhotos.length + ' photo' + (activeEstimatePhotos.length === 1 ? '' : 's') + ' attached to this estimate (see online version)', margin, y);
+    y += 20;
+  }
+
   // Footer
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(140, 127, 110);
   doc.text('This estimate is valid for 30 days. Actual costs may vary based on site conditions.', margin, y);
-  doc.text('Generated by FenceCalc', margin, y + 12);
+  doc.text('Generated by FenceTrace', margin, y + 12);
 
   // Save
-  var filename = 'FenceCalc-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';
+  var filename = 'FenceTrace-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';
   doc.save(filename);
-  showToast('PDF downloaded');
+  showToast(t('toast_pdf_downloaded'));
   } catch (e) {
-    showToast('PDF error: ' + e.message);
+    showToast(t('toast_pdf_error', {msg: e.message}));
     console.error('PDF generation failed:', e);
   }
 }
@@ -2173,6 +2595,13 @@ function resetEstimate() {
   clearUnsaved();
   nextEstimateNumber();
   updateEmptyMapState();
+
+  // Clear photos state
+  if (typeof activeEstimateId !== 'undefined') {
+    activeEstimateId = null;
+    activeEstimatePhotos = [];
+    renderPhotoGrid();
+  }
 }
 
 // === Panel Toggle (mobile) ===
@@ -2188,17 +2617,17 @@ function togglePanel() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'PrintScreen') {
     e.preventDefault();
-    showToast('Screenshots are disabled');
+    showToast(t('toast_screenshot_disabled'));
   }
   // Ctrl+Shift+S (Windows Snip), Cmd+Shift+3/4/5 (Mac)
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 's' || e.key === 'S' || e.key === '3' || e.key === '4' || e.key === '5')) {
     e.preventDefault();
-    showToast('Screenshots are disabled');
+    showToast(t('toast_screenshot_disabled'));
   }
   // Ctrl+P (Print)
   if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
     e.preventDefault();
-    showToast('Printing is disabled. Use Save as PDF instead.');
+    showToast(t('toast_print_disabled'));
   }
 });
 
@@ -2207,9 +2636,20 @@ document.addEventListener('contextmenu', function(e) {
   e.preventDefault();
 });
 
-// Detect visibility change (screen recording indicator on some browsers)
+// Pause hint timers and cancel pending RAF when tab is hidden
 document.addEventListener('visibilitychange', function() {
-  // Could log this but don't block — too many false positives
+  if (document.hidden) {
+    // Cancel any pending drag-debounce frame
+    if (_dragRecalcRAF) {
+      cancelAnimationFrame(_dragRecalcRAF);
+      _dragRecalcRAF = 0;
+    }
+    // Cancel hint auto-dismiss timer
+    if (hintAutoTimer) {
+      clearTimeout(hintAutoTimer);
+      hintAutoTimer = null;
+    }
+  }
 });
 
 // === Contextual Hints System ===
@@ -2255,7 +2695,7 @@ function showHint(id, text, anchorEl, position) {
 
   hint.innerHTML = '<div class="fc-hint-arrow ' + arrowClass + '"></div>' +
     '<div>' + text + '</div>' +
-    '<button class="fc-hint-dismiss" onclick="dismissHint()">Got it</button>';
+    '<button class="fc-hint-dismiss" onclick="dismissHint()">' + t('hint_got_it') + '</button>';
 
   document.body.appendChild(hint);
 
@@ -2306,61 +2746,61 @@ document.addEventListener('click', function(e) {
 function resetHints() {
   fcHintsSeen = {};
   localStorage.removeItem('fc_hints_seen');
-  showToast('Tips have been reset');
+  showToast(t('toast_tips_reset'));
 }
 
 function resetOnboarding() {
   localStorage.removeItem('fc_onboarded');
   resetHints();
-  showToast('Onboarding has been reset. Reload to see it.');
+  showToast(t('toast_onboarding_reset'));
 }
 
 // Hint triggers — called from various places
 function hintFirstVisit() {
   setTimeout(function() {
     var searchBar = document.querySelector('.search-bar');
-    if (searchBar) showHint('first_visit', 'Search an address or click the map to start', searchBar, 'below');
+    if (searchBar) showHint('first_visit', t('hint_first_visit'), searchBar, 'below');
   }, 1500);
 }
 
 function hintAfterFirstPoint() {
   if (fencePoints.length === 1) {
     var toolbar = document.querySelector('.map-toolbar');
-    if (toolbar) showHint('first_point', 'Click to add more points. Each segment shows its length.', toolbar, 'above');
+    if (toolbar) showHint('first_point', t('hint_first_point'), toolbar, 'above');
   }
 }
 
 function hintAfterThreePoints() {
   if (fencePoints.length === 3 && !fenceClosed) {
     var closeBtn = document.getElementById('close-btn');
-    if (closeBtn) showHint('three_points', 'Try the Close button to complete a perimeter', closeBtn, 'above');
+    if (closeBtn) showHint('three_points', t('hint_three_points'), closeBtn, 'above');
   }
 }
 
 function hintAfterGate() {
   if (gates.length === 1) {
     var gatesList = document.getElementById('gates-list');
-    if (gatesList) showHint('first_gate', 'Change gate type in the panel on the right', gatesList, 'above');
+    if (gatesList) showHint('first_gate', t('hint_first_gate'), gatesList, 'above');
   }
 }
 
 function hintFenceType() {
   var pencilBtn = document.querySelector('.bom-toggle');
-  if (pencilBtn) showHint('fence_type', 'You can edit material prices with the pencil icon', pencilBtn, 'left');
+  if (pencilBtn) showHint('fence_type', t('hint_fence_type'), pencilBtn, 'left');
 }
 
 function hintAfter50Feet() {
   var feet = parseInt((document.getElementById('total-feet').textContent || '0').replace(/,/g, '')) || 0;
   if (feet >= 50) {
     var firstLabel = document.querySelector('.seg-label');
-    if (firstLabel) showHint('fifty_feet', 'Click any measurement to type an exact length', firstLabel, 'above');
+    if (firstLabel) showHint('fifty_feet', t('hint_fifty_feet'), firstLabel, 'above');
   }
 }
 
 function hintBOMAppears() {
   var bomList = document.getElementById('bom-list');
   if (bomList && !bomList.querySelector('.empty-state')) {
-    showHint('bom_appears', 'Quantities are editable \u2014 adjust any count', bomList, 'above');
+    showHint('bom_appears', t('hint_bom_appears'), bomList, 'above');
   }
 }
 
@@ -2369,7 +2809,7 @@ function hintAfterEstimate() {
   var val = total ? total.textContent : '$0';
   if (val !== '$0') {
     var actions = document.querySelector('.panel-actions');
-    if (actions) showHint('first_estimate', 'Share or save as PDF at the bottom of the panel', actions, 'above');
+    if (actions) showHint('first_estimate', t('hint_first_estimate'), actions, 'above');
   }
 }
 
@@ -2465,12 +2905,54 @@ document.addEventListener('keydown', function(e) {
     return;
   }
 
+  // N: New section
+  if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    addNewSection();
+    return;
+  }
+
+  // L: Close/loop fence
+  if (e.key === 'l' || e.key === 'L') {
+    e.preventDefault();
+    if (fenceClosed) { openFence(); } else { closeFence(); }
+    return;
+  }
+
+  // P: Save as PDF
+  if (e.key === 'p' || e.key === 'P') {
+    e.preventDefault();
+    generatePDF();
+    return;
+  }
+
+  // E: Share estimate
+  if (e.key === 'e' || e.key === 'E') {
+    e.preventDefault();
+    shareEstimate();
+    return;
+  }
+
   // S: Save estimate
   if (e.key === 's' || e.key === 'S') {
     if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
       e.preventDefault();
       saveEstimate();
     }
+    return;
+  }
+
+  // M: My Estimates
+  if (e.key === 'm' || e.key === 'M') {
+    e.preventDefault();
+    if (typeof showEstimatesList === 'function') showEstimatesList();
+    return;
+  }
+
+  // R: Reset/New estimate
+  if (e.key === 'r' || e.key === 'R') {
+    e.preventDefault();
+    resetEstimate();
     return;
   }
 
@@ -2519,7 +3001,7 @@ function updateEmptyMapState() {
   var overlay = document.createElement('div');
   overlay.id = 'map-empty-state';
   overlay.className = 'map-empty-state';
-  overlay.innerHTML = '<div class="map-empty-state-text">Click the map to start drawing a fence</div>' +
+  overlay.innerHTML = '<div class="map-empty-state-text">' + t('empty_map') + '</div>' +
     '<div class="map-empty-arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>';
   mapEl.parentElement.appendChild(overlay);
 }
