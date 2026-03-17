@@ -1,0 +1,40 @@
+{
+  "packageId": "com.ravenwingllc.fencecalc",
+  "host": "ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com",
+  "name": "FenceCalc",
+  "launcherName": "FenceCalc",
+  "display": "standalone",
+  "themeColor": "#c0622e",
+  "themeColorDark": "#1a1a2e",
+  "navigationColor": "#f5f0eb",
+  "navigationColorDark": "#1a1a2e",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#f5f0eb",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com/icon-512.png",
+  "maskableIconUrl": "http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "fencecalc"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [],
+  "generatorApp": "nicolo-nicolo-ribaudo@nicolo-ribaudo/nicolo-nicolo",
+  "webManifestUrl": "http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com/",
+  "minSdkVersion": 19,
+  "orientation": "default",
+  "fingerprints": []
+}

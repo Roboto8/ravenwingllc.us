@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forward Thinking Innovations</title>
+  <!-- Load Tailwind CSS from CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load Inter font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .hero-bg {
+      background-image: url('https://placehold.co/1920x1080/0f172a/94a3b8?text=FTIC+Health+IT+Solutions');
+    }
+    /* Smooth scrolling behavior */
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 z-50 w-full bg-gray-900 shadow-lg text-white">
+    <div class="container mx-auto flex items-center justify-between p-4">
+      <!-- Logo and Company Name -->
+      <a href="#" class="flex items-center space-x-2 text-xl font-bold">
+        <!-- Replaced logo URL with a placeholder for a single-file solution -->
+        <img src="https://placehold.co/40x40/fca311/fff?text=FT" alt="FTIC Logo" class="rounded-lg">
+        <span>Forward Thinking Innovations</span>
+      </a>
+      <!-- Desktop Navigation Links -->
+      <div class="hidden md:flex space-x-6">
+        <a href="#capabilities" class="hover:text-amber-500 transition-colors duration-300">Capabilities</a>
+        <a href="#about" class="hover:text-amber-500 transition-colors duration-300">About Us</a>
+        <a href="#team" class="hover:text-amber-500 transition-colors duration-300">Team</a>
+      </div>
+      <!-- Mobile Menu Button -->
+      <button id="mobile-menu-button" class="md:hidden focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+        </svg>
+      </button>
+    </div>
+    <!-- Mobile Navigation Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-gray-800 py-2">
+      <a href="#capabilities" class="block py-2 px-4 text-sm hover:bg-gray-700">Capabilities</a>
+      <a href="#about" class="block py-2 px-4 text-sm hover:bg-gray-700">About Us</a>
+      <a href="#team" class="block py-2 px-4 text-sm hover:bg-gray-700">Team</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header id="home" class="hero-bg bg-cover bg-center h-screen flex items-center justify-center text-white">
+    <div class="overlay absolute inset-0 bg-black bg-opacity-70"></div>
+    <div class="container mx-auto px-6 text-center relative z-10">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-4">
+        Leading the Future of Health IT
+      </h1>
+      <p class="text-lg sm:text-xl lg:text-2xl font-light mb-8 max-w-2xl mx-auto">
+        Improving the quality and continuity of healthcare in America with forward-thinking advancements in Health IT.
+      </p>
+      <a href="#capabilities" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
+        Explore Our Capabilities
+      </a>
+    </div>
+  </header>
+
+  <!-- Capabilities Section -->
+  <section id="capabilities" class="py-16 md:py-24 bg-white">
+    <div class="container mx-auto px-6">
+      <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Our Core Capabilities</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Capability Card 1 -->
+        <div class="bg-gray-100 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105">
+          <div class="text-amber-500 mb-4">
+            <!-- Icon placeholder for Health IT Modernization -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l2 2 4-4m6 10H6a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 class="text-xl md:text-2xl font-bold text-center mb-2">Health IT Modernization</h3>
+          <p class="text-center text-gray-600">
+            We provide efficient and up-to-date solutions for modernizing electronic healthcare records for service members and veterans.
+          </p>
+        </div>
+        <!-- Capability Card 2 -->
+        <div class="bg-gray-100 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105">
+          <div class="text-amber-500 mb-4">
+            <!-- Icon placeholder for Data & Policy -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v14a2 2 0 01-2 2H9z" />
+            </svg>
+          </div>
+          <h3 class="text-xl md:text-2xl font-bold text-center mb-2">Data & Policy Consulting</h3>
+          <p class="text-center text-gray-600">
+            We work with stakeholders to broadly influence how clinical and claims data are viewed, used, shared, and stored.
+          </p>
+        </div>
+        <!-- Capability Card 3 -->
+        <div class="bg-gray-100 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105">
+          <div class="text-amber-500 mb-4">
+            <!-- Icon placeholder for Veteran-Focused Solutions -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H9a3 3 0 01-3-3V7.151a3.003 3.003 0 01.378-1.554M17 21a2 2 0 002-2V7.151a2.003 2.003 0 00-.378-1.554M12 21v-7a3 3 0 00-3-3H6.5" />
+            </svg>
+          </div>
+          <h3 class="text-xl md:text-2xl font-bold text-center mb-2">Veteran-Focused Solutions</h3>
+          <p class="text-center text-gray-600">
+            As a Service Disabled Veteran Owned Small Business (SDVOSB), our mission is personal and deeply rooted in our community.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Us Section -->
+  <section id="about" class="py-16 md:py-24 bg-gray-900 text-white">
+    <div class="container mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-center gap-12">
+        <div class="md:w-1/2">
+          <h2 class="text-3xl md:text-4xl font-bold mb-4">About Our Mission</h2>
+          <p class="text-lg text-gray-300 mb-4">
+            Forward Thinking Innovations is a Service Disabled Veteran Owned Small Business (SDVOSB)
+            committed to positively shaping the future of American health IT. We lead and inspire those
+            we work with by providing advanced, high-quality, and continuous healthcare solutions.
+          </p>
+          <p class="text-lg text-gray-300">
+            Our expertise and dedication allow us to partner with businesses, policy makers, and
+            various government agencies to create meaningful, lasting change in how healthcare
+            data is managed and utilized.
+          </p>
+        </div>
+        <div class="md:w-1/2">
+          <img src="https://placehold.co/600x400/1d2b53/fff?text=Our+Mission" alt="About Us" class="rounded-xl shadow-lg">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team Section -->
+  <section id="team" class="py-16 md:py-24 bg-white">
+    <div class="container mx-auto px-6 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold mb-12">Meet the Leadership</h2>
+      <div class="flex flex-col items-center">
+        <!-- Team Member Card -->
+        <div class="bg-gray-100 p-8 rounded-2xl shadow-xl max-w-sm">
+          <img src="https://placehold.co/150x150/e0e0e0/555?text=Denny" alt="Dennis R. Porter" class="rounded-full mx-auto mb-4 border-4 border-amber-500">
+          <h3 class="text-xl font-semibold">Dennis R. (Denny) Porter</h3>
+          <p class="text-gray-600">President and CEO</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-gray-400 py-10">
+    <div class="container mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+        <!-- Company Info -->
+        <div>
+          <h4 class="text-lg font-bold text-white mb-2">Forward Thinking Innovations</h4>
+          <p class="text-sm">Innovating Health IT for a Better Future.</p>
+        </div>
+        <!-- Links -->
+        <div>
+          <h4 class="text-lg font-bold text-white mb-2">Quick Links</h4>
+          <ul class="space-y-1">
+            <li><a href="#" class="hover:text-amber-500 transition-colors">Home</a></li>
+            <li><a href="#capabilities" class="hover:text-amber-500 transition-colors">Capabilities</a></li>
+            <li><a href="#about" class="hover:text-amber-500 transition-colors">About Us</a></li>
+          </ul>
+        </div>
+        <!-- Certifications -->
+        <div>
+          <h4 class="text-lg font-bold text-white mb-2">Our Certifications</h4>
+          <div class="flex flex-wrap justify-center md:justify-start items-center gap-4">
+            <!-- Replaced local images with placeholders for a single-file solution -->
+            <img src="https://placehold.co/60x60/fca311/fff?text=SDVOSB" alt="SDVOSB Certification" class="rounded-lg">
+            <img src="https://placehold.co/60x60/fca311/fff?text=SWAM" alt="SWAM Certification" class="rounded-lg">
+            <img src="https://placehold.co/60x60/fca311/fff?text=Hub" alt="HUBZone Certification" class="rounded-lg">
+            <img src="https://placehold.co/60x60/fca311/fff?text=PMP" alt="PMP Certification" class="rounded-lg">
+          </div>
+        </div>
+      </div>
+      <div class="text-center text-sm text-gray-500 mt-8 pt-6 border-t border-gray-700">
+        &copy; 2025 Forward Thinking Innovations. All Rights Reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Simple JavaScript for mobile menu toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+
+    // Close mobile menu on link click
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>

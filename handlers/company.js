@@ -21,7 +21,8 @@ module.exports.get = async (event) => {
     subscriptionStatus: company.subscriptionStatus,
     trialEndsAt: company.trialEndsAt,
     region: company.region || 'national',
-    pricebook: company.pricebook || {}
+    pricebook: company.pricebook || {},
+    language: company.language || 'en'
   });
 };
 
@@ -30,7 +31,7 @@ module.exports.update = async (event) => {
   if (!companyId) return res.forbidden('No company found');
 
   const body = JSON.parse(event.body || '{}');
-  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'region', 'pricebook'];
+  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'region', 'pricebook', 'language'];
   const updates = {};
 
   for (const key of allowed) {

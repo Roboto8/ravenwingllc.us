@@ -1655,3 +1655,13 @@ body.twa-mode .modal-overlay {
   font-size: 0.82rem;
   padding: 10px 8px;
 }
+
+/* Reports period selector */
+.rpt-period.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.rpt-period.active:hover {
+  background: var(--accent-hover);
+}

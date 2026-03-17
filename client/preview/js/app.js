@@ -764,7 +764,7 @@ function showMergePrompt(otherIdx, whichEnd) {
 
   if (activeType !== otherType || activeHeight !== otherHeight) {
     // Different materials — don't offer merge
-    showToast('Sections use different materials (' + activeType + ' vs ' + otherType + ') — keeping separate');
+    showToast(t('toast_sections_diff_material', {a: activeType, b: otherType}));
     return;
   }
 
@@ -776,7 +776,7 @@ function showMergePrompt(otherIdx, whichEnd) {
   var toast = document.createElement('div');
   toast.id = 'merge-toast';
   toast.className = 'undo-toast';
-  toast.innerHTML = '<span>Sections overlap</span><button onclick="mergeSections()">Join</button><button onclick="dismissMerge()" style="color:var(--text-muted)">Ignore</button>';
+  toast.innerHTML = '<span>' + t('toast_sections_overlap') + '</span><button onclick="mergeSections()">' + t('toast_merge_join') + '</button><button onclick="dismissMerge()" style="color:var(--text-muted)">' + t('toast_merge_ignore') + '</button>';
   document.body.appendChild(toast);
   requestAnimationFrame(function() { toast.classList.add('visible'); });
 
@@ -862,7 +862,7 @@ function mergeSections() {
   recalculate();
 
   dismissMerge();
-  showToast('Sections joined');
+  showToast(t('toast_sections_joined'));
 }
 
 // === Curve Interpolation (Catmull-Rom spline) ===
@@ -1060,10 +1060,10 @@ function updateCloseButton() {
 
   btn.style.display = 'flex';
   if (fenceClosed) {
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Open';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> ' + t('tool_open');
     btn.onclick = openFence;
   } else {
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Close';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> ' + t('tool_close');
     btn.onclick = closeFence;
   }
 }
@@ -1087,7 +1087,7 @@ function addGate(latlng) {
     draggable: true,
     icon: L.divIcon({
       className: 'gate-marker',
-      html: '<div style="background:#c0622e;color:#fff;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);letter-spacing:0.5px;">GATE</div>',
+      html: '<div style="background:#c0622e;color:#fff;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);letter-spacing:0.5px;">' + t('gate_marker_label') + '</div>',
       iconSize: [50, 20],
       iconAnchor: [25, 28]
     })
@@ -1117,16 +1117,16 @@ function addGate(latlng) {
 function renderGates() {
   const list = document.getElementById('gates-list');
   if (gates.length === 0) {
-    list.innerHTML = '<p class="empty-state">Place gates by clicking the map</p>';
+    list.innerHTML = '<p class="empty-state">' + t('gates_empty') + '</p>';
     return;
   }
   list.innerHTML = gates.map((g, i) => `
     <div class="gate-item">
-      <span>Gate ${i + 1}</span>
+      <span>${t('gate_label')} ${i + 1}</span>
       <select onchange="updateGateType(${g.id}, this.value)">
-        <option value="single" ${g.type === 'single' ? 'selected' : ''}>Single ($350)</option>
-        <option value="double" ${g.type === 'double' ? 'selected' : ''}>Double ($550)</option>
-        <option value="sliding" ${g.type === 'sliding' ? 'selected' : ''}>Sliding ($1,200)</option>
+        <option value="single" ${g.type === 'single' ? 'selected' : ''}>${t('gate_single')} ($350)</option>
+        <option value="double" ${g.type === 'double' ? 'selected' : ''}>${t('gate_double')} ($550)</option>
+        <option value="sliding" ${g.type === 'sliding' ? 'selected' : ''}>${t('gate_sliding')} ($1,200)</option>
       </select>
       <button class="gate-remove" onclick="removeGate(${g.id})">&#x2715;</button>
     </div>
@@ -1189,7 +1189,7 @@ function undoLast() {
     renderGates();
     recalculate();
     markUnsaved();
-    showToast('Gate removed');
+    showToast(t('toast_gate_removed'));
 
   } else if (last.type === 'point') {
     // Undo fence point — switch to the right section if needed
@@ -1707,7 +1707,7 @@ var bomQtyOverrides = {};
 function renderBOM(bom) {
   const container = document.getElementById('bom-list');
   if (!bom || bom.items.length === 0) {
-    container.innerHTML = '<p class="empty-state">Draw fence to see materials</p>';
+    container.innerHTML = '<p class="empty-state">' + t('bom_empty') + '</p>';
     document.getElementById('bom-total').textContent = '$0';
     return;
   }
@@ -1887,7 +1887,8 @@ function recalculate() {
   const total = fenceCost + gateCost + removal + permit + stain + customTotal;
 
   // Update summary
-  document.getElementById('sum-type').textContent = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1);
+  var fenceTypeKey = 'fence_' + selectedFence.type.replace('-', '_');
+  document.getElementById('sum-type').textContent = t(fenceTypeKey);
   document.getElementById('sum-height').textContent = selectedHeight;
   document.getElementById('sum-fence').textContent = '$' + Math.round(fenceCost).toLocaleString();
 
@@ -1937,10 +1938,10 @@ function searchAddress() {
         map.setView([lat, lon], 19);
         document.getElementById('cust-address').value = query;
       } else {
-        showToast('Address not found. Try being more specific.');
+        showToast(t('toast_addr_not_found'));
       }
     })
-    .catch(function() { showToast('Search failed. Check your connection.'); });
+    .catch(function() { showToast(t('toast_search_failed')); });
 }
 
 document.getElementById('address-input').addEventListener('keydown', function(e) {
@@ -2009,7 +2010,7 @@ function copyToClipboard(text) {
   // Try modern API first, fall back to textarea hack for HTTP
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(() => {
-      showToast('Link copied to clipboard');
+      showToast(t('toast_link_copied'));
     }).catch(() => fallbackCopy(text));
   } else {
     fallbackCopy(text);
@@ -2257,13 +2258,14 @@ function captureMap() {
         var x = toX(g.latlng.lng);
         var y = toY(g.latlng.lat);
         ctx.font = 'bold 10px sans-serif';
-        var tw = ctx.measureText('GATE').width;
+        var gateLabel = t('gate_marker_label');
+        var tw = ctx.measureText(gateLabel).width;
         ctx.fillStyle = '#c0622e';
         ctx.fillRect(x - tw / 2 - 5, y - 10, tw + 10, 18);
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('GATE', x, y - 1);
+        ctx.fillText(gateLabel, x, y - 1);
       });
 
       // Title
@@ -2271,7 +2273,7 @@ function captureMap() {
       ctx.fillStyle = '#2c2417';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText('Fence Layout — ' + updateFootage() + ' linear ft', 12, 10);
+      ctx.fillText(t('pdf_fence_layout') + ' — ' + updateFootage() + ' ' + t('pdf_linear_ft'), 12, 10);
 
       resolve(canvas.toDataURL('image/jpeg', 0.9));
     } catch (e) {
@@ -2284,7 +2286,7 @@ function captureMap() {
 async function generatePDF() {
   if (typeof requireAuth === 'function' && !requireAuth('download PDF estimates')) return;
   try {
-  showToast('Generating PDF...');
+  showToast(t('toast_generating_pdf'));
 
   // Capture map screenshot
   var mapImage = null;
@@ -2295,7 +2297,7 @@ async function generatePDF() {
   }
 
   if (!window.jspdf) {
-    showToast('PDF library not loaded. Try refreshing.');
+    showToast(t('toast_pdf_lib_error'));
     return;
   }
   var jsPDF = window.jspdf.jsPDF;
@@ -2549,9 +2551,9 @@ async function generatePDF() {
   // Save
   var filename = 'FenceTrace-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';
   doc.save(filename);
-  showToast('PDF downloaded');
+  showToast(t('toast_pdf_downloaded'));
   } catch (e) {
-    showToast('PDF error: ' + e.message);
+    showToast(t('toast_pdf_error', {msg: e.message}));
     console.error('PDF generation failed:', e);
   }
 }
@@ -2600,17 +2602,17 @@ function togglePanel() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'PrintScreen') {
     e.preventDefault();
-    showToast('Screenshots are disabled');
+    showToast(t('toast_screenshot_disabled'));
   }
   // Ctrl+Shift+S (Windows Snip), Cmd+Shift+3/4/5 (Mac)
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 's' || e.key === 'S' || e.key === '3' || e.key === '4' || e.key === '5')) {
     e.preventDefault();
-    showToast('Screenshots are disabled');
+    showToast(t('toast_screenshot_disabled'));
   }
   // Ctrl+P (Print)
   if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
     e.preventDefault();
-    showToast('Printing is disabled. Use Save as PDF instead.');
+    showToast(t('toast_print_disabled'));
   }
 });
 
@@ -2667,7 +2669,7 @@ function showHint(id, text, anchorEl, position) {
 
   hint.innerHTML = '<div class="fc-hint-arrow ' + arrowClass + '"></div>' +
     '<div>' + text + '</div>' +
-    '<button class="fc-hint-dismiss" onclick="dismissHint()">Got it</button>';
+    '<button class="fc-hint-dismiss" onclick="dismissHint()">' + t('hint_got_it') + '</button>';
 
   document.body.appendChild(hint);
 
@@ -2718,61 +2720,61 @@ document.addEventListener('click', function(e) {
 function resetHints() {
   fcHintsSeen = {};
   localStorage.removeItem('fc_hints_seen');
-  showToast('Tips have been reset');
+  showToast(t('toast_tips_reset'));
 }
 
 function resetOnboarding() {
   localStorage.removeItem('fc_onboarded');
   resetHints();
-  showToast('Onboarding has been reset. Reload to see it.');
+  showToast(t('toast_onboarding_reset'));
 }
 
 // Hint triggers — called from various places
 function hintFirstVisit() {
   setTimeout(function() {
     var searchBar = document.querySelector('.search-bar');
-    if (searchBar) showHint('first_visit', 'Search an address or click the map to start', searchBar, 'below');
+    if (searchBar) showHint('first_visit', t('hint_first_visit'), searchBar, 'below');
   }, 1500);
 }
 
 function hintAfterFirstPoint() {
   if (fencePoints.length === 1) {
     var toolbar = document.querySelector('.map-toolbar');
-    if (toolbar) showHint('first_point', 'Click to add more points. Each segment shows its length.', toolbar, 'above');
+    if (toolbar) showHint('first_point', t('hint_first_point'), toolbar, 'above');
   }
 }
 
 function hintAfterThreePoints() {
   if (fencePoints.length === 3 && !fenceClosed) {
     var closeBtn = document.getElementById('close-btn');
-    if (closeBtn) showHint('three_points', 'Try the Close button to complete a perimeter', closeBtn, 'above');
+    if (closeBtn) showHint('three_points', t('hint_three_points'), closeBtn, 'above');
   }
 }
 
 function hintAfterGate() {
   if (gates.length === 1) {
     var gatesList = document.getElementById('gates-list');
-    if (gatesList) showHint('first_gate', 'Change gate type in the panel on the right', gatesList, 'above');
+    if (gatesList) showHint('first_gate', t('hint_first_gate'), gatesList, 'above');
   }
 }
 
 function hintFenceType() {
   var pencilBtn = document.querySelector('.bom-toggle');
-  if (pencilBtn) showHint('fence_type', 'You can edit material prices with the pencil icon', pencilBtn, 'left');
+  if (pencilBtn) showHint('fence_type', t('hint_fence_type'), pencilBtn, 'left');
 }
 
 function hintAfter50Feet() {
   var feet = parseInt((document.getElementById('total-feet').textContent || '0').replace(/,/g, '')) || 0;
   if (feet >= 50) {
     var firstLabel = document.querySelector('.seg-label');
-    if (firstLabel) showHint('fifty_feet', 'Click any measurement to type an exact length', firstLabel, 'above');
+    if (firstLabel) showHint('fifty_feet', t('hint_fifty_feet'), firstLabel, 'above');
   }
 }
 
 function hintBOMAppears() {
   var bomList = document.getElementById('bom-list');
   if (bomList && !bomList.querySelector('.empty-state')) {
-    showHint('bom_appears', 'Quantities are editable \u2014 adjust any count', bomList, 'above');
+    showHint('bom_appears', t('hint_bom_appears'), bomList, 'above');
   }
 }
 
@@ -2781,7 +2783,7 @@ function hintAfterEstimate() {
   var val = total ? total.textContent : '$0';
   if (val !== '$0') {
     var actions = document.querySelector('.panel-actions');
-    if (actions) showHint('first_estimate', 'Share or save as PDF at the bottom of the panel', actions, 'above');
+    if (actions) showHint('first_estimate', t('hint_first_estimate'), actions, 'above');
   }
 }
 
@@ -2973,7 +2975,7 @@ function updateEmptyMapState() {
   var overlay = document.createElement('div');
   overlay.id = 'map-empty-state';
   overlay.className = 'map-empty-state';
-  overlay.innerHTML = '<div class="map-empty-state-text">Click the map to start drawing a fence</div>' +
+  overlay.innerHTML = '<div class="map-empty-state-text">' + t('empty_map') + '</div>' +
     '<div class="map-empty-arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>';
   mapEl.parentElement.appendChild(overlay);
 }

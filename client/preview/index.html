@@ -133,7 +133,7 @@
       <span class="nav-tagline" data-i18n="nav_tagline">Satellite fence estimates</span>
     </div>
     <div class="nav-right">
-      <select id="lang-select" class="lang-select" onchange="setLang(this.value)" title="Language" style="padding:4px 6px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;cursor:pointer;min-width:auto">
+      <select id="lang-select" class="lang-select" onchange="setLang(this.value); if(typeof Auth!=='undefined'&&Auth.isLoggedIn()){API.updateCompany({language:this.value}).catch(function(){})}" title="Language" style="padding:4px 6px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;cursor:pointer;min-width:auto">
         <option value="en">EN</option>
         <option value="es">ES</option>
       </select>
@@ -761,9 +761,12 @@
       document.getElementById('btn-save').style.display = 'none';
       document.getElementById('btn-estimates').style.display = 'none';
       document.getElementById('btn-account').style.display = 'none';
+      document.getElementById('btn-reports').style.display = 'none';
+      document.getElementById('notif-wrapper').style.display = 'none';
       document.getElementById('btn-logout').style.display = 'none';
       document.getElementById('trial-banner').style.display = 'none';
       document.getElementById('btn-signin').style.display = '';
+      stopNotifPolling();
       showGuestUI();
     }
 
@@ -789,6 +792,8 @@
       document.getElementById('btn-save').style.display = '';
       document.getElementById('btn-estimates').style.display = '';
       document.getElementById('btn-account').style.display = '';
+      document.getElementById('btn-reports').style.display = '';
+      document.getElementById('notif-wrapper').style.display = '';
       document.getElementById('btn-logout').style.display = '';
       document.getElementById('btn-signin').style.display = 'none';
 
@@ -822,6 +827,11 @@
           companyPricebook = company.pricebook;
           localStorage.setItem('fc_pricebook', JSON.stringify(company.pricebook));
         }
+        if (company.language) {
+          setLang(company.language);
+          var langSel = document.getElementById('lang-select');
+          if (langSel) langSel.value = company.language;
+        }
       } catch (e) { /* skip */ }
 
       // Init region dropdown on main panel and update per-foot prices
@@ -830,6 +840,9 @@
 
       // Show onboarding for first-time users
       showOnboarding();
+
+      // Start notification polling
+      startNotifPolling();
     }
 
     // === Region & Price Book ===
@@ -867,7 +880,7 @@
       }
       updateFencePricesForRegion();
       recalculate();
-      showToast('Region: ' + REGIONS[val].name);
+      showToast(t('toast_region_set', {name: REGIONS[val].name}));
     }
 
     function renderPricebook() {
@@ -1595,6 +1608,169 @@
       } catch (e) {
         showToast('Failed to delete photo: ' + e.message);
       }
+    }
+
+    // === Reports Dashboard ===
+    function showReportsPanel() {
+      if (!requireAuth('view reports')) return;
+      document.getElementById('reports-modal').style.display = 'flex';
+      loadReports('30d');
+    }
+
+    function hideReportsPanel() {
+      document.getElementById('reports-modal').style.display = 'none';
+    }
+
+    async function loadReports(period) {
+      document.querySelectorAll('.rpt-period').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.period === period);
+      });
+      document.getElementById('reports-loading').style.display = '';
+      document.getElementById('reports-content').style.display = 'none';
+      try {
+        var data = await API.getReports(period);
+        document.getElementById('rpt-total').textContent = data.totalEstimates.toLocaleString();
+        document.getElementById('rpt-revenue').textContent = '$' + data.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+        document.getElementById('rpt-conversion').textContent = data.conversionRate + '%';
+        document.getElementById('rpt-avg').textContent = '$' + data.averageEstimateValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+        // Status pills
+        var statusColors = { draft: '#6b6052', sent: '#1a56db', approved: '#2d6e28', declined: '#b91c1c', changes_requested: '#d4870e' };
+        var statusHtml = '';
+        Object.keys(data.estimatesByStatus).forEach(function(s) {
+          var color = statusColors[s] || '#6b6052';
+          statusHtml += '<span style="background:' + color + '15;color:' + color + ';padding:4px 10px;border-radius:12px;font-size:0.78rem;font-weight:600">' + s + ': ' + data.estimatesByStatus[s] + '</span>';
+        });
+        document.getElementById('rpt-status').innerHTML = statusHtml || '<span style="color:var(--text-muted);font-size:0.82rem">No data</span>';
+
+        // Monthly bar chart
+        var months = data.estimatesByMonth;
+        var maxCount = Math.max(1, Math.max.apply(null, months.map(function(m) { return m.count; })));
+        var monthHtml = '';
+        if (months.length === 0) {
+          monthHtml = '<span style="color:var(--text-muted);font-size:0.82rem;padding:8px">No data for this period</span>';
+        } else {
+          var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          months.forEach(function(m) {
+            var pct = Math.max(4, (m.count / maxCount) * 100);
+            var mi = parseInt(m.month.slice(5)) - 1;
+            var monthLabel = monthNames[mi] || m.month.slice(5);
+            monthHtml += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:28px;gap:2px">';
+            monthHtml += '<span style="font-size:0.65rem;color:var(--text);font-weight:700">' + m.count + '</span>';
+            monthHtml += '<div style="width:100%;max-width:32px;height:' + pct + '%;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px" title="' + m.count + ' estimates, $' + Math.round(m.revenue) + ' revenue"></div>';
+            monthHtml += '<span style="font-size:0.6rem;color:var(--text-muted)">' + monthLabel + '</span>';
+            monthHtml += '</div>';
+          });
+        }
+        document.getElementById('rpt-monthly').innerHTML = monthHtml;
+
+        // Materials table
+        var matHtml = '';
+        if (data.topMaterials.length === 0) {
+          matHtml = '<tr><td style="padding:8px;color:var(--text-muted)">No data</td></tr>';
+        } else {
+          matHtml += '<tr style="border-bottom:1px solid var(--surface-2)"><th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-size:0.72rem;text-transform:uppercase">Material</th><th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-size:0.72rem;text-transform:uppercase">Count</th><th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-size:0.72rem;text-transform:uppercase">Share</th></tr>';
+          data.topMaterials.forEach(function(m) {
+            var share = data.totalEstimates > 0 ? Math.round(m.count / data.totalEstimates * 100) : 0;
+            matHtml += '<tr style="border-bottom:1px solid var(--surface-2)"><td style="padding:6px 8px;text-transform:capitalize;font-weight:500">' + m.material + '</td><td style="padding:6px 8px;text-align:right">' + m.count + '</td><td style="padding:6px 8px;text-align:right;color:var(--text-muted)">' + share + '%</td></tr>';
+          });
+        }
+        document.getElementById('rpt-materials').innerHTML = matHtml;
+
+        document.getElementById('reports-loading').style.display = 'none';
+        document.getElementById('reports-content').style.display = '';
+      } catch (e) {
+        document.getElementById('reports-loading').textContent = 'Could not load reports: ' + e.message;
+      }
+    }
+
+    // === Notifications ===
+    var notifPollTimer = null;
+
+    function toggleNotifPanel() {
+      var dd = document.getElementById('notif-dropdown');
+      if (dd.style.display === 'none') {
+        dd.style.display = '';
+        loadNotifications();
+      } else {
+        dd.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      var wrapper = document.getElementById('notif-wrapper');
+      var dd = document.getElementById('notif-dropdown');
+      if (wrapper && dd && dd.style.display !== 'none' && !wrapper.contains(e.target)) {
+        dd.style.display = 'none';
+      }
+    });
+
+    async function loadNotifications() {
+      try {
+        var data = await API.getNotifications();
+        updateNotifBadge(data.unreadCount);
+        var list = document.getElementById('notif-list');
+        if (data.notifications.length === 0) {
+          list.innerHTML = '<p style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.82rem">No notifications</p>';
+          return;
+        }
+        list.innerHTML = data.notifications.map(function(n) {
+          var bg = n.read ? 'transparent' : 'var(--accent-light)';
+          var weight = n.read ? '400' : '600';
+          var ago = timeAgo(n.createdAt);
+          var linkAttr = n.link ? " data-link=\"" + escapeHtml(n.link) + "\"" : "";
+          return '<div onclick="handleNotifClick(\'' + n.id + '\', this.dataset.link || \'\')"' + linkAttr + ' style="padding:10px 14px;border-bottom:1px solid var(--surface-2);cursor:pointer;background:' + bg + '">' +
+            '<div style="font-size:0.82rem;font-weight:' + weight + ';color:var(--text);margin-bottom:2px">' + escapeHtml(n.title) + '</div>' +
+            (n.message ? '<div style="font-size:0.75rem;color:var(--text-mid);margin-bottom:2px">' + escapeHtml(n.message) + '</div>' : '') +
+            '<div style="font-size:0.68rem;color:var(--text-muted)">' + ago + '</div>' +
+          '</div>';
+        }).join('');
+      } catch (e) { /* silently fail */ }
+    }
+
+    function updateNotifBadge(count) {
+      var badge = document.getElementById('notif-badge');
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    async function handleNotifClick(id, link) {
+      try { await API.markNotificationsRead([id]); } catch (e) { /* ok */ }
+      document.getElementById('notif-dropdown').style.display = 'none';
+      if (link) window.location.href = link;
+      else loadNotifications();
+    }
+
+    async function markAllNotifRead() {
+      try {
+        await API.markNotificationsRead();
+        loadNotifications();
+      } catch (e) { showToast('Could not mark as read'); }
+    }
+
+    function timeAgo(iso) {
+      var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    function startNotifPolling() {
+      if (notifPollTimer) clearInterval(notifPollTimer);
+      loadNotifications();
+      notifPollTimer = setInterval(function() {
+        if (!document.hidden && Auth.isLoggedIn()) loadNotifications();
+      }, 60000);
+    }
+
+    function stopNotifPolling() {
+      if (notifPollTimer) { clearInterval(notifPollTimer); notifPollTimer = null; }
+      updateNotifBadge(0);
     }
 
     // === Init Auth ===
