@@ -73,11 +73,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   border-bottom: 2px solid var(--border);
   z-index: 1000;
   flex-shrink: 0;
+  position: relative;
 }
 
 @media (max-width: 600px) {
   .nav { padding: 4px 8px; gap: 4px; }
-  .nav-tagline { display: none; }
   .nav-right { gap: 3px; }
   .nav-right .btn-sm { padding: 6px 8px; font-size: 0.72rem; min-height: 32px; }
 }
@@ -1456,8 +1456,6 @@ body.twa-mode .modal-overlay {
   .nav-right { gap: 4px; }
   .btn-sm { padding: 8px 10px; font-size: 0.82rem; }
 
-  .fence-types { grid-template-columns: 1fr 1fr; }
-
   .modal { padding: 24px 18px; }
 
   .panel-scroll { padding: 14px 14px; }
@@ -1664,4 +1662,129 @@ body.twa-mode .modal-overlay {
 }
 .rpt-period.active:hover {
   background: var(--accent-hover);
+}
+
+/* === Hamburger / Overflow Nav Menu === */
+.nav-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px 8px;
+  min-height: 32px;
+  min-width: 32px;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.nav-hamburger:hover { background: var(--surface-2); }
+
+.nav-overflow {
+  display: contents;
+}
+
+@media (max-width: 600px) {
+  .nav-hamburger { display: flex; }
+  .nav-overflow {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: var(--shadow-md);
+    flex-direction: column;
+    padding: 6px;
+    gap: 4px;
+    z-index: 1001;
+    min-width: 180px;
+  }
+  .nav-overflow.open {
+    display: flex;
+  }
+  .nav-overflow .btn-sm {
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+  }
+  .nav-overflow .lang-select {
+    width: 100%;
+  }
+}
+
+/* === Account Modal Tabs === */
+.acct-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 16px;
+  gap: 0;
+}
+.acct-tab {
+  flex: 1;
+  padding: 10px 6px;
+  min-height: var(--min-touch);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.acct-tab:hover { color: var(--text); }
+.acct-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.acct-tab-content {
+  display: none;
+}
+.acct-tab-content.active {
+  display: block;
+}
+
+/* === Collapsible Side Panel Sections === */
+.section-title.collapsible {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.section-title.collapsible:hover {
+  color: var(--text-mid);
+}
+.section-chevron {
+  display: inline-block;
+  font-size: 0.7rem;
+  transition: transform 0.2s ease;
+  margin-right: 4px;
+  color: var(--text-muted);
+}
+.section-title.collapsible.collapsed .section-chevron {
+  transform: rotate(0deg);
+}
+.section-title.collapsible:not(.collapsed) .section-chevron {
+  transform: rotate(90deg);
+}
+.section-body {
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  max-height: 2000px;
+  opacity: 1;
+}
+.section-body.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
 }

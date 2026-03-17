@@ -13,12 +13,20 @@ let fenceLine = null;
 let fenceMarkers = [];
 let segmentLabels = [];
 let fenceClosed = false;
-let closingLine = null;
-let closingLabel = null;
 
 let gates = [];
 let gateMarkers = [];
 let customItems = [];
+
+// Debounced recalculate for drag handlers — limits to once per animation frame
+let _dragRecalcRAF = 0;
+function recalculateDrag() {
+  if (_dragRecalcRAF) return;
+  _dragRecalcRAF = requestAnimationFrame(function() {
+    _dragRecalcRAF = 0;
+    recalculate();
+  });
+}
 
 function initSections() {
   sections = [];
@@ -112,7 +120,6 @@ function switchSection(idx) {
   updateSectionTabs();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -143,7 +150,6 @@ function deleteSection(idx) {
   updateSectionTabs();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
   showToast(t('toast_section_removed'));
 }
@@ -558,7 +564,6 @@ function deleteSegment(segIndex) {
   redrawSegmentLabels();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
   markUnsaved();
   updateEmptyMapState();
@@ -654,7 +659,6 @@ function applySegmentLength(segIndex, value) {
   redrawFenceLine();
   redrawSegmentLabels();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 
   showToast(t('toast_segment_set', {n: newFeet}));
@@ -691,13 +695,11 @@ function addFencePoint(latlng) {
     fencePoints[idx] = e.target.getLatLng();
     redrawFenceLine();
     redrawSegmentLabels();
-    updateFootage();
-    recalculate();
+    recalculateDrag();
   });
 
   marker.on('dragend', function() {
     redrawSegmentLabels();
-    updateFootage();
     recalculate();
   });
 
@@ -710,7 +712,6 @@ function addFencePoint(latlng) {
   redrawSegmentLabels();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
   markUnsaved();
   updateEmptyMapState();
@@ -858,7 +859,6 @@ function mergeSections() {
   });
 
   updateSectionTabs();
-  updateFootage();
   recalculate();
 
   dismissMerge();
@@ -921,7 +921,6 @@ function toggleCurve() {
   if (btn) btn.classList.toggle('active', curveMode);
   redrawFenceLine();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -941,7 +940,6 @@ function insertMidpoint(afterIndex) {
   redrawFenceLine();
   redrawSegmentLabels();
   updateCloseButton();
-  updateFootage();
   recalculate();
 }
 
@@ -963,13 +961,11 @@ function rebuildAllMarkers() {
       fencePoints[idx] = e.target.getLatLng();
       redrawFenceLine();
       redrawSegmentLabels();
-      updateFootage();
-      recalculate();
+      recalculateDrag();
     });
 
     marker.on('dragend', function() {
       redrawSegmentLabels();
-      updateFootage();
       recalculate();
     });
 
@@ -1017,7 +1013,6 @@ function updateMidpointHandles() {
       redrawSegmentLabels();
       updateMidpointHandles();
       updateCloseButton();
-      updateFootage();
       recalculate();
     });
 
@@ -1035,7 +1030,6 @@ function closeFence() {
 
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -1045,7 +1039,6 @@ function openFence() {
   redrawSegmentLabels();
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
 }
 
@@ -1207,7 +1200,6 @@ function undoLast() {
       redrawSegmentLabels();
       updateCloseButton();
       updateMidpointHandles();
-      updateFootage();
       recalculate();
       markUnsaved();
       updateEmptyMapState();
@@ -1223,12 +1215,10 @@ function rebindMarkerDrags() {
       fencePoints[idx] = e.target.getLatLng();
       redrawFenceLine();
       redrawSegmentLabels();
-      updateFootage();
-      recalculate();
+      recalculateDrag();
     });
     marker.on('dragend', function() {
       redrawSegmentLabels();
-      updateFootage();
       recalculate();
     });
   });
@@ -1265,7 +1255,6 @@ function clearAll() {
 
   updateCloseButton();
   updateMidpointHandles();
-  updateFootage();
   recalculate();
   updateEmptyMapState();
 }
@@ -2621,9 +2610,20 @@ document.addEventListener('contextmenu', function(e) {
   e.preventDefault();
 });
 
-// Detect visibility change (screen recording indicator on some browsers)
+// Pause hint timers and cancel pending RAF when tab is hidden
 document.addEventListener('visibilitychange', function() {
-  // Could log this but don't block — too many false positives
+  if (document.hidden) {
+    // Cancel any pending drag-debounce frame
+    if (_dragRecalcRAF) {
+      cancelAnimationFrame(_dragRecalcRAF);
+      _dragRecalcRAF = 0;
+    }
+    // Cancel hint auto-dismiss timer
+    if (hintAutoTimer) {
+      clearTimeout(hintAutoTimer);
+      hintAutoTimer = null;
+    }
+  }
 });
 
 // === Contextual Hints System ===
