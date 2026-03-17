@@ -146,6 +146,24 @@ functions:
           authorizer:
             name: cognitoAuthorizer
 
+  trashEstimates:
+    handler: handlers/estimates.trash
+    events:
+      - httpApi:
+          path: /api/estimates/trash
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  restoreEstimate:
+    handler: handlers/estimates.restore
+    events:
+      - httpApi:
+          path: /api/estimates/{id}/restore
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
   billingCheckout:
     handler: handlers/billing.checkout
     events:
@@ -169,6 +187,15 @@ functions:
     events:
       - httpApi:
           path: /api/billing/status
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  billingExport:
+    handler: handlers/billing.exportData
+    events:
+      - httpApi:
+          path: /api/billing/export
           method: GET
           authorizer:
             name: cognitoAuthorizer

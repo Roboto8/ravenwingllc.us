@@ -45,9 +45,12 @@ const API = {
   getEstimate(id) { return this._fetch('/api/estimates/' + id); },
   updateEstimate(id, data) { return this._fetch('/api/estimates/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
   deleteEstimate(id) { return this._fetch('/api/estimates/' + id, { method: 'DELETE' }); },
+  getTrash() { return this._fetch('/api/estimates/trash'); },
+  restoreEstimate(id) { return this._fetch('/api/estimates/' + id + '/restore', { method: 'POST' }); },
 
   // Billing
   getStatus() { return this._fetch('/api/billing/status'); },
   createCheckout(returnUrl) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
-  createPortal(returnUrl) { return this._fetch('/api/billing/portal', { method: 'POST', body: JSON.stringify({ returnUrl }) }); }
+  createPortal(returnUrl) { return this._fetch('/api/billing/portal', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
+  exportData() { return this._fetch('/api/billing/export'); }
 };

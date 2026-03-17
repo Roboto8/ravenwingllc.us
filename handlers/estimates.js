@@ -13,7 +13,7 @@ module.exports.list = async (event) => {
   const { items, nextKey } = await db.query('COMPANY#' + companyId, 'EST#', limit, lastKey);
 
   return res.ok({
-    estimates: items.map(stripKeys),
+    estimates: items.filter(i => i.status !== 'deleted').map(stripKeys),
     cursor: nextKey
   });
 };
@@ -106,8 +106,56 @@ module.exports.remove = async (event) => {
   const est = items.find(i => i.id === id);
   if (!est) return res.notFound();
 
-  await db.remove(est.PK, est.SK);
+  // Soft delete — move to trash instead of permanent delete
+  await db.update(est.PK, est.SK, {
+    status: 'deleted',
+    deletedAt: new Date().toISOString()
+  });
   return res.ok({ deleted: true });
+};
+
+// Permanently delete (called by cleanup or manual purge)
+module.exports.purge = async (event) => {
+  const companyId = await auth.getCompanyId(event, db);
+  if (!companyId) return res.forbidden();
+
+  const id = event.pathParameters.id;
+  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
+  const est = items.find(i => i.id === id);
+  if (!est) return res.notFound();
+
+  await db.remove(est.PK, est.SK);
+  return res.ok({ purged: true });
+};
+
+// Restore from trash
+module.exports.restore = async (event) => {
+  const companyId = await auth.getCompanyId(event, db);
+  if (!companyId) return res.forbidden();
+
+  const id = event.pathParameters.id;
+  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
+  const est = items.find(i => i.id === id);
+  if (!est) return res.notFound();
+
+  await db.update(est.PK, est.SK, {
+    status: 'draft',
+    deletedAt: ''
+  });
+  return res.ok(stripKeys(est));
+};
+
+// List deleted estimates (trash)
+module.exports.trash = async (event) => {
+  const companyId = await auth.getCompanyId(event, db);
+  if (!companyId) return res.forbidden();
+
+  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
+  const deleted = items.filter(i => i.status === 'deleted');
+
+  return res.ok({
+    estimates: deleted.map(stripKeys)
+  });
 };
 
 function stripKeys(item) {

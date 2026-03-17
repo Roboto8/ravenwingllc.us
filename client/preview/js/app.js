@@ -86,31 +86,131 @@ function onMapClick(e) {
 }
 
 // === Segment Labels ===
-function createSegmentLabel(p1, p2) {
-  const meters = p1.distanceTo(p2);
-  const feet = Math.round(meters * 3.28084);
-  const midLat = (p1.lat + p2.lat) / 2;
-  const midLng = (p1.lng + p2.lng) / 2;
+function createSegmentLabel(p1, p2, segIndex) {
+  var meters = p1.distanceTo(p2);
+  var feet = Math.round(meters * 3.28084);
+  var midLat = (p1.lat + p2.lat) / 2;
+  var midLng = (p1.lng + p2.lng) / 2;
 
-  const label = L.marker([midLat, midLng], {
+  var label = L.marker([midLat, midLng], {
     icon: L.divIcon({
       className: 'segment-label',
-      html: '<div class="seg-label">' + feet + ' ft</div>',
+      html: '<div class="seg-label seg-clickable" data-seg="' + segIndex + '" onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</div>',
       iconSize: [60, 20],
       iconAnchor: [30, 10]
     }),
-    interactive: false
+    interactive: true
   }).addTo(map);
 
   return label;
+}
+
+function editSegmentLength(segIndex, event) {
+  if (event) event.stopPropagation();
+
+  // Figure out which two points this segment connects
+  var p1idx, p2idx;
+  var totalSegs = fenceClosed ? fencePoints.length : fencePoints.length - 1;
+  if (segIndex < fencePoints.length - 1) {
+    p1idx = segIndex;
+    p2idx = segIndex + 1;
+  } else if (fenceClosed && segIndex === fencePoints.length - 1) {
+    // Closing segment
+    p1idx = fencePoints.length - 1;
+    p2idx = 0;
+  } else {
+    return;
+  }
+
+  var p1 = fencePoints[p1idx];
+  var p2 = fencePoints[p2idx];
+  var currentFeet = Math.round(p1.distanceTo(p2) * 3.28084);
+
+  // Replace the label with an input
+  var el = document.querySelector('.seg-label[data-seg="' + segIndex + '"]');
+  if (!el) return;
+
+  el.innerHTML = '<input type="number" class="seg-input" value="' + currentFeet + '" ' +
+    'onblur="applySegmentLength(' + segIndex + ', this.value)" ' +
+    'onkeydown="if(event.key===\'Enter\'){applySegmentLength(' + segIndex + ', this.value);}" ' +
+    'onclick="event.stopPropagation()" ' +
+    'style="width:50px;text-align:center;border:none;background:transparent;color:#fff;font-weight:600;font-size:12px;outline:none;font-family:inherit">';
+  el.classList.add('seg-editing');
+
+  var input = el.querySelector('input');
+  input.focus();
+  input.select();
+}
+
+function applySegmentLength(segIndex, value) {
+  var newFeet = parseFloat(value);
+  if (!newFeet || newFeet <= 0) {
+    redrawSegmentLabels();
+    return;
+  }
+
+  var p1idx, p2idx;
+  if (segIndex < fencePoints.length - 1) {
+    p1idx = segIndex;
+    p2idx = segIndex + 1;
+  } else if (fenceClosed && segIndex === fencePoints.length - 1) {
+    p1idx = fencePoints.length - 1;
+    p2idx = 0;
+  } else {
+    redrawSegmentLabels();
+    return;
+  }
+
+  var p1 = fencePoints[p1idx];
+  var p2 = fencePoints[p2idx];
+
+  // Calculate bearing from p1 to p2
+  var dLng = (p2.lng - p1.lng) * Math.PI / 180;
+  var lat1 = p1.lat * Math.PI / 180;
+  var lat2 = p2.lat * Math.PI / 180;
+  var y = Math.sin(dLng) * Math.cos(lat2);
+  var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  var bearing = Math.atan2(y, x);
+
+  // Calculate new position for p2 at the desired distance along the same bearing
+  var newMeters = newFeet / 3.28084;
+  var R = 6371000;
+  var lat1r = p1.lat * Math.PI / 180;
+  var lng1r = p1.lng * Math.PI / 180;
+  var newLat = Math.asin(Math.sin(lat1r) * Math.cos(newMeters / R) + Math.cos(lat1r) * Math.sin(newMeters / R) * Math.cos(bearing));
+  var newLng = lng1r + Math.atan2(Math.sin(bearing) * Math.sin(newMeters / R) * Math.cos(lat1r), Math.cos(newMeters / R) - Math.sin(lat1r) * Math.sin(newLat));
+
+  newLat = newLat * 180 / Math.PI;
+  newLng = newLng * 180 / Math.PI;
+
+  // Move the point
+  fencePoints[p2idx] = L.latLng(newLat, newLng);
+
+  // Update the marker position
+  if (fenceMarkers[p2idx]) {
+    fenceMarkers[p2idx].setLatLng(fencePoints[p2idx]);
+  }
+
+  rebuildAllMarkers();
+  redrawFenceLine();
+  redrawSegmentLabels();
+  updateMidpointHandles();
+  updateFootage();
+  recalculate();
+
+  showToast('Segment set to ' + newFeet + ' ft');
 }
 
 function redrawSegmentLabels() {
   segmentLabels.forEach(l => map.removeLayer(l));
   segmentLabels = [];
 
-  for (let i = 1; i < fencePoints.length; i++) {
-    segmentLabels.push(createSegmentLabel(fencePoints[i - 1], fencePoints[i]));
+  for (var i = 1; i < fencePoints.length; i++) {
+    segmentLabels.push(createSegmentLabel(fencePoints[i - 1], fencePoints[i], i - 1));
+  }
+  // Closing segment label
+  if (fenceClosed && fencePoints.length > 2) {
+    segmentLabels.push(createSegmentLabel(fencePoints[fencePoints.length - 1], fencePoints[0], fencePoints.length - 1));
   }
 }
 
@@ -150,6 +250,11 @@ function addFencePoint(latlng) {
   updateMidpointHandles();
   updateFootage();
   recalculate();
+  markUnsaved();
+  updateEmptyMapState();
+  hintAfterFirstPoint();
+  hintAfterThreePoints();
+  hintAfter50Feet();
 }
 
 // === Curve Interpolation (Catmull-Rom spline) ===
@@ -318,9 +423,7 @@ function closeFence() {
   fenceClosed = true;
 
   redrawFenceLine();
-
-  // Add label for closing segment
-  segmentLabels.push(createSegmentLabel(fencePoints[fencePoints.length - 1], fencePoints[0]));
+  redrawSegmentLabels();
 
   updateCloseButton();
   updateMidpointHandles();
@@ -398,6 +501,8 @@ function addGate(latlng) {
   renderGates();
   recalculate();
   setTool('draw');
+  markUnsaved();
+  hintAfterGate();
 }
 
 function renderGates() {
@@ -468,6 +573,8 @@ function undoLast() {
     updateMidpointHandles();
     updateFootage();
     recalculate();
+    markUnsaved();
+    updateEmptyMapState();
   }
 }
 
@@ -512,6 +619,7 @@ function clearAll() {
   updateMidpointHandles();
   updateFootage();
   recalculate();
+  updateEmptyMapState();
 }
 
 // === Fence Selection ===
@@ -520,13 +628,33 @@ function selectFence(btn, type) {
   btn.classList.add('active');
   selectedFence = { type, price: parseInt(btn.dataset.price) };
   recalculate();
+  markUnsaved();
+  hintFenceType();
 }
 
 function selectHeight(btn, height) {
   btn.parentElement.querySelectorAll('.height-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (height) selectedHeight = height;
+  // Clear custom input when a preset is selected
+  var customInput = document.getElementById('custom-height');
+  if (customInput) customInput.value = '';
   recalculate();
+}
+
+function setCustomHeight(value) {
+  var h = parseFloat(value);
+  if (!h || h < 1 || h > 20) return;
+  selectedHeight = h;
+  // Deselect preset buttons
+  clearHeightButtons();
+  recalculate();
+}
+
+function clearHeightButtons() {
+  document.querySelectorAll('.height-options .height-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
 }
 
 function selectTerrain(btn, multiplier) {
@@ -659,11 +787,29 @@ const BOM = {
 };
 
 // === BOM Calculation ===
+function getNearestHeight(spec, height) {
+  // If exact match exists, use it
+  if (spec.heights[height]) return { data: spec.heights[height], multiplier: 1 };
+  // Otherwise find nearest and scale
+  var available = Object.keys(spec.heights).map(Number).sort(function(a, b) { return a - b; });
+  var nearest = available[0];
+  var minDiff = Math.abs(height - nearest);
+  for (var i = 1; i < available.length; i++) {
+    var diff = Math.abs(height - available[i]);
+    if (diff < minDiff) { minDiff = diff; nearest = available[i]; }
+  }
+  // Scale factor for cost (taller = more expensive proportionally)
+  var multiplier = height / nearest;
+  return { data: spec.heights[nearest], multiplier: multiplier, nearestHeight: nearest };
+}
+
 function calculateBOM(feet, fenceType, height) {
   const spec = BOM[fenceType];
-  if (!spec || !spec.heights[height]) return null;
+  if (!spec) return null;
 
-  const h = spec.heights[height];
+  var resolved = getNearestHeight(spec, height);
+  const h = resolved.data;
+  var heightScale = resolved.multiplier;
   const ex = spec.extras;
   const sections = Math.max(0, Math.ceil(feet / spec.postSpacing));
   const posts = sections + 1;
@@ -682,9 +828,11 @@ function calculateBOM(feet, fenceType, height) {
     const screwBoxes = Math.ceil(totalScrews / ex.screwsPerBox);
     const totalConcrete = posts * h.concreteBags;
 
-    items.push({ name: h.postLength + ' posts', qty: posts, unit: 'ea', unitCost: p('postCost', h.postCost) });
+    var postLabel = heightScale !== 1 ? 'PT posts (' + height + 'ft)' : h.postLength + ' posts';
+    var picketLabel = heightScale !== 1 ? 'Dog ear PT pickets (' + height + 'ft)' : h.picketDesc + ' pickets';
+    items.push({ name: postLabel, qty: posts, unit: 'ea', unitCost: Math.round(p('postCost', h.postCost) * heightScale * 100) / 100 });
     items.push({ name: h.railDesc + ' rails', qty: totalRails, unit: 'ea', unitCost: p('railCost', h.railCost) });
-    items.push({ name: h.picketDesc + ' pickets', qty: totalPickets, unit: 'ea', unitCost: p('picketCost', h.picketCost) });
+    items.push({ name: picketLabel, qty: totalPickets, unit: 'ea', unitCost: Math.round(p('picketCost', h.picketCost) * heightScale * 100) / 100 });
     items.push({ name: 'Rail brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
     items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
     items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
@@ -938,7 +1086,8 @@ function closePricingEditor() {
 // === Calculation ===
 function recalculate() {
   const feet = updateFootage();
-  const heightMult = selectedHeight === 4 ? 0.8 : selectedHeight === 8 ? 1.3 : 1.0;
+  // Scale price/ft based on height (6ft is baseline)
+  const heightMult = selectedHeight <= 4 ? 0.8 : selectedHeight >= 8 ? 1.3 : (0.8 + (selectedHeight - 4) * 0.125);
 
   let fenceCost = feet * selectedFence.price * heightMult;
   const gateCost = gates.reduce((sum, g) => sum + g.price, 0);
@@ -978,6 +1127,12 @@ function recalculate() {
   // BOM
   const bom = calculateBOM(feet, selectedFence.type, selectedHeight);
   renderBOM(bom);
+
+  // Trigger contextual hints
+  if (feet > 0) {
+    setTimeout(hintBOMAppears, 600);
+    setTimeout(hintAfterEstimate, 1200);
+  }
 }
 
 // === Address Search ===
@@ -1599,6 +1754,9 @@ function resetEstimate() {
   terrainMultiplier = 1.0;
 
   recalculate();
+  clearUnsaved();
+  nextEstimateNumber();
+  updateEmptyMapState();
 }
 
 // === Panel Toggle (mobile) ===
@@ -1638,7 +1796,332 @@ document.addEventListener('visibilitychange', function() {
   // Could log this but don't block — too many false positives
 });
 
+// === Contextual Hints System ===
+var fcHintsSeen = JSON.parse(localStorage.getItem('fc_hints_seen') || '{}');
+var activeHint = null;
+var hintAutoTimer = null;
+
+function isHintSeen(id) {
+  return !!fcHintsSeen[id];
+}
+
+function markHintSeen(id) {
+  fcHintsSeen[id] = true;
+  localStorage.setItem('fc_hints_seen', JSON.stringify(fcHintsSeen));
+}
+
+function dismissHint() {
+  if (!activeHint) return;
+  var el = document.getElementById('fc-hint-el');
+  if (el) {
+    el.classList.remove('visible');
+    setTimeout(function() { el.remove(); }, 300);
+  }
+  if (activeHint) markHintSeen(activeHint);
+  activeHint = null;
+  clearTimeout(hintAutoTimer);
+}
+
+function showHint(id, text, anchorEl, position) {
+  if (isHintSeen(id)) return;
+  if (activeHint) dismissHint();
+
+  activeHint = id;
+
+  var hint = document.createElement('div');
+  hint.id = 'fc-hint-el';
+  hint.className = 'fc-hint';
+
+  var arrowClass = 'fc-hint-arrow-down'; // default
+  if (position === 'below') arrowClass = 'fc-hint-arrow-up';
+  else if (position === 'right') arrowClass = 'fc-hint-arrow-left';
+  else if (position === 'left') arrowClass = 'fc-hint-arrow-right';
+
+  hint.innerHTML = '<div class="fc-hint-arrow ' + arrowClass + '"></div>' +
+    '<div>' + text + '</div>' +
+    '<button class="fc-hint-dismiss" onclick="dismissHint()">Got it</button>';
+
+  document.body.appendChild(hint);
+
+  // Position relative to anchor
+  if (anchorEl) {
+    var rect = anchorEl.getBoundingClientRect();
+    var hintRect;
+
+    // Make visible first to measure, but hidden
+    hint.style.visibility = 'hidden';
+    hint.style.opacity = '0';
+    hint.style.display = 'block';
+    hintRect = hint.getBoundingClientRect();
+
+    if (position === 'below') {
+      hint.style.top = (rect.bottom + 10) + 'px';
+      hint.style.left = Math.max(8, Math.min(window.innerWidth - hintRect.width - 8, rect.left + rect.width / 2 - hintRect.width / 2)) + 'px';
+    } else if (position === 'right') {
+      hint.style.top = (rect.top + rect.height / 2 - hintRect.height / 2) + 'px';
+      hint.style.left = (rect.right + 10) + 'px';
+    } else if (position === 'left') {
+      hint.style.top = (rect.top + rect.height / 2 - hintRect.height / 2) + 'px';
+      hint.style.left = (rect.left - hintRect.width - 10) + 'px';
+    } else {
+      // above (default)
+      hint.style.top = (rect.top - hintRect.height - 10) + 'px';
+      hint.style.left = Math.max(8, Math.min(window.innerWidth - hintRect.width - 8, rect.left + rect.width / 2 - hintRect.width / 2)) + 'px';
+    }
+
+    hint.style.visibility = '';
+  }
+
+  requestAnimationFrame(function() { hint.classList.add('visible'); });
+
+  // Auto-dismiss after 8 seconds
+  hintAutoTimer = setTimeout(function() {
+    dismissHint();
+  }, 8000);
+}
+
+// Click anywhere to dismiss hint
+document.addEventListener('click', function(e) {
+  if (activeHint && !e.target.closest('.fc-hint')) {
+    dismissHint();
+  }
+}, true);
+
+function resetHints() {
+  fcHintsSeen = {};
+  localStorage.removeItem('fc_hints_seen');
+  showToast('Tips have been reset');
+}
+
+function resetOnboarding() {
+  localStorage.removeItem('fc_onboarded');
+  resetHints();
+  showToast('Onboarding has been reset. Reload to see it.');
+}
+
+// Hint triggers — called from various places
+function hintFirstVisit() {
+  setTimeout(function() {
+    var searchBar = document.querySelector('.search-bar');
+    if (searchBar) showHint('first_visit', 'Search an address or click the map to start', searchBar, 'below');
+  }, 1500);
+}
+
+function hintAfterFirstPoint() {
+  if (fencePoints.length === 1) {
+    var toolbar = document.querySelector('.map-toolbar');
+    if (toolbar) showHint('first_point', 'Click to add more points. Each segment shows its length.', toolbar, 'above');
+  }
+}
+
+function hintAfterThreePoints() {
+  if (fencePoints.length === 3 && !fenceClosed) {
+    var closeBtn = document.getElementById('close-btn');
+    if (closeBtn) showHint('three_points', 'Try the Close button to complete a perimeter', closeBtn, 'above');
+  }
+}
+
+function hintAfterGate() {
+  if (gates.length === 1) {
+    var gatesList = document.getElementById('gates-list');
+    if (gatesList) showHint('first_gate', 'Change gate type in the panel on the right', gatesList, 'above');
+  }
+}
+
+function hintFenceType() {
+  var pencilBtn = document.querySelector('.bom-toggle');
+  if (pencilBtn) showHint('fence_type', 'You can edit material prices with the pencil icon', pencilBtn, 'left');
+}
+
+function hintAfter50Feet() {
+  var feet = parseInt((document.getElementById('total-feet').textContent || '0').replace(/,/g, '')) || 0;
+  if (feet >= 50) {
+    var firstLabel = document.querySelector('.seg-label');
+    if (firstLabel) showHint('fifty_feet', 'Click any measurement to type an exact length', firstLabel, 'above');
+  }
+}
+
+function hintBOMAppears() {
+  var bomList = document.getElementById('bom-list');
+  if (bomList && !bomList.querySelector('.empty-state')) {
+    showHint('bom_appears', 'Quantities are editable \u2014 adjust any count', bomList, 'above');
+  }
+}
+
+function hintAfterEstimate() {
+  var total = document.getElementById('sum-total');
+  var val = total ? total.textContent : '$0';
+  if (val !== '$0') {
+    var actions = document.querySelector('.panel-actions');
+    if (actions) showHint('first_estimate', 'Share or save as PDF at the bottom of the panel', actions, 'above');
+  }
+}
+
+// === Unsaved Changes Indicator ===
+var hasUnsavedChanges = false;
+
+function markUnsaved() {
+  if (hasUnsavedChanges) return;
+  hasUnsavedChanges = true;
+  var saveBtn = document.getElementById('btn-save');
+  if (saveBtn && !saveBtn.querySelector('.save-dot')) {
+    var dot = document.createElement('span');
+    dot.className = 'save-dot';
+    saveBtn.appendChild(dot);
+  }
+}
+
+function clearUnsaved() {
+  hasUnsavedChanges = false;
+  var dot = document.querySelector('.save-dot');
+  if (dot) dot.remove();
+}
+
+// === Estimate Counter ===
+var estimateCounter = parseInt(localStorage.getItem('fc_estimate_counter') || '0');
+
+function nextEstimateNumber() {
+  estimateCounter++;
+  localStorage.setItem('fc_estimate_counter', estimateCounter.toString());
+  updateEstimateCounterDisplay();
+  return estimateCounter;
+}
+
+function updateEstimateCounterDisplay() {
+  var el = document.getElementById('estimate-number');
+  if (el) el.textContent = 'Estimate #' + estimateCounter;
+}
+
+// === Keyboard Shortcuts ===
+document.addEventListener('keydown', function(e) {
+  // Skip if inside an input, textarea, or select
+  var tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+  // Skip if a modal is open
+  var authModal = document.getElementById('auth-modal');
+  var pricingModal = document.getElementById('pricing-modal');
+  var accountModal = document.getElementById('account-modal');
+  if ((authModal && authModal.style.display === 'flex') ||
+      (pricingModal && pricingModal.style.display === 'flex') ||
+      (accountModal && accountModal.style.display === 'flex')) {
+    // Only handle Escape in modals
+    if (e.key === 'Escape') {
+      if (pricingModal && pricingModal.style.display === 'flex') { closePricingEditor(); e.preventDefault(); return; }
+      if (accountModal && accountModal.style.display === 'flex') { hideAccountPanel(); e.preventDefault(); return; }
+      if (authModal && authModal.style.display === 'flex' && document.getElementById('auth-close').style.display === 'block') { hideAuthUI(); e.preventDefault(); return; }
+    }
+    return;
+  }
+
+  // Ctrl+Z: Undo
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    undoLast();
+    return;
+  }
+
+  // Ctrl+Shift+Z: Clear all
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    clearAll();
+    return;
+  }
+
+  // D: Draw tool
+  if (e.key === 'd' || e.key === 'D') {
+    e.preventDefault();
+    setTool('draw');
+    return;
+  }
+
+  // G: Gate tool
+  if (e.key === 'g' || e.key === 'G') {
+    e.preventDefault();
+    setTool('gate');
+    return;
+  }
+
+  // C: Toggle curve
+  if (e.key === 'c' || e.key === 'C') {
+    e.preventDefault();
+    toggleCurve();
+    return;
+  }
+
+  // S: Save estimate
+  if (e.key === 's' || e.key === 'S') {
+    if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+      e.preventDefault();
+      saveEstimate();
+    }
+    return;
+  }
+
+  // Escape: Cancel / close
+  if (e.key === 'Escape') {
+    dismissHint();
+    setTool('draw');
+    // Close drawers
+    var drawer = document.getElementById('estimates-drawer');
+    if (drawer && drawer.style.display !== 'none') {
+      hideEstimatesList();
+    }
+    return;
+  }
+});
+
+// === Double-click to Finish Drawing ===
+function initDoubleClick() {
+  map.on('dblclick', function(e) {
+    // Prevent default zoom
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
+
+    if (currentTool === 'draw' && !fenceClosed) {
+      if (fencePoints.length >= 3) {
+        closeFence();
+      }
+      // If fewer than 3 points, just stop (do nothing extra)
+    }
+  });
+
+  // Disable default double-click zoom
+  map.doubleClickZoom.disable();
+}
+
+// === Empty Map State ===
+function updateEmptyMapState() {
+  var existing = document.getElementById('map-empty-state');
+  if (fencePoints.length > 0) {
+    if (existing) existing.remove();
+    return;
+  }
+  if (existing) return; // Already showing
+
+  var mapEl = document.getElementById('map');
+  var overlay = document.createElement('div');
+  overlay.id = 'map-empty-state';
+  overlay.className = 'map-empty-state';
+  overlay.innerHTML = '<div class="map-empty-state-text">Click the map to start drawing a fence</div>' +
+    '<div class="map-empty-arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>';
+  mapEl.parentElement.appendChild(overlay);
+}
+
 // === Init ===
 initMap();
+initDoubleClick();
 recalculate();
 loadFromURL();
+updateEmptyMapState();
+
+// Increment estimate counter for a fresh session
+if (fencePoints.length === 0) {
+  nextEstimateNumber();
+}
+updateEstimateCounterDisplay();
+
+// Show first-visit hint after a delay (if no shared estimate loaded)
+if (fencePoints.length === 0) {
+  hintFirstVisit();
+}

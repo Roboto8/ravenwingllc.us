@@ -129,6 +129,7 @@
       <button class="btn btn-sm btn-outline" onclick="resetEstimate()">New</button>
       <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none">Save</button>
       <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none">My Estimates</button>
+      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none">Account</button>
       <button class="btn btn-sm" id="btn-logout" onclick="handleLogout()" style="display:none">Log Out</button>
       <button class="btn btn-sm" id="btn-signin" onclick="showAuthUI(); showLogin(); document.getElementById('auth-close').style.display='block';" style="display:none">Sign In</button>
     </div>
@@ -150,15 +151,15 @@
         <button class="layer-btn" data-layer="topo" onclick="setMapLayer('topo')">Topo</button>
       </div>
       <div class="map-toolbar">
-        <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')">
+        <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')" title="Draw tool (D)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
           Draw
         </button>
-        <button class="tool-btn" id="gate-btn" onclick="setTool('gate')">
+        <button class="tool-btn" id="gate-btn" onclick="setTool('gate')" title="Gate tool (G)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
           Gate
         </button>
-        <button class="tool-btn" id="curve-btn" onclick="toggleCurve()">
+        <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
           Curve
         </button>
@@ -166,11 +167,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
           Close
         </button>
-        <button class="tool-btn" id="undo-btn" onclick="undoLast()">
+        <button class="tool-btn" id="undo-btn" onclick="undoLast()" title="Undo last point (Ctrl+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6.69 3L3 13"/></svg>
           Undo
         </button>
-        <button class="tool-btn danger" id="clear-btn" onclick="clearAll()">
+        <button class="tool-btn danger" id="clear-btn" onclick="clearAll()" title="Clear all (Ctrl+Shift+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
           Clear
         </button>
@@ -189,6 +190,8 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="panel-scroll">
+
+        <div class="estimate-number" id="estimate-number">Estimate #1</div>
 
         <div class="panel-section">
           <h3 class="section-title">Customer</h3>
@@ -240,6 +243,10 @@
             <button class="height-btn" onclick="selectHeight(this, 4)">4 ft</button>
             <button class="height-btn active" onclick="selectHeight(this, 6)">6 ft</button>
             <button class="height-btn" onclick="selectHeight(this, 8)">8 ft</button>
+            <div class="custom-height-wrap">
+              <input type="number" id="custom-height" class="custom-height-input" placeholder="Custom" min="1" max="20" step="0.5" onchange="setCustomHeight(this.value)" onfocus="clearHeightButtons()">
+              <span class="custom-height-unit">ft</span>
+            </div>
           </div>
         </div>
 
@@ -362,6 +369,61 @@
 
   </div>
 
+  <!-- Account Panel -->
+  <div class="modal-overlay" id="account-modal" style="display:none" onclick="if(event.target===this)hideAccountPanel()">
+    <div class="modal" style="position:relative;max-width:440px">
+      <button class="auth-close" onclick="hideAccountPanel()">&times;</button>
+      <h2 class="modal-title" style="font-size:1.2rem">Account</h2>
+
+      <div id="account-info" style="margin-top:16px">
+        <div class="account-row">
+          <span class="account-label">Email</span>
+          <span id="account-email">—</span>
+        </div>
+        <div class="account-row">
+          <span class="account-label">Status</span>
+          <span id="account-status">—</span>
+        </div>
+        <div class="account-row" id="account-next-row" style="display:none">
+          <span class="account-label">Next billing</span>
+          <span id="account-next">—</span>
+        </div>
+        <div class="account-row" id="account-amount-row" style="display:none">
+          <span class="account-label">Plan</span>
+          <span id="account-amount">—</span>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none">Manage Subscription</button>
+        <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="handleUpgrade()" style="display:none">Subscribe — $49/mo</button>
+        <button class="btn btn-full btn-outline" onclick="handleExportData()">Export My Data</button>
+      </div>
+
+      <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Keyboard Shortcuts</p>
+        <div class="shortcuts-list">
+          <span class="shortcut-key">Ctrl+Z</span><span class="shortcut-desc">Undo last point</span>
+          <span class="shortcut-key">Ctrl+Shift+Z</span><span class="shortcut-desc">Clear all</span>
+          <span class="shortcut-key">D</span><span class="shortcut-desc">Draw tool</span>
+          <span class="shortcut-key">G</span><span class="shortcut-desc">Gate tool</span>
+          <span class="shortcut-key">C</span><span class="shortcut-desc">Toggle curve mode</span>
+          <span class="shortcut-key">Esc</span><span class="shortcut-desc">Cancel / close modals</span>
+          <span class="shortcut-key">S</span><span class="shortcut-desc">Save estimate</span>
+        </div>
+      </div>
+
+      <div class="account-utility-row">
+        <button class="btn btn-sm btn-outline" onclick="resetHints()">Reset Tips</button>
+        <button class="btn btn-sm btn-outline" onclick="resetOnboarding()">Reset Onboarding</button>
+      </div>
+
+      <p style="margin-top:16px;font-size:0.82rem;color:var(--text-muted);text-align:center">
+        Cancel anytime — no fees, no questions. Your data stays available for 90 days after cancellation.
+      </p>
+    </div>
+  </div>
+
   <!-- Pricing Editor Modal -->
   <div class="modal-overlay" id="pricing-modal" style="display:none" onclick="if(event.target===this)closePricingEditor()">
     <div class="modal">
@@ -376,8 +438,12 @@
   <div class="drawer-overlay" id="drawer-overlay" style="display:none" onclick="hideEstimatesList()"></div>
   <div class="drawer" id="estimates-drawer" style="display:none">
     <div class="drawer-header">
-      <h3>Saved Estimates</h3>
+      <h3 id="drawer-title">Saved Estimates</h3>
       <button class="gate-remove" onclick="hideEstimatesList()">&times;</button>
+    </div>
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" id="tab-estimates" onclick="showDrawerTab('estimates')">Estimates</button>
+      <button class="drawer-tab" id="tab-trash" onclick="showDrawerTab('trash')">Trash</button>
     </div>
     <div class="drawer-body" id="estimates-list-body">
       <p class="empty-state">No saved estimates yet</p>
@@ -486,6 +552,7 @@
       Auth.logout();
       document.getElementById('btn-save').style.display = 'none';
       document.getElementById('btn-estimates').style.display = 'none';
+      document.getElementById('btn-account').style.display = 'none';
       document.getElementById('btn-logout').style.display = 'none';
       document.getElementById('trial-banner').style.display = 'none';
       document.getElementById('btn-signin').style.display = '';
@@ -513,6 +580,7 @@
     async function onLoggedIn() {
       document.getElementById('btn-save').style.display = '';
       document.getElementById('btn-estimates').style.display = '';
+      document.getElementById('btn-account').style.display = '';
       document.getElementById('btn-logout').style.display = '';
       document.getElementById('btn-signin').style.display = 'none';
 
@@ -542,6 +610,65 @@
 
       // Show onboarding for first-time users
       showOnboarding();
+    }
+
+    async function showAccountPanel() {
+      document.getElementById('account-modal').style.display = 'flex';
+      document.getElementById('account-email').textContent = Auth.user ? Auth.user.email : '—';
+
+      try {
+        var status = await API.getStatus();
+        var statusText = status.status === 'active' ? 'Active subscriber'
+          : status.trialActive ? 'Free trial (' + status.daysLeft + ' days left)'
+          : status.status === 'canceled' ? 'Canceled'
+          : status.status === 'past_due' ? 'Payment past due'
+          : 'Trial expired';
+        document.getElementById('account-status').textContent = statusText;
+
+        if (status.nextBillingDate) {
+          document.getElementById('account-next-row').style.display = 'flex';
+          document.getElementById('account-next').textContent = new Date(status.nextBillingDate).toLocaleDateString();
+        }
+        if (status.planAmount) {
+          document.getElementById('account-amount-row').style.display = 'flex';
+          document.getElementById('account-amount').textContent = '$' + status.planAmount + '/month';
+        }
+
+        // Show manage button for active subscribers, upgrade for everyone else
+        if (status.canCancel) {
+          document.getElementById('account-manage-btn').style.display = '';
+          document.getElementById('account-upgrade-btn').style.display = 'none';
+        } else if (!status.active) {
+          document.getElementById('account-manage-btn').style.display = 'none';
+          document.getElementById('account-upgrade-btn').style.display = '';
+        }
+      } catch (e) { /* skip */ }
+    }
+
+    function hideAccountPanel() {
+      document.getElementById('account-modal').style.display = 'none';
+    }
+
+    async function handleManageBilling() {
+      try {
+        var result = await API.createPortal(window.location.href);
+        window.location.href = result.url;
+      } catch (e) { showToast('Could not open billing portal'); }
+    }
+
+    async function handleExportData() {
+      try {
+        showToast('Exporting data...');
+        var data = await API.exportData();
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'fencecalc-export-' + new Date().toISOString().slice(0, 10) + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Data exported');
+      } catch (e) { showToast('Export failed: ' + e.message); }
     }
 
     async function handleUpgrade() {
@@ -582,6 +709,7 @@
           materialsCost: bom ? bom.materialTotal : 0
         });
         showToast('Estimate saved');
+        clearUnsaved();
       } catch (e) { showToast(e.message); }
     }
 
@@ -590,6 +718,52 @@
       document.getElementById('drawer-overlay').style.display = 'block';
       document.getElementById('estimates-drawer').style.display = 'flex';
       loadEstimatesList();
+    }
+
+    var currentDrawerTab = 'estimates';
+
+    function showDrawerTab(tab) {
+      currentDrawerTab = tab;
+      document.getElementById('tab-estimates').classList.toggle('active', tab === 'estimates');
+      document.getElementById('tab-trash').classList.toggle('active', tab === 'trash');
+      if (tab === 'estimates') {
+        loadEstimatesList();
+      } else {
+        loadTrashList();
+      }
+    }
+
+    async function loadTrashList() {
+      var body = document.getElementById('estimates-list-body');
+      body.innerHTML = '<p class="empty-state">Loading...</p>';
+      try {
+        var result = await API.getTrash();
+        if (result.estimates.length === 0) {
+          body.innerHTML = '<p class="empty-state">Trash is empty</p>';
+          return;
+        }
+        body.innerHTML = result.estimates.map(function(e) { return '' +
+          '<div class="est-list-item">' +
+            '<div class="est-list-content">' +
+              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + '</div>' +
+              '<div class="est-list-detail">' + (e.customerAddress || 'No address') + '</div>' +
+              '<div class="est-list-detail">' + e.fenceType + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
+              '<div class="est-list-date">Deleted ' + new Date(e.deletedAt).toLocaleDateString() + '</div>' +
+            '</div>' +
+            '<button class="est-restore-btn" onclick="restoreEstimate(\'' + e.id + '\')" title="Restore">Restore</button>' +
+          '</div>';
+        }).join('');
+      } catch (e) {
+        body.innerHTML = '<p class="empty-state">Could not load trash</p>';
+      }
+    }
+
+    async function restoreEstimate(id) {
+      try {
+        await API.restoreEstimate(id);
+        showToast('Estimate restored');
+        loadTrashList();
+      } catch (e) { showToast('Could not restore'); }
     }
 
     function hideEstimatesList() {
@@ -607,16 +781,71 @@
           body.innerHTML = '<p class="empty-state">No saved estimates yet</p>';
           return;
         }
-        body.innerHTML = estimates.map(e => `
-          <div class="est-list-item" onclick="loadSavedEstimate('${e.id}')">
-            <div class="est-list-name">${e.customerName || 'Unnamed'}</div>
-            <div class="est-list-detail">${e.customerAddress || 'No address'}</div>
-            <div class="est-list-detail">${e.fenceType} · ${e.totalFeet} ft · ${e.totalCost}</div>
-            <div class="est-list-date">${new Date(e.createdAt).toLocaleDateString()}</div>
-          </div>
-        `).join('');
+        body.innerHTML = estimates.map(function(e) { return '' +
+          '<div class="est-list-item">' +
+            '<div class="est-list-content" onclick="loadSavedEstimate(\'' + e.id + '\')">' +
+              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + '</div>' +
+              '<div class="est-list-detail">' + (e.customerAddress || 'No address') + '</div>' +
+              '<div class="est-list-detail">' + e.fenceType + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
+              '<div class="est-list-date">' + new Date(e.createdAt).toLocaleDateString() + '</div>' +
+            '</div>' +
+            '<button class="est-delete-btn" onclick="event.stopPropagation(); deleteEstimate(\'' + e.id + '\')" title="Delete">&times;</button>' +
+          '</div>';
+        }).join('');
       } catch (e) {
         body.innerHTML = '<p class="empty-state">Could not load estimates</p>';
+      }
+    }
+
+    var lastDeletedEstimate = null;
+    var undoTimeout = null;
+
+    async function deleteEstimate(id) {
+      // Save it first so we can undo
+      try {
+        var est = await API.getEstimate(id);
+        await API.deleteEstimate(id);
+        lastDeletedEstimate = est;
+        loadEstimatesList();
+        showUndoToast('Estimate deleted');
+      } catch (e) { showToast('Could not delete'); }
+    }
+
+    async function undoDelete() {
+      if (!lastDeletedEstimate) return;
+      try {
+        await API.createEstimate(lastDeletedEstimate);
+        lastDeletedEstimate = null;
+        clearTimeout(undoTimeout);
+        hideUndoToast();
+        showToast('Estimate restored');
+        loadEstimatesList();
+      } catch (e) { showToast('Could not restore'); }
+    }
+
+    function showUndoToast(msg) {
+      var existing = document.getElementById('undo-toast');
+      if (existing) existing.remove();
+
+      var toast = document.createElement('div');
+      toast.id = 'undo-toast';
+      toast.className = 'undo-toast';
+      toast.innerHTML = '<span>' + msg + '</span><button onclick="undoDelete()">Undo</button>';
+      document.body.appendChild(toast);
+      requestAnimationFrame(function() { toast.classList.add('visible'); });
+
+      clearTimeout(undoTimeout);
+      undoTimeout = setTimeout(function() {
+        hideUndoToast();
+        lastDeletedEstimate = null;
+      }, 8000);
+    }
+
+    function hideUndoToast() {
+      var toast = document.getElementById('undo-toast');
+      if (toast) {
+        toast.classList.remove('visible');
+        setTimeout(function() { toast.remove(); }, 300);
       }
     }
 
