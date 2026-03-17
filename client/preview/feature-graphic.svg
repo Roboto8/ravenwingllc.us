@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#c0622e"/>
+
+  <!-- Subtle fence pattern in background -->
+  <g opacity="0.1">
+    <rect x="50" y="180" width="8" height="200" fill="white"/>
+    <rect x="110" y="200" width="8" height="180" fill="white"/>
+    <rect x="170" y="180" width="8" height="200" fill="white"/>
+    <rect x="230" y="200" width="8" height="180" fill="white"/>
+    <rect x="290" y="180" width="8" height="200" fill="white"/>
+    <polygon points="50,180 54,160 58,180" fill="white"/>
+    <polygon points="110,200 114,180 118,200" fill="white"/>
+    <polygon points="170,180 174,160 178,180" fill="white"/>
+    <polygon points="230,200 234,180 238,200" fill="white"/>
+    <polygon points="290,180 294,160 298,180" fill="white"/>
+    <rect x="42" y="230" width="264" height="6" fill="white"/>
+    <rect x="42" y="310" width="264" height="6" fill="white"/>
+  </g>
+
+  <!-- Annie mascot on left -->
+  <g transform="translate(180, 180) scale(0.7)">
+    <ellipse cx="0" cy="60" rx="45" ry="35" fill="white" opacity="0.9"/>
+    <ellipse cx="0" cy="-15" rx="55" ry="52" fill="#5a4a42"/>
+    <ellipse cx="-15" cy="-5" rx="18" ry="20" fill="#6d5d55" opacity="0.6"/>
+    <ellipse cx="15" cy="-5" rx="18" ry="20" fill="#6d5d55" opacity="0.6"/>
+    <path d="M-20,-58 L-18,-78 L-12,-62 L-8,-80 L-2,-60 L4,-82 L10,-62 L16,-76 L20,-58" stroke="#4a3a32" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M-15,-55 L-10,-72 L-4,-58 L2,-75 L8,-56 L14,-70 L18,-55" stroke="#6d5d55" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="-50" cy="-5" rx="20" ry="35" fill="#4a3a32" transform="rotate(-10, -50, -5)"/>
+    <ellipse cx="50" cy="-5" rx="20" ry="35" fill="#4a3a32" transform="rotate(10, 50, -5)"/>
+    <ellipse cx="0" cy="18" rx="30" ry="20" fill="#6d5d55"/>
+    <ellipse cx="0" cy="32" rx="28" ry="16" fill="#7d6d65"/>
+    <ellipse cx="0" cy="12" rx="13" ry="10" fill="#2c2018"/>
+    <ellipse cx="-18" cy="-25" rx="10" ry="11" fill="#2c2018"/>
+    <ellipse cx="18" cy="-25" rx="10" ry="11" fill="#2c2018"/>
+    <ellipse cx="-18" cy="-25" rx="7" ry="8" fill="#8B6914"/>
+    <ellipse cx="18" cy="-25" rx="7" ry="8" fill="#8B6914"/>
+    <circle cx="-18" cy="-25" r="4" fill="#1a1008"/>
+    <circle cx="18" cy="-25" r="4" fill="#1a1008"/>
+    <circle cx="-15" cy="-27" r="2.5" fill="white" opacity="0.75"/>
+    <circle cx="21" cy="-27" r="2.5" fill="white" opacity="0.75"/>
+    <path d="M-20,22 Q0,42 20,22" fill="#d4756a"/>
+    <ellipse cx="3" cy="36" rx="10" ry="14" fill="#e8877c"/>
+    <rect x="228" y="248" width="68" height="10" rx="4" fill="#c0622e" transform="translate(-262,-188)"/>
+  </g>
+
+  <!-- Main text -->
+  <text x="580" y="190" font-size="72" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="800" fill="white" text-anchor="middle" letter-spacing="-2">
+    Fence<tspan fill="#2c2417">Trace</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="580" y="245" font-size="24" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="500" fill="white" opacity="0.9" text-anchor="middle">
+    Satellite fence estimates
+  </text>
+
+  <!-- Feature bullets -->
+  <text x="580" y="310" font-size="18" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="400" fill="white" opacity="0.8" text-anchor="middle">
+    Trace on satellite imagery
+  </text>
+  <text x="580" y="340" font-size="18" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="400" fill="white" opacity="0.8" text-anchor="middle">
+    Every bolt, bracket &amp; concrete bag priced
+  </text>
+  <text x="580" y="370" font-size="18" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="400" fill="white" opacity="0.8" text-anchor="middle">
+    5 fence types · 11 regions · English &amp; Spanish
+  </text>
+
+  <!-- Trace line decoration -->
+  <path d="M380 430 Q480 410 580 435 Q680 460 780 425 Q850 405 920 420" stroke="white" stroke-width="3" fill="none" stroke-dasharray="12,8" stroke-linecap="round" opacity="0.4"/>
+  <circle cx="380" cy="430" r="6" fill="white" opacity="0.5"/>
+  <circle cx="580" cy="435" r="6" fill="white" opacity="0.5"/>
+  <circle cx="920" cy="420" r="6" fill="white" opacity="0.5"/>
+</svg>

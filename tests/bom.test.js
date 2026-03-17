@@ -1,6 +1,10 @@
 const {
   BOM,
+  MULCH,
   calculateBOM,
+  calculateMulchBOM,
+  calculatePolygonArea,
+  calculatePolygonPerimeter,
   catmullRom,
   getSplinePoints,
   calculateFootage,
@@ -653,5 +657,230 @@ describe('cross-type BOM comparisons', () => {
         });
       });
     });
+  });
+});
+
+// =============================================================================
+// MULCH DATA STRUCTURE
+// =============================================================================
+describe('MULCH data structure', () => {
+  const mulchTypes = ['hardwood', 'cedar', 'cypress', 'pine-bark', 'dyed-black', 'dyed-red', 'rubber', 'river-rock', 'pea-gravel', 'lava-rock'];
+
+  test('all mulch types have required fields', () => {
+    mulchTypes.forEach(type => {
+      expect(MULCH[type]).toBeDefined();
+      expect(MULCH[type].name).toBeDefined();
+      expect(MULCH[type].bagCuFt).toBeGreaterThan(0);
+      expect(MULCH[type].bagCost).toBeGreaterThan(0);
+      expect(MULCH[type].bulkCuYdCost).toBeGreaterThan(0);
+    });
+  });
+
+  test('rock types have smaller bag sizes', () => {
+    expect(MULCH['river-rock'].bagCuFt).toBeLessThan(MULCH.hardwood.bagCuFt);
+    expect(MULCH['pea-gravel'].bagCuFt).toBeLessThan(MULCH.hardwood.bagCuFt);
+    expect(MULCH['lava-rock'].bagCuFt).toBeLessThan(MULCH.hardwood.bagCuFt);
+  });
+
+  test('rubber mulch is more expensive than standard mulch', () => {
+    expect(MULCH.rubber.bagCost).toBeGreaterThan(MULCH.hardwood.bagCost);
+    expect(MULCH.rubber.bulkCuYdCost).toBeGreaterThan(MULCH.hardwood.bulkCuYdCost);
+  });
+});
+
+// =============================================================================
+// calculatePolygonArea
+// =============================================================================
+describe('calculatePolygonArea', () => {
+  test('returns 0 for fewer than 3 points', () => {
+    expect(calculatePolygonArea([])).toBe(0);
+    expect(calculatePolygonArea([{ lat: 0, lng: 0 }])).toBe(0);
+    expect(calculatePolygonArea([{ lat: 0, lng: 0 }, { lat: 1, lng: 0 }])).toBe(0);
+  });
+
+  test('calculates area for a known square', () => {
+    // ~10m x 10m square near equator
+    const side = 10 / 111320; // 10 meters in degrees
+    const points = [
+      { lat: 0, lng: 0 },
+      { lat: side, lng: 0 },
+      { lat: side, lng: side },
+      { lat: 0, lng: side }
+    ];
+    const area = calculatePolygonArea(points);
+    // 10m x 10m = 100 sq meters = ~1076 sq ft
+    expect(area).toBeGreaterThan(900);
+    expect(area).toBeLessThan(1200);
+  });
+
+  test('calculates area for a triangle', () => {
+    const side = 20 / 111320; // 20 meters
+    const points = [
+      { lat: 0, lng: 0 },
+      { lat: side, lng: 0 },
+      { lat: 0, lng: side }
+    ];
+    const area = calculatePolygonArea(points);
+    // Triangle: 0.5 * 20 * 20 = 200 sq meters = ~2153 sq ft
+    expect(area).toBeGreaterThan(1800);
+    expect(area).toBeLessThan(2500);
+  });
+
+  test('larger area produces larger result', () => {
+    const small = 5 / 111320;
+    const large = 20 / 111320;
+    const smallSquare = [
+      { lat: 0, lng: 0 }, { lat: small, lng: 0 },
+      { lat: small, lng: small }, { lat: 0, lng: small }
+    ];
+    const largeSquare = [
+      { lat: 0, lng: 0 }, { lat: large, lng: 0 },
+      { lat: large, lng: large }, { lat: 0, lng: large }
+    ];
+    expect(calculatePolygonArea(largeSquare)).toBeGreaterThan(calculatePolygonArea(smallSquare));
+  });
+});
+
+// =============================================================================
+// calculatePolygonPerimeter
+// =============================================================================
+describe('calculatePolygonPerimeter', () => {
+  test('returns 0 for fewer than 2 points', () => {
+    expect(calculatePolygonPerimeter([])).toBe(0);
+    expect(calculatePolygonPerimeter([{ lat: 0, lng: 0 }])).toBe(0);
+  });
+
+  test('calculates perimeter for known square', () => {
+    const side = 10 / 111320; // ~10 meters
+    const points = [
+      { lat: 0, lng: 0 },
+      { lat: side, lng: 0 },
+      { lat: side, lng: side },
+      { lat: 0, lng: side }
+    ];
+    const perimeter = calculatePolygonPerimeter(points);
+    // 4 * 10m = 40m = ~131 ft
+    expect(perimeter).toBeGreaterThan(110);
+    expect(perimeter).toBeLessThan(160);
+  });
+});
+
+// =============================================================================
+// calculateMulchBOM
+// =============================================================================
+describe('calculateMulchBOM', () => {
+  test('returns null for unknown material', () => {
+    expect(calculateMulchBOM(100, 'unknown', 3)).toBeNull();
+  });
+
+  test('bags mode - hardwood 3 inch depth, 1000 sq ft', () => {
+    const bom = calculateMulchBOM(1000, 'hardwood', 3);
+    expect(bom).not.toBeNull();
+    expect(bom.items.length).toBe(1);
+
+    // 1000 * 3 / 12 = 250 cu ft, 250 / 2 = 125 bags
+    const mulchItem = bom.items[0];
+    expect(mulchItem.qty).toBe(125);
+    expect(mulchItem.unit).toBe('bags');
+    expect(mulchItem.unitCost).toBe(4.50);
+    expect(bom.materialTotal).toBe(563); // 125 * 4.50 = 562.50 rounds to 563
+  });
+
+  test('bulk mode - hardwood 3 inch depth, 1000 sq ft', () => {
+    const bom = calculateMulchBOM(1000, 'hardwood', 3, { deliveryMode: 'bulk' });
+    expect(bom).not.toBeNull();
+
+    // 1000 * 3 / 12 = 250 cu ft / 27 = 9.26 cu yd, rounds up to 9.3
+    const mulchItem = bom.items[0];
+    expect(mulchItem.qty).toBe(9.3);
+    expect(mulchItem.unit).toBe('cu yd');
+    expect(mulchItem.unitCost).toBe(35);
+  });
+
+  test('deeper mulch uses more material', () => {
+    const bom2 = calculateMulchBOM(500, 'hardwood', 2);
+    const bom4 = calculateMulchBOM(500, 'hardwood', 4);
+    expect(bom4.materialTotal).toBeGreaterThan(bom2.materialTotal);
+  });
+
+  test('larger area uses more material', () => {
+    const bomSmall = calculateMulchBOM(200, 'cedar', 3);
+    const bomLarge = calculateMulchBOM(2000, 'cedar', 3);
+    expect(bomLarge.materialTotal).toBeGreaterThan(bomSmall.materialTotal);
+  });
+
+  test('includes landscape fabric when addFabric is true', () => {
+    const bom = calculateMulchBOM(500, 'hardwood', 3, { addFabric: true });
+    const fabricItem = bom.items.find(i => i.name.includes('fabric'));
+    expect(fabricItem).toBeDefined();
+    // 500 / 150 = 4 rolls (rounded up)
+    expect(fabricItem.qty).toBe(4);
+
+    const stapleItem = bom.items.find(i => i.name.includes('staples'));
+    expect(stapleItem).toBeDefined();
+  });
+
+  test('includes edging when addEdging is true with perimeter', () => {
+    const bom = calculateMulchBOM(500, 'hardwood', 3, { addEdging: true, perimeterFt: 100 });
+    const edgingItem = bom.items.find(i => i.name.includes('edging'));
+    expect(edgingItem).toBeDefined();
+    // 100 / 20 = 5 sections
+    expect(edgingItem.qty).toBe(5);
+
+    const stakeItem = bom.items.find(i => i.name.includes('stakes'));
+    expect(stakeItem).toBeDefined();
+    // 100 / 3 = 34 stakes
+    expect(stakeItem.qty).toBe(34);
+  });
+
+  test('does not include edging without perimeter', () => {
+    const bom = calculateMulchBOM(500, 'hardwood', 3, { addEdging: true });
+    const edgingItem = bom.items.find(i => i.name.includes('edging'));
+    expect(edgingItem).toBeUndefined();
+  });
+
+  test('custom pricing overrides bag cost', () => {
+    const bom = calculateMulchBOM(100, 'hardwood', 3, {
+      customPricing: { 'mulch.hardwood.bagCost': 10 }
+    });
+    const mulchItem = bom.items[0];
+    expect(mulchItem.unitCost).toBe(10);
+  });
+
+  test('custom pricing overrides bulk cost', () => {
+    const bom = calculateMulchBOM(100, 'hardwood', 3, {
+      deliveryMode: 'bulk',
+      customPricing: { 'mulch.hardwood.bulkCuYdCost': 50 }
+    });
+    const mulchItem = bom.items[0];
+    expect(mulchItem.unitCost).toBe(50);
+  });
+
+  test('returns cubicYards in result', () => {
+    const bom = calculateMulchBOM(1000, 'hardwood', 3);
+    // 1000 * 3 / 12 / 27 = 9.26, rounds to 9.3
+    expect(bom.cubicYards).toBe(9.3);
+  });
+
+  test('all mulch types produce valid BOM', () => {
+    const types = ['hardwood', 'cedar', 'cypress', 'pine-bark', 'dyed-black', 'dyed-red', 'rubber', 'river-rock', 'pea-gravel', 'lava-rock'];
+    types.forEach(type => {
+      const bom = calculateMulchBOM(500, type, 3);
+      expect(bom).not.toBeNull();
+      expect(bom.materialTotal).toBeGreaterThan(0);
+      expect(bom.items.length).toBeGreaterThan(0);
+      bom.items.forEach(item => {
+        expect(item).toHaveProperty('name');
+        expect(item).toHaveProperty('qty');
+        expect(item).toHaveProperty('unit');
+        expect(item).toHaveProperty('unitCost');
+        expect(item).toHaveProperty('total');
+      });
+    });
+  });
+
+  test('zero area returns zero total', () => {
+    const bom = calculateMulchBOM(0, 'hardwood', 3);
+    expect(bom.materialTotal).toBe(0);
   });
 });

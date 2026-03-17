@@ -178,6 +178,7 @@
       <div id="map"></div>
       <div class="map-layers">
         <button class="layer-btn active" data-layer="satellite" onclick="setMapLayer('satellite')" data-i18n="layer_satellite">Satellite</button>
+        <button class="layer-btn" data-layer="esri" onclick="setMapLayer('esri')">ESRI</button>
         <button class="layer-btn" data-layer="hybrid" onclick="setMapLayer('hybrid')" data-i18n="layer_hybrid">Hybrid</button>
         <button class="layer-btn" data-layer="streets" onclick="setMapLayer('streets')" data-i18n="layer_streets">Streets</button>
         <button class="layer-btn" data-layer="topo" onclick="setMapLayer('topo')" data-i18n="layer_topo">Topo</button>
@@ -212,6 +213,10 @@
         <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
           <span data-i18n="tool_curve">Curve</span>
+        </button>
+        <button class="tool-btn" id="mulch-btn" onclick="setTool('mulch')" title="Mulch area tool (A)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20L12 4 2 20z"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="14" cy="14" r="1" fill="currentColor"/><circle cx="11" cy="18" r="1" fill="currentColor"/></svg>
+          <span data-i18n="tool_mulch">Mulch</span>
         </button>
         <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="New section (N)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
@@ -374,6 +379,54 @@
           </div>
         </div>
 
+        <div class="panel-section" data-section="mulch">
+          <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span><span data-i18n="section_mulch">Mulch</span></h3>
+          <div class="section-body collapsed">
+            <div class="mulch-material-options" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+              <button class="height-btn active" onclick="selectMulchMaterial('hardwood', this)">Hardwood</button>
+              <button class="height-btn" onclick="selectMulchMaterial('cedar', this)">Cedar</button>
+              <button class="height-btn" onclick="selectMulchMaterial('cypress', this)">Cypress</button>
+              <button class="height-btn" onclick="selectMulchMaterial('pine-bark', this)">Pine Bark</button>
+              <button class="height-btn" onclick="selectMulchMaterial('dyed-black', this)">Dyed Black</button>
+              <button class="height-btn" onclick="selectMulchMaterial('dyed-red', this)">Dyed Red</button>
+              <button class="height-btn" onclick="selectMulchMaterial('rubber', this)">Rubber</button>
+              <button class="height-btn" onclick="selectMulchMaterial('river-rock', this)">River Rock</button>
+              <button class="height-btn" onclick="selectMulchMaterial('pea-gravel', this)">Pea Gravel</button>
+              <button class="height-btn" onclick="selectMulchMaterial('lava-rock', this)">Lava Rock</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+              <span style="font-size:12px;color:#999">Depth:</span>
+              <div class="height-options" id="mulch-depth-options">
+                <button class="height-btn" onclick="selectMulchDepth(2, this)">2&quot;</button>
+                <button class="height-btn active" onclick="selectMulchDepth(3, this)">3&quot;</button>
+                <button class="height-btn" onclick="selectMulchDepth(4, this)">4&quot;</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+              <span style="font-size:12px;color:#999">Delivery:</span>
+              <div class="height-options" id="mulch-delivery-options">
+                <button class="height-btn active" onclick="selectMulchDelivery('bags', this)">Bags</button>
+                <button class="height-btn" onclick="selectMulchDelivery('bulk', this)">Bulk</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <label style="font-size:12px;color:#999;display:flex;align-items:center;gap:4px">
+                <input type="checkbox" id="mulch-fabric" onchange="recalculate()"> Landscape fabric
+              </label>
+              <label style="font-size:12px;color:#999;display:flex;align-items:center;gap:4px">
+                <input type="checkbox" id="mulch-edging" onchange="recalculate()"> Edging
+              </label>
+            </div>
+            <div id="mulch-areas-list">
+              <p class="empty-state">Draw areas on the map with the Mulch tool</p>
+            </div>
+            <div class="bom-total-row" id="mulch-total-row" style="display:none">
+              <span>Mulch Materials</span>
+              <span id="mulch-total">$0</span>
+            </div>
+          </div>
+        </div>
+
         <div class="panel-section" data-section="gates">
           <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span><span data-i18n="section_gates">Gates</span></h3>
           <div class="section-body collapsed">
@@ -444,6 +497,10 @@
           <div class="summary-row" id="row-terrain" style="display:none">
             <span data-i18n="summary_terrain">Terrain</span>
             <span id="sum-terrain">+0%</span>
+          </div>
+          <div class="summary-row" id="row-mulch" style="display:none">
+            <span>Mulch</span>
+            <span id="sum-mulch">$0</span>
           </div>
           <div class="summary-row" id="row-custom" style="display:none">
             <span data-i18n="summary_custom">Custom items</span>

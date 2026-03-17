@@ -86,7 +86,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .search-btn { padding: 6px 12px; min-height: 36px; font-size: 0.82rem; }
   .map-layers { padding: 6px 8px; gap: 4px; flex-wrap: wrap; }
   .layer-btn { padding: 6px 10px; font-size: 0.78rem; min-height: 36px; }
-  .map-toolbar { padding: 6px 8px; gap: 4px; flex-wrap: wrap; }
+  .map-toolbar { padding: 6px 8px; gap: 4px; }
   .tool-btn { padding: 8px 10px; font-size: 0.78rem; min-height: 36px; }
   .drone-banner, #drone-banner { max-width: 280px; font-size: 0.78rem; }
 }
@@ -299,7 +299,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   padding: 6px 10px;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  flex-wrap: wrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .tool-btn {
@@ -776,6 +779,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 /* Segment Labels */
+.mulch-area-label { background: none !important; border: none !important; z-index: 200 !important; pointer-events: none; }
+.mulch-label {
+  background: rgba(45, 138, 78, 0.85);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-align: center;
+}
 .segment-label { background: none !important; border: none !important; z-index: 200 !important; }
 .angle-label { pointer-events: none; }
 .angle-tag {
@@ -1503,7 +1518,7 @@ body.twa-mode .modal-overlay {
 @media (max-width: 300px) {
   .nav-brand { font-size: 0.82rem; }
   .fence-types { grid-template-columns: 1fr; }
-  .map-toolbar { flex-wrap: wrap; justify-content: center; }
+  .map-toolbar { justify-content: center; }
 }
 
 /* === Contextual Hints === */
