@@ -3,36 +3,928 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="RavenWing LLC - Innovation in progress.">
-  <meta property="og:title" content="RavenWing LLC">
-  <meta property="og:description" content="Something is taking shape. Stay tuned.">
-  <meta property="og:type" content="website">
-  <title>RavenWing LLC</title>
+  <meta name="description" content="Draw fence lines on satellite imagery, calculate materials, and generate professional estimates in seconds. Built for fence contractors.">
+  <title>FenceCalc | RavenWing LLC</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="icon-192.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="css/style.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="css/app.css" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#c0622e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
-  <div class="scene">
-    <nav class="nav">
-      <span class="nav-brand">RavenWing LLC</span>
-    </nav>
-
-    <main class="hero">
-      <div class="hero-content">
-        <div class="badge">Coming Soon</div>
-        <h1>Raven<span class="accent">Wing</span></h1>
-        <p class="tagline">Something is taking shape.<br>We're building something worth the wait.</p>
-        <a href="mailto:info@ravenwingllc.us" class="btn">Get in Touch</a>
-      </div>
-    </main>
-
-    <footer class="footer">
-      <p>&copy; RavenWing LLC 2026</p>
-    </footer>
+  <!-- Loading Screen -->
+  <div id="loading-screen" style="
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: #f5f0eb; z-index: 99999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  ">
+    <div style="font-size: 1.8rem; font-weight: 800; color: #2c2417; letter-spacing: -0.03em;">
+      Fence<span style="color: #c0622e;">Calc</span>
+    </div>
+    <div style="
+      width: 28px; height: 28px;
+      border: 3px solid #d4cdc4; border-top-color: #c0622e;
+      border-radius: 50%;
+      animation: fc-spin 0.8s linear infinite;
+    "></div>
+    <style>@keyframes fc-spin { to { transform: rotate(360deg); } }</style>
   </div>
+
+  <!-- Onboarding Overlay -->
+  <div id="onboarding-overlay" class="onboarding-overlay" style="display:none">
+    <div class="onboarding-backdrop"></div>
+    <div class="onboarding-step" data-step="1">
+      <div class="onboarding-card onboarding-card-search">
+        <div class="onboarding-arrow onboarding-arrow-up"></div>
+        <div class="onboarding-step-num">1 / 3</div>
+        <h3 class="onboarding-title">Search for a property address</h3>
+        <p class="onboarding-desc">Type an address into the search bar to fly to any property on the satellite map.</p>
+        <button class="btn btn-sm onboarding-next" onclick="onboardNext()">Next</button>
+      </div>
+    </div>
+    <div class="onboarding-step" data-step="2" style="display:none">
+      <div class="onboarding-card onboarding-card-map">
+        <div class="onboarding-arrow onboarding-arrow-up"></div>
+        <div class="onboarding-step-num">2 / 3</div>
+        <h3 class="onboarding-title">Click the map to draw fence lines</h3>
+        <p class="onboarding-desc">Click points on the map to trace the fence. Each segment shows its length in feet.</p>
+        <button class="btn btn-sm onboarding-next" onclick="onboardNext()">Next</button>
+      </div>
+    </div>
+    <div class="onboarding-step" data-step="3" style="display:none">
+      <div class="onboarding-card onboarding-card-panel">
+        <div class="onboarding-arrow onboarding-arrow-left"></div>
+        <div class="onboarding-step-num">3 / 3</div>
+        <h3 class="onboarding-title">Review your estimate and share it</h3>
+        <p class="onboarding-desc">Pick materials, add extras, then share or save your estimate as a PDF.</p>
+        <button class="btn btn-sm onboarding-next" onclick="onboardFinish()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="auth-modal" style="display:none">
+    <div class="modal" style="position:relative">
+      <button class="auth-close" id="auth-close" onclick="hideAuthUI()" style="display:none">&times;</button>
+      <h2 class="modal-title">Fence<span class="accent">Calc</span></h2>
+      <p class="auth-gate-msg" id="auth-gate-msg" style="display:none"></p>
+      <p class="modal-sub">14-day free trial. No card required.</p>
+
+      <div id="auth-login" class="auth-form">
+        <div class="form-group"><input type="email" id="login-email" placeholder="Email"></div>
+        <div class="form-group"><input type="password" id="login-password" placeholder="Password"></div>
+        <button class="btn btn-full" onclick="handleLogin()">Log In</button>
+        <p class="auth-switch">No account? <a href="#" onclick="showSignup(); return false;">Sign up</a></p>
+      </div>
+
+      <div id="auth-signup" class="auth-form" style="display:none">
+        <div class="form-group"><input type="text" id="signup-company" placeholder="Company name"></div>
+        <div class="form-group"><input type="email" id="signup-email" placeholder="Email"></div>
+        <div class="form-group"><input type="password" id="signup-password" placeholder="Password (8+ chars, 1 number)"></div>
+        <button class="btn btn-full" onclick="handleSignup()">Start Free Trial</button>
+        <p class="auth-switch">Have an account? <a href="#" onclick="showLogin(); return false;">Log in</a></p>
+      </div>
+
+      <div id="auth-confirm" class="auth-form" style="display:none">
+        <p class="auth-info">Check your email for a verification code.</p>
+        <div class="form-group"><input type="text" id="confirm-code" placeholder="Verification code"></div>
+        <button class="btn btn-full" onclick="handleConfirm()">Verify</button>
+      </div>
+
+      <p class="auth-error" id="auth-error"></p>
+    </div>
+  </div>
+
+  <!-- Trial Banner -->
+  <div class="trial-banner" id="trial-banner" style="display:none">
+    <span id="trial-text"></span>
+    <button class="btn btn-sm" onclick="handleUpgrade()">Subscribe</button>
+    <button class="banner-close" onclick="this.parentElement.style.display='none'">&times;</button>
+  </div>
+
+  <!-- Paywall -->
+  <div class="modal-overlay" id="paywall-modal" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Trial Expired</h2>
+      <p class="modal-sub">Subscribe to keep creating estimates.</p>
+      <button class="btn btn-full" onclick="handleUpgrade()">Subscribe — $49/mo</button>
+      <p class="auth-switch" style="margin-top:12px"><a href="#" onclick="Auth.logout(); location.reload(); return false;">Log out</a></p>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-left">
+      <span class="nav-brand">Fence<span class="accent">Calc</span></span>
+      <span class="nav-tagline">Satellite fence estimates</span>
+    </div>
+    <div class="nav-right">
+      <button class="btn btn-sm btn-outline" onclick="resetEstimate()">New</button>
+      <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none">Save</button>
+      <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none">My Estimates</button>
+      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none">Account</button>
+      <button class="btn btn-sm" id="btn-logout" onclick="handleLogout()" style="display:none">Log Out</button>
+      <button class="btn btn-sm" id="btn-signin" onclick="showAuthUI(); showLogin(); document.getElementById('auth-close').style.display='block';" style="display:none">Sign In</button>
+    </div>
+  </nav>
+
+  <div class="app-layout">
+
+    <div class="map-panel">
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="address-input" placeholder="Search address..." autocomplete="off">
+        <button class="search-btn" onclick="searchAddress()">Go</button>
+      </div>
+      <div id="map"></div>
+      <div class="map-layers">
+        <button class="layer-btn active" data-layer="satellite" onclick="setMapLayer('satellite')">Satellite</button>
+        <button class="layer-btn" data-layer="hybrid" onclick="setMapLayer('hybrid')">Hybrid</button>
+        <button class="layer-btn" data-layer="streets" onclick="setMapLayer('streets')">Streets</button>
+        <button class="layer-btn" data-layer="topo" onclick="setMapLayer('topo')">Topo</button>
+      </div>
+      <div class="section-tabs" id="section-tabs" style="display:none"></div>
+      <div class="map-toolbar">
+        <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')" title="Draw tool (D)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          Draw
+        </button>
+        <button class="tool-btn" id="gate-btn" onclick="setTool('gate')" title="Gate tool (G)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+          Gate
+        </button>
+        <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
+          Curve
+        </button>
+        <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="Start a new fence section">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Section
+        </button>
+        <button class="tool-btn" id="close-btn" style="display:none" onclick="closeFence()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          Close
+        </button>
+        <button class="tool-btn" id="undo-btn" onclick="undoLast()" title="Undo last point (Ctrl+Z)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6.69 3L3 13"/></svg>
+          Undo
+        </button>
+        <button class="tool-btn danger" id="clear-btn" onclick="clearAll()" title="Clear all (Ctrl+Shift+Z)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+          Clear
+        </button>
+        <div class="tool-divider"></div>
+        <div class="footage-display">
+          <span class="footage-label">Total</span>
+          <span class="footage-value" id="total-feet">0</span>
+          <span class="footage-unit">ft</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="estimate-panel" id="estimate-panel">
+      <button class="panel-toggle" id="panel-toggle" onclick="togglePanel()">
+        <span class="toggle-label">Show Estimate</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="panel-scroll">
+
+        <div class="panel-section">
+          <h3 class="section-title">Customer <span class="estimate-number" id="estimate-number">#1</span></h3>
+          <div class="form-group">
+            <input type="text" id="cust-name" placeholder="Name">
+          </div>
+          <div class="form-group">
+            <input type="text" id="cust-phone" placeholder="Phone">
+          </div>
+          <div class="form-group">
+            <input type="text" id="cust-address" placeholder="Address">
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="section-title">Material</h3>
+          <div class="fence-types">
+            <button class="fence-type-btn active" onclick="selectFence(this, 'wood')" data-price="25">
+              <span class="fence-icon">W</span>
+              <span>Wood</span>
+              <span class="fence-price">$25/ft</span>
+            </button>
+            <button class="fence-type-btn" onclick="selectFence(this, 'vinyl')" data-price="35">
+              <span class="fence-icon">V</span>
+              <span>Vinyl</span>
+              <span class="fence-price">$35/ft</span>
+            </button>
+            <button class="fence-type-btn" onclick="selectFence(this, 'chain-link')" data-price="15">
+              <span class="fence-icon">C</span>
+              <span>Chain Link</span>
+              <span class="fence-price">$15/ft</span>
+            </button>
+            <button class="fence-type-btn" onclick="selectFence(this, 'aluminum')" data-price="40">
+              <span class="fence-icon">A</span>
+              <span>Aluminum</span>
+              <span class="fence-price">$40/ft</span>
+            </button>
+            <button class="fence-type-btn" onclick="selectFence(this, 'iron')" data-price="55">
+              <span class="fence-icon">I</span>
+              <span>Iron</span>
+              <span class="fence-price">$55/ft</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="section-title">Height</h3>
+          <div class="height-options">
+            <button class="height-btn" onclick="selectHeight(this, 4)">4 ft</button>
+            <button class="height-btn active" onclick="selectHeight(this, 6)">6 ft</button>
+            <button class="height-btn" onclick="selectHeight(this, 8)">8 ft</button>
+            <div class="custom-height-wrap">
+              <input type="number" id="custom-height" class="custom-height-input" placeholder="Custom" min="1" max="20" step="0.5" onchange="setCustomHeight(this.value)" onfocus="clearHeightButtons()">
+              <span class="custom-height-unit">ft</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="section-title">Extras</h3>
+          <label class="addon-row">
+            <input type="checkbox" id="addon-removal" onchange="recalculate()">
+            <span>Remove old fence</span>
+            <span class="addon-price">$3/ft</span>
+          </label>
+          <label class="addon-row">
+            <input type="checkbox" id="addon-permit" onchange="recalculate()">
+            <span>Permit</span>
+            <span class="addon-price">$150</span>
+          </label>
+          <label class="addon-row">
+            <input type="checkbox" id="addon-stain" onchange="recalculate()">
+            <span>Stain / seal</span>
+            <span class="addon-price">$4/ft</span>
+          </label>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="section-title">Ground</h3>
+          <div class="height-options">
+            <button class="height-btn active" onclick="selectTerrain(this, 1.0)">Flat</button>
+            <button class="height-btn" onclick="selectTerrain(this, 1.15)">Slope</button>
+            <button class="height-btn" onclick="selectTerrain(this, 1.3)">Rocky</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="section-title">Gates</h3>
+          <div id="gates-list" class="gates-list">
+            <p class="empty-state">Place gates by clicking the map</p>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="section-title">
+            Material Breakdown
+            <span style="display:flex;gap:4px;align-items:center">
+              <button class="bom-toggle" onclick="showPricingEditor()" title="Edit prices">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
+              </button>
+              <button class="bom-toggle" onclick="this.closest('.panel-section').classList.toggle('bom-collapsed')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            </span>
+          </h3>
+          <div class="bom-content">
+            <div id="bom-list">
+              <p class="empty-state">Draw fence to see materials</p>
+            </div>
+            <div class="bom-total-row">
+              <span>Materials Total</span>
+              <span id="bom-total">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="section-title">Custom Items</h3>
+          <div id="custom-items-list"></div>
+          <button class="add-custom-btn" onclick="addCustomItem()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Add labor, delivery, or other costs
+          </button>
+        </div>
+
+        <div class="panel-section summary">
+          <h3 class="section-title">Estimate</h3>
+          <div class="summary-row">
+            <span><span id="sum-type">Wood</span> fence, <span id="sum-height">6</span>ft</span>
+            <span id="sum-fence">$0</span>
+          </div>
+          <div class="summary-row" id="row-gates" style="display:none">
+            <span>Gates (<span id="sum-gate-count">0</span>)</span>
+            <span id="sum-gates">$0</span>
+          </div>
+          <div class="summary-row" id="row-removal" style="display:none">
+            <span>Removal</span>
+            <span id="sum-removal">$0</span>
+          </div>
+          <div class="summary-row" id="row-permit" style="display:none">
+            <span>Permit</span>
+            <span>$150</span>
+          </div>
+          <div class="summary-row" id="row-stain" style="display:none">
+            <span>Stain / seal</span>
+            <span id="sum-stain">$0</span>
+          </div>
+          <div class="summary-row" id="row-terrain" style="display:none">
+            <span>Terrain</span>
+            <span id="sum-terrain">+0%</span>
+          </div>
+          <div class="summary-row" id="row-custom" style="display:none">
+            <span>Custom items</span>
+            <span id="sum-custom">$0</span>
+          </div>
+          <div class="summary-total">
+            <span>Total</span>
+            <span id="sum-total">$0</span>
+          </div>
+        </div>
+
+        <div class="panel-actions">
+          <button class="btn btn-full" onclick="shareEstimate()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>Share Estimate
+          </button>
+          <button class="btn btn-full btn-outline" style="margin-top:6px" onclick="generatePDF()">Save as PDF</button>
+        </div>
+
+        <div class="panel-footer">
+          &copy; 2026 RavenWing LLC &middot; <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Account Panel -->
+  <div class="modal-overlay" id="account-modal" style="display:none" onclick="if(event.target===this)hideAccountPanel()">
+    <div class="modal" style="position:relative;max-width:440px">
+      <button class="auth-close" onclick="hideAccountPanel()">&times;</button>
+      <h2 class="modal-title" style="font-size:1.2rem">Account</h2>
+
+      <div id="account-info" style="margin-top:16px">
+        <div class="account-row">
+          <span class="account-label">Email</span>
+          <span id="account-email">—</span>
+        </div>
+        <div class="account-row">
+          <span class="account-label">Status</span>
+          <span id="account-status">—</span>
+        </div>
+        <div class="account-row" id="account-next-row" style="display:none">
+          <span class="account-label">Next billing</span>
+          <span id="account-next">—</span>
+        </div>
+        <div class="account-row" id="account-amount-row" style="display:none">
+          <span class="account-label">Plan</span>
+          <span id="account-amount">—</span>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none">Manage Subscription</button>
+        <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="handleUpgrade()" style="display:none">Subscribe — $49/mo</button>
+        <button class="btn btn-full btn-outline" onclick="handleExportData()">Export My Data</button>
+      </div>
+
+      <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Keyboard Shortcuts</p>
+        <div class="shortcuts-list">
+          <span class="shortcut-key">Ctrl+Z</span><span class="shortcut-desc">Undo last point</span>
+          <span class="shortcut-key">Ctrl+Shift+Z</span><span class="shortcut-desc">Clear all</span>
+          <span class="shortcut-key">D</span><span class="shortcut-desc">Draw tool</span>
+          <span class="shortcut-key">G</span><span class="shortcut-desc">Gate tool</span>
+          <span class="shortcut-key">C</span><span class="shortcut-desc">Toggle curve mode</span>
+          <span class="shortcut-key">Esc</span><span class="shortcut-desc">Cancel / close modals</span>
+          <span class="shortcut-key">S</span><span class="shortcut-desc">Save estimate</span>
+        </div>
+      </div>
+
+      <div class="account-utility-row">
+        <button class="btn btn-sm btn-outline" onclick="resetHints()">Reset Tips</button>
+        <button class="btn btn-sm btn-outline" onclick="resetOnboarding()">Reset Onboarding</button>
+      </div>
+
+      <p style="margin-top:16px;font-size:0.82rem;color:var(--text-muted);text-align:center">
+        Cancel anytime — no fees, no questions. Your data stays available for 90 days after cancellation.
+      </p>
+    </div>
+  </div>
+
+  <!-- Pricing Editor Modal -->
+  <div class="modal-overlay" id="pricing-modal" style="display:none" onclick="if(event.target===this)closePricingEditor()">
+    <div class="modal">
+      <h2 class="modal-title" style="font-size:1.1rem">Edit Material Prices</h2>
+      <p class="modal-sub">Set your actual supplier costs</p>
+      <div id="pricing-editor-body"></div>
+      <button class="btn btn-full" style="margin-top:16px" onclick="closePricingEditor()">Done</button>
+    </div>
+  </div>
+
+  <!-- Estimates List Drawer -->
+  <div class="drawer-overlay" id="drawer-overlay" style="display:none" onclick="hideEstimatesList()"></div>
+  <div class="drawer" id="estimates-drawer" style="display:none">
+    <div class="drawer-header">
+      <h3 id="drawer-title">Saved Estimates</h3>
+      <button class="gate-remove" onclick="hideEstimatesList()">&times;</button>
+    </div>
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" id="tab-estimates" onclick="showDrawerTab('estimates')">Estimates</button>
+      <button class="drawer-tab" id="tab-trash" onclick="showDrawerTab('trash')">Trash</button>
+    </div>
+    <div class="drawer-body" id="estimates-list-body">
+      <p class="empty-state">No saved estimates yet</p>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // === CONFIG — Update these after first deploy ===
+    const FC_CONFIG = {
+      userPoolId: 'us-east-1_R2XpjOllC',
+      clientId: '5u9qucogbu5fod8rrqptnvmebh',
+      apiUrl: 'https://wkst09rgl3.execute-api.us-east-1.amazonaws.com'
+    };
+
+    Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
+    API.configure(FC_CONFIG.apiUrl);
+
+    // === Hide loading screen ===
+    document.getElementById('loading-screen').style.display = 'none';
+
+    // === Onboarding ===
+    let onboardStep = 1;
+
+    function showOnboarding() {
+      if (localStorage.getItem('fc_onboarded') === 'true') return;
+      document.getElementById('onboarding-overlay').style.display = 'block';
+    }
+
+    function onboardNext() {
+      document.querySelector('.onboarding-step[data-step="' + onboardStep + '"]').style.display = 'none';
+      onboardStep++;
+      document.querySelector('.onboarding-step[data-step="' + onboardStep + '"]').style.display = 'block';
+    }
+
+    function onboardFinish() {
+      document.getElementById('onboarding-overlay').style.display = 'none';
+      localStorage.setItem('fc_onboarded', 'true');
+    }
+
+    // === Auth UI ===
+    function showAuthUI() { document.getElementById('auth-modal').style.display = 'flex'; }
+    function hideAuthUI() {
+      document.getElementById('auth-modal').style.display = 'none';
+      document.getElementById('auth-gate-msg').style.display = 'none';
+      document.getElementById('auth-close').style.display = 'none';
+      authError('');
+    }
+    function showLogin() {
+      document.getElementById('auth-login').style.display = 'block';
+      document.getElementById('auth-signup').style.display = 'none';
+      document.getElementById('auth-confirm').style.display = 'none';
+    }
+    function showSignup() {
+      document.getElementById('auth-login').style.display = 'none';
+      document.getElementById('auth-signup').style.display = 'block';
+      document.getElementById('auth-confirm').style.display = 'none';
+    }
+    function authError(msg) { document.getElementById('auth-error').textContent = msg; }
+
+    let pendingEmail = '';
+
+    async function handleSignup() {
+      authError('');
+      const company = document.getElementById('signup-company').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      if (!company || !email || !password) return authError('All fields required');
+      try {
+        await Auth.signup(email, password, company);
+        pendingEmail = email;
+        document.getElementById('auth-login').style.display = 'none';
+        document.getElementById('auth-signup').style.display = 'none';
+        document.getElementById('auth-confirm').style.display = 'block';
+      } catch (e) { authError(e.message); }
+    }
+
+    async function handleConfirm() {
+      authError('');
+      const code = document.getElementById('confirm-code').value.trim();
+      if (!code) return authError('Enter the code');
+      try {
+        await Auth.confirm(pendingEmail, code);
+        showLogin();
+        authError('Verified! You can log in now.');
+      } catch (e) { authError(e.message); }
+    }
+
+    async function handleLogin() {
+      authError('');
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!email || !password) return authError('Email and password required');
+      try {
+        await Auth.login(email, password);
+        hideAuthUI();
+        onLoggedIn();
+      } catch (e) { authError(e.message); }
+    }
+
+    function handleLogout() {
+      Auth.logout();
+      document.getElementById('btn-save').style.display = 'none';
+      document.getElementById('btn-estimates').style.display = 'none';
+      document.getElementById('btn-account').style.display = 'none';
+      document.getElementById('btn-logout').style.display = 'none';
+      document.getElementById('trial-banner').style.display = 'none';
+      document.getElementById('btn-signin').style.display = '';
+      showGuestUI();
+    }
+
+    function showGuestUI() {
+      document.getElementById('btn-signin').style.display = '';
+      document.getElementById('btn-save').style.display = 'none';
+      document.getElementById('btn-estimates').style.display = 'none';
+      document.getElementById('btn-logout').style.display = 'none';
+    }
+
+    // Gate check — show signup prompt for premium features
+    function requireAuth(featureName) {
+      if (Auth.isLoggedIn()) return true;
+      document.getElementById('auth-modal').style.display = 'flex';
+      document.getElementById('auth-close').style.display = 'block';
+      document.getElementById('auth-gate-msg').textContent = featureName ? 'Sign up to ' + featureName : '';
+      document.getElementById('auth-gate-msg').style.display = featureName ? 'block' : 'none';
+      showSignup();
+      return false;
+    }
+
+    async function onLoggedIn() {
+      document.getElementById('btn-save').style.display = '';
+      document.getElementById('btn-estimates').style.display = '';
+      document.getElementById('btn-account').style.display = '';
+      document.getElementById('btn-logout').style.display = '';
+      document.getElementById('btn-signin').style.display = 'none';
+
+      // Hide everything first
+      document.getElementById('trial-banner').style.display = 'none';
+      document.getElementById('paywall-modal').style.display = 'none';
+
+      // Check billing status
+      try {
+        const status = await API.getStatus();
+        if (!status.active) {
+          document.getElementById('paywall-modal').style.display = 'flex';
+        } else if (status.trialActive && status.status === 'trialing') {
+          document.getElementById('trial-banner').style.display = 'flex';
+          document.getElementById('trial-text').textContent = status.daysLeft + ' days left in trial';
+        }
+        // If status is 'active' — no banner, no paywall, just let them work
+      } catch (e) { /* API not deployed yet, skip */ }
+
+      // Load company branding
+      try {
+        const company = await API.getCompany();
+        if (company.accentColor) {
+          document.documentElement.style.setProperty('--accent', company.accentColor);
+        }
+      } catch (e) { /* skip */ }
+
+      // Show onboarding for first-time users
+      showOnboarding();
+    }
+
+    async function showAccountPanel() {
+      document.getElementById('account-modal').style.display = 'flex';
+      document.getElementById('account-email').textContent = Auth.user ? Auth.user.email : '—';
+
+      try {
+        var status = await API.getStatus();
+        var statusText = status.status === 'active' ? 'Active subscriber'
+          : status.trialActive ? 'Free trial (' + status.daysLeft + ' days left)'
+          : status.status === 'canceled' ? 'Canceled'
+          : status.status === 'past_due' ? 'Payment past due'
+          : 'Trial expired';
+        document.getElementById('account-status').textContent = statusText;
+
+        if (status.nextBillingDate) {
+          document.getElementById('account-next-row').style.display = 'flex';
+          document.getElementById('account-next').textContent = new Date(status.nextBillingDate).toLocaleDateString();
+        }
+        if (status.planAmount) {
+          document.getElementById('account-amount-row').style.display = 'flex';
+          document.getElementById('account-amount').textContent = '$' + status.planAmount + '/month';
+        }
+
+        // Show manage button for active subscribers, upgrade for everyone else
+        if (status.canCancel) {
+          document.getElementById('account-manage-btn').style.display = '';
+          document.getElementById('account-upgrade-btn').style.display = 'none';
+        } else if (!status.active) {
+          document.getElementById('account-manage-btn').style.display = 'none';
+          document.getElementById('account-upgrade-btn').style.display = '';
+        }
+      } catch (e) { /* skip */ }
+    }
+
+    function hideAccountPanel() {
+      document.getElementById('account-modal').style.display = 'none';
+    }
+
+    async function handleManageBilling() {
+      try {
+        var result = await API.createPortal(window.location.href);
+        window.location.href = result.url;
+      } catch (e) { showToast('Could not open billing portal'); }
+    }
+
+    async function handleExportData() {
+      try {
+        showToast('Exporting data...');
+        var data = await API.exportData();
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'fencecalc-export-' + new Date().toISOString().slice(0, 10) + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Data exported');
+      } catch (e) { showToast('Export failed: ' + e.message); }
+    }
+
+    async function handleUpgrade() {
+      try {
+        const { url } = await API.createCheckout(window.location.href);
+        window.location.href = url;
+      } catch (e) { showToast('Billing not configured yet'); }
+    }
+
+    // === Save/Load Estimates ===
+    async function saveEstimate() {
+      if (!requireAuth('save estimates')) return;
+      const feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
+      if (feet === 0) return showToast('Draw a fence first');
+
+      const bom = calculateBOM(feet, selectedFence.type, selectedHeight);
+
+      try {
+        await API.createEstimate({
+          customerName: document.getElementById('cust-name').value,
+          customerPhone: document.getElementById('cust-phone').value,
+          customerAddress: document.getElementById('cust-address').value,
+          fenceType: selectedFence.type,
+          fencePrice: selectedFence.price,
+          fenceHeight: selectedHeight,
+          terrainMultiplier,
+          fencePoints: fencePoints.map(p => ({ lat: p.lat, lng: p.lng })),
+          fenceClosed,
+          gates: gates.map(g => ({ lat: g.latlng.lat, lng: g.latlng.lng, type: g.type, price: g.price })),
+          addons: {
+            removal: document.getElementById('addon-removal').checked,
+            permit: document.getElementById('addon-permit').checked,
+            stain: document.getElementById('addon-stain').checked
+          },
+          bom: bom ? bom.items : [],
+          totalFeet: feet,
+          totalCost: document.getElementById('sum-total').textContent,
+          materialsCost: bom ? bom.materialTotal : 0
+        });
+        showToast('Estimate saved');
+        clearUnsaved();
+      } catch (e) { showToast(e.message); }
+    }
+
+    function showEstimatesList() {
+      if (!requireAuth('view saved estimates')) return;
+      document.getElementById('drawer-overlay').style.display = 'block';
+      document.getElementById('estimates-drawer').style.display = 'flex';
+      loadEstimatesList();
+    }
+
+    var currentDrawerTab = 'estimates';
+
+    function showDrawerTab(tab) {
+      currentDrawerTab = tab;
+      document.getElementById('tab-estimates').classList.toggle('active', tab === 'estimates');
+      document.getElementById('tab-trash').classList.toggle('active', tab === 'trash');
+      if (tab === 'estimates') {
+        loadEstimatesList();
+      } else {
+        loadTrashList();
+      }
+    }
+
+    async function loadTrashList() {
+      var body = document.getElementById('estimates-list-body');
+      body.innerHTML = '<p class="empty-state">Loading...</p>';
+      try {
+        var result = await API.getTrash();
+        if (result.estimates.length === 0) {
+          body.innerHTML = '<p class="empty-state">Trash is empty</p>';
+          return;
+        }
+        body.innerHTML = result.estimates.map(function(e) { return '' +
+          '<div class="est-list-item">' +
+            '<div class="est-list-content">' +
+              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + '</div>' +
+              '<div class="est-list-detail">' + (e.customerAddress || 'No address') + '</div>' +
+              '<div class="est-list-detail">' + e.fenceType + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
+              '<div class="est-list-date">Deleted ' + new Date(e.deletedAt).toLocaleDateString() + '</div>' +
+            '</div>' +
+            '<button class="est-restore-btn" onclick="restoreEstimate(\'' + e.id + '\')" title="Restore">Restore</button>' +
+          '</div>';
+        }).join('');
+      } catch (e) {
+        body.innerHTML = '<p class="empty-state">Could not load trash</p>';
+      }
+    }
+
+    async function restoreEstimate(id) {
+      try {
+        await API.restoreEstimate(id);
+        showToast('Estimate restored');
+        loadTrashList();
+      } catch (e) { showToast('Could not restore'); }
+    }
+
+    function hideEstimatesList() {
+      document.getElementById('drawer-overlay').style.display = 'none';
+      document.getElementById('estimates-drawer').style.display = 'none';
+    }
+
+    async function loadEstimatesList() {
+      const body = document.getElementById('estimates-list-body');
+      body.innerHTML = '<p class="empty-state">Loading...</p>';
+
+      try {
+        const { estimates } = await API.listEstimates();
+        if (estimates.length === 0) {
+          body.innerHTML = '<p class="empty-state">No saved estimates yet</p>';
+          return;
+        }
+        body.innerHTML = estimates.map(function(e) { return '' +
+          '<div class="est-list-item">' +
+            '<div class="est-list-content" onclick="loadSavedEstimate(\'' + e.id + '\')">' +
+              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + '</div>' +
+              '<div class="est-list-detail">' + (e.customerAddress || 'No address') + '</div>' +
+              '<div class="est-list-detail">' + e.fenceType + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
+              '<div class="est-list-date">' + new Date(e.createdAt).toLocaleDateString() + '</div>' +
+            '</div>' +
+            '<button class="est-delete-btn" onclick="event.stopPropagation(); deleteEstimate(\'' + e.id + '\')" title="Delete">&times;</button>' +
+          '</div>';
+        }).join('');
+      } catch (e) {
+        body.innerHTML = '<p class="empty-state">Could not load estimates</p>';
+      }
+    }
+
+    var lastDeletedEstimate = null;
+    var undoTimeout = null;
+
+    async function deleteEstimate(id) {
+      // Save it first so we can undo
+      try {
+        var est = await API.getEstimate(id);
+        await API.deleteEstimate(id);
+        lastDeletedEstimate = est;
+        loadEstimatesList();
+        showUndoToast('Estimate deleted');
+      } catch (e) { showToast('Could not delete'); }
+    }
+
+    async function undoDelete() {
+      if (!lastDeletedEstimate) return;
+      try {
+        await API.createEstimate(lastDeletedEstimate);
+        lastDeletedEstimate = null;
+        clearTimeout(undoTimeout);
+        hideUndoToast();
+        showToast('Estimate restored');
+        loadEstimatesList();
+      } catch (e) { showToast('Could not restore'); }
+    }
+
+    function showUndoToast(msg) {
+      var existing = document.getElementById('undo-toast');
+      if (existing) existing.remove();
+
+      var toast = document.createElement('div');
+      toast.id = 'undo-toast';
+      toast.className = 'undo-toast';
+      toast.innerHTML = '<span>' + msg + '</span><button onclick="undoDelete()">Undo</button>';
+      document.body.appendChild(toast);
+      requestAnimationFrame(function() { toast.classList.add('visible'); });
+
+      clearTimeout(undoTimeout);
+      undoTimeout = setTimeout(function() {
+        hideUndoToast();
+        lastDeletedEstimate = null;
+      }, 8000);
+    }
+
+    function hideUndoToast() {
+      var toast = document.getElementById('undo-toast');
+      if (toast) {
+        toast.classList.remove('visible');
+        setTimeout(function() { toast.remove(); }, 300);
+      }
+    }
+
+    async function loadSavedEstimate(id) {
+      hideEstimatesList();
+      try {
+        const est = await API.getEstimate(id);
+        resetEstimate();
+
+        if (est.customerName) document.getElementById('cust-name').value = est.customerName;
+        if (est.customerPhone) document.getElementById('cust-phone').value = est.customerPhone;
+        if (est.customerAddress) document.getElementById('cust-address').value = est.customerAddress;
+
+        // Set fence type
+        const prices = { wood: 25, vinyl: 35, 'chain-link': 15, aluminum: 40, iron: 55 };
+        selectedFence = { type: est.fenceType, price: prices[est.fenceType] || 25 };
+        document.querySelectorAll('.fence-type-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.fence-type-btn').forEach(b => {
+          if (b.textContent.toLowerCase().includes(est.fenceType.replace('-', ' '))) b.classList.add('active');
+        });
+
+        selectedHeight = est.fenceHeight || 6;
+        terrainMultiplier = est.terrainMultiplier || 1;
+
+        if (est.addons) {
+          document.getElementById('addon-removal').checked = !!est.addons.removal;
+          document.getElementById('addon-permit').checked = !!est.addons.permit;
+          document.getElementById('addon-stain').checked = !!est.addons.stain;
+        }
+
+        if (est.fencePoints && est.fencePoints.length > 0) {
+          map.setView([est.fencePoints[0].lat, est.fencePoints[0].lng], 19);
+          est.fencePoints.forEach(pt => addFencePoint(L.latLng(pt.lat, pt.lng)));
+          if (est.fenceClosed) closeFence();
+        }
+
+        if (est.gates && est.gates.length > 0) {
+          est.gates.forEach(g => {
+            addGate(L.latLng(g.lat, g.lng));
+            const gate = gates[gates.length - 1];
+            gate.type = g.type;
+            gate.price = g.price;
+          });
+          renderGates();
+        }
+
+        recalculate();
+        showToast('Estimate loaded');
+      } catch (e) { showToast('Could not load estimate'); }
+    }
+
+    // === Init Auth ===
+    try {
+      if (FC_CONFIG.userPoolId && Auth.isLoggedIn()) {
+        // Check if returning from Stripe checkout
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('billing') === 'success') {
+          window.history.replaceState({}, '', window.location.pathname);
+          showToast('Subscription activated!');
+        }
+        onLoggedIn().catch(function() {
+          // If onLoggedIn fails (API down, token expired), fall back to guest
+          Auth.logout();
+          showGuestUI();
+        });
+      } else {
+        // Guest mode — show sign in button, let them use the app
+        showGuestUI();
+        showOnboarding();
+      }
+    } catch (e) {
+      // Any init error — fall back to guest mode
+      showGuestUI();
+      showOnboarding();
+    }
+  </script>
 
 </body>
 </html>

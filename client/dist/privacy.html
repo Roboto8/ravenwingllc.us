@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — FenceCalc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f0eb;
+      --surface: #fff;
+      --surface-2: #ede8e2;
+      --border: #d4cdc4;
+      --text: #2c2417;
+      --text-mid: #4a4030;
+      --text-muted: #6b6052;
+      --accent: #c0622e;
+      --accent-hover: #a8521f;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius: 6px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .site-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand .calc { color: var(--accent); }
+
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { font-size: 0.9rem; font-weight: 500; color: var(--text-mid); text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-links a.active { color: var(--accent); }
+
+    .legal-content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .legal-content h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .legal-date {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    .legal-content h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .legal-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    .legal-content p {
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+
+    .legal-content ul, .legal-content ol {
+      margin: 0 0 16px 20px;
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+    }
+
+    .legal-content li { margin-bottom: 6px; }
+
+    .legal-content .legal-toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+
+    .legal-toc p {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .legal-toc ol {
+      margin: 0 0 0 18px;
+      font-size: 0.88rem;
+      columns: 2;
+      column-gap: 24px;
+    }
+
+    .legal-toc li { margin-bottom: 4px; }
+
+    .legal-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.9rem;
+    }
+
+    .legal-content th,
+    .legal-content td {
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-mid);
+    }
+
+    .legal-content th {
+      font-weight: 600;
+      color: var(--text);
+      background: var(--surface-2);
+    }
+
+    .legal-content .notice-box {
+      background: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 16px 20px;
+      margin: 20px 0;
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .notice-box p { margin-bottom: 0; font-size: 0.9rem; }
+    .notice-box p + p { margin-top: 10px; }
+
+    .site-footer {
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-brand {
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .footer-brand .calc { color: var(--accent); }
+
+    .footer-copy {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .footer-inner { flex-direction: column; text-align: center; gap: 12px; }
+      .legal-content h1 { font-size: 1.6rem; }
+      .legal-content table { font-size: 0.82rem; }
+      .legal-content th, .legal-content td { padding: 8px 10px; }
+      .legal-toc ol { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="landing.html" class="brand">Fence<span class="calc">Calc</span></a>
+      <div class="nav-links">
+        <a href="landing.html">Home</a>
+        <a href="index.html">App</a>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html" class="active">Privacy</a>
+        <a href="eula.html">EULA</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="legal-content">
+    <h1>Privacy Policy</h1>
+    <p class="legal-date">Last updated: March 16, 2026</p>
+
+    <p>This Privacy Policy describes how RavenWing LLC ("Company," "we," "us," or "our") collects, uses, processes, stores, shares, and protects personal information and other data when you access or use FenceCalc (the "Service"). This Privacy Policy applies to all users of the Service, regardless of geographic location, and governs all data processing activities performed by RavenWing LLC in connection with the Service.</p>
+    <p>By accessing or using the Service, you acknowledge that you have read, understood, and agree to the data practices described in this Privacy Policy. This Privacy Policy is incorporated into and forms part of our <a href="terms.html">Terms of Service</a>. If you do not agree with these practices, you must not access or use the Service.</p>
+    <p>RavenWing LLC is a Service-Disabled Veteran-Owned Small Business (SDVOSB) organized under the laws of the Commonwealth of Virginia, with its principal place of business in Mechanicsville, Virginia.</p>
+
+    <div class="legal-toc">
+      <p>Table of Contents</p>
+      <ol>
+        <li><a href="#collected">Information We Collect</a></li>
+        <li><a href="#how-collected">How We Collect Information</a></li>
+        <li><a href="#legal-basis">Legal Basis for Processing</a></li>
+        <li><a href="#how-used">How We Use Your Information</a></li>
+        <li><a href="#third-party">Third-Party Services</a></li>
+        <li><a href="#sharing">Data Sharing</a></li>
+        <li><a href="#storage">Data Storage Location</a></li>
+        <li><a href="#security">Data Security</a></li>
+        <li><a href="#retention">Data Retention</a></li>
+        <li><a href="#rights">Your Rights</a></li>
+        <li><a href="#cookies">Cookie Policy</a></li>
+        <li><a href="#children">Children's Privacy</a></li>
+        <li><a href="#international">International Data Transfers</a></li>
+        <li><a href="#ccpa">California Privacy Rights (CCPA)</a></li>
+        <li><a href="#changes">Changes to This Policy</a></li>
+        <li><a href="#contact">Contact Information</a></li>
+      </ol>
+    </div>
+
+    <h2 id="collected">1. Information We Collect</h2>
+    <p>We collect the following categories of information in connection with the Service. The specific information collected depends on how you interact with the Service and which features you use.</p>
+
+    <h3>1.1 Account Information</h3>
+    <p>When you create a FenceCalc account, we collect the following personal information:</p>
+    <ul>
+      <li>Email address (required; used as your primary account identifier and for account-related communications)</li>
+      <li>Password (required; stored only in securely hashed and salted form using bcrypt; we never store, log, transmit, or have access to your plaintext password)</li>
+      <li>Full name (optional; if provided during registration or in account settings)</li>
+      <li>Company or business name (optional; if provided during registration or in account settings)</li>
+      <li>Business phone number (optional; if provided in account settings)</li>
+      <li>Business address (optional; if provided in account settings)</li>
+      <li>Account creation date and time</li>
+      <li>Subscription status, plan type, billing cycle, and plan history</li>
+      <li>Account role and permissions (for multi-user accounts)</li>
+    </ul>
+
+    <h3>1.2 Payment Information</h3>
+    <p>Payment processing is handled exclusively by our third-party payment processor, <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe, Inc.</a> ("Stripe"), a PCI DSS Level 1 certified service provider. When you subscribe to a paid plan, Stripe collects and processes your payment card details directly through its secure, PCI-compliant infrastructure. <strong>RavenWing LLC does not collect, process, store, or have access to your full card number, CVV/CVC, PIN, or other sensitive payment authentication data at any time.</strong> We receive from Stripe only the following limited information:</p>
+    <ul>
+      <li>Last four digits of your payment card number</li>
+      <li>Card brand (e.g., Visa, Mastercard, American Express, Discover)</li>
+      <li>Card expiration month and year</li>
+      <li>Billing address (city, state, postal code, and country, if provided to Stripe)</li>
+      <li>Subscription status, plan type, billing cycle, and payment history (including amounts, dates, and success/failure status)</li>
+      <li>Stripe Customer ID (an opaque, non-reversible identifier assigned by Stripe)</li>
+      <li>Stripe Subscription ID and Payment Intent IDs (opaque identifiers)</li>
+    </ul>
+
+    <h3>1.3 Estimate and Project Data</h3>
+    <p>When you use the Service to create fence estimates, we collect, process, and store the following data that you input or that the Service generates based on your input:</p>
+    <ul>
+      <li>Property addresses, street addresses, and geographic coordinates (latitude/longitude) that you search for, select, or navigate to</li>
+      <li>Fence line coordinates, vertex positions, segment lengths, and calculated linear footage measurements</li>
+      <li>Fence type selections, style selections, height specifications, material specifications, and configuration options</li>
+      <li>Gate type selections, gate dimensions, gate positions, and gate hardware specifications</li>
+      <li>Material quantities, unit prices (default and custom), extended prices, and total cost calculations</li>
+      <li>Customer names, company names, contact information (phone numbers, email addresses, mailing addresses), and customer notes, to the extent you choose to enter this information</li>
+      <li>Project names, labels, notes, annotations, and internal reference numbers you add to estimates</li>
+      <li>Generated PDF documents, shareable estimate links and their access tokens</li>
+      <li>Estimate creation timestamps, modification timestamps, and version history</li>
+      <li>Markup percentages, tax rates, discount amounts, and other financial parameters you configure</li>
+    </ul>
+
+    <h3>1.4 Usage and Analytics Data</h3>
+    <p>We automatically collect certain information about how you interact with the Service to help us understand usage patterns, improve the user experience, and maintain the Service:</p>
+    <ul>
+      <li>Pages, views, and features accessed, and frequency and duration of use</li>
+      <li>Actions performed within the Service (e.g., creating estimates, adding fence lines, generating PDFs, sharing estimates, modifying prices)</li>
+      <li>Session duration, session start and end times, entry pages, and exit pages</li>
+      <li>Error logs, exception reports, and performance metrics (page load times, API response times)</li>
+      <li>Referral source (how you arrived at the Service, including referring URL, campaign parameters, and search terms)</li>
+      <li>Feature usage frequency and patterns (to prioritize development of commonly used features)</li>
+      <li>Search queries entered into the address search bar within the Service</li>
+    </ul>
+
+    <h3>1.5 Device and Technical Information</h3>
+    <p>We automatically collect technical information about the device, browser, and network connection you use to access the Service:</p>
+    <ul>
+      <li>IP address (may be used for approximate geolocation at the city or region level for analytics and security purposes)</li>
+      <li>Browser type, version, and language preferences</li>
+      <li>Operating system type and version</li>
+      <li>Device type (desktop, laptop, tablet, or mobile), device manufacturer, and screen resolution</li>
+      <li>Time zone and locale settings</li>
+      <li>Date and time of each access request (access timestamps)</li>
+      <li>HTTP request headers, including Accept, Accept-Language, and Accept-Encoding</li>
+      <li>TLS/SSL protocol version and cipher suite used for the connection</li>
+    </ul>
+
+    <h3>1.6 Communication Data</h3>
+    <p>When you contact our support team or otherwise communicate with us, we collect:</p>
+    <ul>
+      <li>The content of your communications (email messages, subject lines, attachments)</li>
+      <li>Your email address and name (as provided in your communication)</li>
+      <li>Timestamps of communications</li>
+      <li>Any additional information you voluntarily provide in connection with your inquiry</li>
+    </ul>
+
+    <h2 id="how-collected">2. How We Collect Information</h2>
+
+    <h3>2.1 Information You Provide Directly</h3>
+    <p>We collect information that you voluntarily and affirmatively provide when you: create an Account; subscribe to a paid plan; create, edit, or manage fence estimates; enter customer data into the Service; configure your account preferences; contact our support team via email; respond to surveys or questionnaires; or otherwise interact with the Service. You are not required to provide any information beyond what is necessary to create an Account (email address and password), but certain features of the Service may require additional information to function.</p>
+
+    <h3>2.2 Information Collected Automatically</h3>
+    <p>We use cookies, server-side logging, session storage, local storage, and similar technologies to automatically collect usage data, device information, and technical information when you access the Service. This data is collected passively through your browser and our server infrastructure. See Section 11 (Cookie Policy) for detailed information about the specific cookies and storage mechanisms we use, their purposes, and their durations.</p>
+
+    <h3>2.3 Information from Third-Party Services</h3>
+    <p>We may receive limited information from third-party services that are integrated into or interact with the Service, including:</p>
+    <ul>
+      <li><strong>Stripe:</strong> Subscription status updates, payment success or failure notifications, payment dispute notifications, fraud risk assessments, and card update notifications (e.g., when a card on file is replaced by the issuing bank)</li>
+      <li><strong>Map tile providers (Esri ArcGIS, OpenStreetMap):</strong> Satellite imagery, aerial imagery, and base map tiles rendered in response to geographic coordinates requested by the Service on your behalf. These providers do not provide us with personal information about you; however, your IP address and requested tile coordinates are transmitted to these providers as part of the tile request process.</li>
+      <li><strong>Geocoding services (Nominatim/OpenStreetMap):</strong> Latitude and longitude coordinates corresponding to property addresses you search within the Service. Your search query (address text) is transmitted to Nominatim for geocoding. Nominatim's usage policy requires that requests include an identifiable user agent and contact information; we include our application identifier and contact email, not your personal information.</li>
+      <li><strong>Google Fonts:</strong> When the Service loads web fonts from Google's content delivery network, Google may collect your IP address and browser user-agent string. No other personal information is shared with Google through this integration.</li>
+    </ul>
+
+    <h2 id="legal-basis">3. Legal Basis for Processing</h2>
+    <p>We process your personal information on the following legal bases, as applicable under relevant data protection laws (including the EU General Data Protection Regulation, UK GDPR, and similar frameworks):</p>
+    <ul>
+      <li><strong>Performance of a Contract:</strong> Processing that is necessary to provide the Service you have subscribed to and to fulfill our contractual obligations to you, including: account creation and management, estimate generation and storage, output document production, payment processing, subscription management, and customer support. (Applies to data described in Sections 1.1, 1.2, 1.3, and 1.6.)</li>
+      <li><strong>Legitimate Interest:</strong> Processing that is necessary for our legitimate business interests, provided that such interests are not overridden by your fundamental rights and freedoms. Our legitimate interests include: improving and optimizing the Service; understanding usage patterns and trends; detecting, preventing, and investigating fraud, abuse, and security incidents; enforcing our Terms of Service; maintaining system security and integrity; and conducting aggregated analytics. We conduct balancing tests to ensure our interests do not override your rights. (Applies to data described in Sections 1.4, 1.5, and 1.6.)</li>
+      <li><strong>Consent:</strong> Where required by applicable law, we obtain your informed, specific, and freely given consent before processing personal information for particular purposes, such as sending marketing or promotional communications, deploying non-essential analytics cookies, or processing data for purposes beyond what is strictly necessary for service delivery. You may withdraw consent at any time without affecting the lawfulness of processing based on consent before its withdrawal. (Applies to optional marketing communications and non-essential cookies.)</li>
+      <li><strong>Legal Obligation:</strong> Processing that is necessary to comply with applicable laws, regulations, legal processes, court orders, subpoenas, or enforceable governmental requests. (Applies to retention of billing records for tax compliance, responses to law enforcement requests, and similar obligations.)</li>
+    </ul>
+
+    <h2 id="how-used">4. How We Use Your Information</h2>
+    <p>We use the information we collect for the following specific purposes. We process only the minimum amount of data necessary to achieve each stated purpose.</p>
+
+    <h3>4.1 Service Delivery and Operations</h3>
+    <ul>
+      <li>Providing, operating, maintaining, and improving the FenceCalc Service and all of its features</li>
+      <li>Creating, authenticating, and managing your Account and Subscription</li>
+      <li>Generating fence estimates, bills of materials, cost calculations, and related Output</li>
+      <li>Rendering map imagery and satellite imagery for fence line drawing and property visualization</li>
+      <li>Converting property addresses to geographic coordinates (geocoding) for map display</li>
+      <li>Enabling shareable estimate links, PDF document generation, and estimate export</li>
+      <li>Processing Subscription payments, managing billing cycles, and handling payment failures through Stripe</li>
+      <li>Storing and retrieving your estimates, projects, and account data</li>
+    </ul>
+
+    <h3>4.2 Communication</h3>
+    <ul>
+      <li>Sending transactional emails (account confirmation, email verification, password reset, billing receipts, payment confirmations, payment failure notifications, subscription renewal notices, and plan change confirmations)</li>
+      <li>Responding to your support requests, questions, and inquiries in a timely manner</li>
+      <li>Providing Service-related notices (including scheduled maintenance windows, unplanned outage notifications, policy changes, security alerts, and feature updates)</li>
+      <li>Sending marketing or promotional communications (only with your explicit opt-in consent, and with an unsubscribe option in every communication)</li>
+    </ul>
+
+    <h3>4.3 Analytics, Improvement, and Development</h3>
+    <ul>
+      <li>Analyzing usage patterns, trends, and user behavior to improve the Service's features, functionality, and user experience</li>
+      <li>Identifying, diagnosing, and fixing bugs, errors, performance bottlenecks, and usability issues</li>
+      <li>Developing, testing, and deploying new features, tools, and functionality</li>
+      <li>Creating aggregated, de-identified, and anonymized data sets for internal benchmarking, statistical analysis, and Service improvement (in which no individual User, customer, or project is identifiable)</li>
+      <li>Conducting A/B testing and feature experiments to optimize the user experience</li>
+      <li>Monitoring system performance, server health, and infrastructure capacity</li>
+    </ul>
+
+    <h3>4.4 Security, Fraud Prevention, and Compliance</h3>
+    <ul>
+      <li>Detecting, investigating, and preventing fraudulent, unauthorized, malicious, or illegal activity</li>
+      <li>Monitoring for and responding to security threats, vulnerabilities, and anomalous behavior</li>
+      <li>Enforcing our <a href="terms.html">Terms of Service</a>, <a href="eula.html">EULA</a>, and other policies</li>
+      <li>Complying with applicable legal obligations, regulatory requirements, and valid legal process</li>
+      <li>Maintaining audit logs for security and compliance purposes</li>
+      <li>Preventing abuse of free trial offers and enforcing usage limits</li>
+    </ul>
+
+    <div class="notice-box">
+      <p><strong>We do not sell your personal information to third parties.</strong> We do not share your personal information with third parties for their own marketing purposes. We do not send marketing or promotional emails unless you have explicitly opted in to receive them.</p>
+    </div>
+
+    <h2 id="third-party">5. Third-Party Services</h2>
+    <p>The Service integrates with the following third-party services to provide its functionality. Each third-party service operates under its own terms of service and privacy policy, which govern their respective collection and processing of data. We encourage you to review their policies.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Provider</th>
+          <th>Purpose</th>
+          <th>Data Shared / Accessible</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cloud Hosting &amp; Infrastructure</td>
+          <td>Amazon Web Services, Inc. (AWS)</td>
+          <td>Application hosting, compute, database, file storage, content delivery, and infrastructure services</td>
+          <td>All Service data is stored and processed on AWS infrastructure. AWS acts as a data processor on our behalf and does not access or use your data for its own purposes.</td>
+        </tr>
+        <tr>
+          <td>Payment Processing</td>
+          <td>Stripe, Inc.</td>
+          <td>Subscription billing, payment card processing, fraud detection, and payment compliance (PCI DSS)</td>
+          <td>Payment card details (collected directly by Stripe), billing address, email address, subscription plan details, and transaction amounts</td>
+        </tr>
+        <tr>
+          <td>Satellite &amp; Aerial Imagery / Map Tiles</td>
+          <td>Esri (ArcGIS World Imagery) and OpenStreetMap contributors</td>
+          <td>Rendering satellite imagery, aerial photography, and base map tiles for fence line drawing, property visualization, and measurement</td>
+          <td>Geographic coordinates (latitude/longitude) of map viewport center and bounds, zoom level, and tile coordinates. Your IP address is transmitted as part of tile HTTP requests.</td>
+        </tr>
+        <tr>
+          <td>Geocoding (Address Search)</td>
+          <td>Nominatim (operated by OpenStreetMap Foundation)</td>
+          <td>Converting property addresses entered by users into geographic coordinates (latitude/longitude) for map display and navigation</td>
+          <td>Property address search text entered by users. Your IP address is transmitted as part of geocoding HTTP requests. Our application user-agent string is included per Nominatim usage policy.</td>
+        </tr>
+        <tr>
+          <td>Web Fonts (Typography)</td>
+          <td>Google Fonts (operated by Google LLC)</td>
+          <td>Rendering the Inter typeface used throughout the Service's user interface and generated documents</td>
+          <td>IP address and browser user-agent string (collected by Google when font files are loaded from Google's CDN). No other personal information is shared.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>We select third-party service providers that maintain appropriate security standards and data protection practices. Where required, we execute data processing agreements (DPAs) with our providers to ensure compliance with applicable data protection laws. However, we are not responsible for the privacy practices, security measures, or data handling of third-party services beyond our contractual agreements with them.</p>
+    <p>We encourage you to review the privacy policies of our third-party service providers:</p>
+    <ul>
+      <li><a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener">AWS Privacy Notice</a> | <a href="https://aws.amazon.com/compliance/data-privacy/" target="_blank" rel="noopener">AWS Data Privacy Center</a></li>
+      <li><a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe Privacy Policy</a> | <a href="https://stripe.com/guides/general-data-protection-regulation" target="_blank" rel="noopener">Stripe GDPR Guide</a></li>
+      <li><a href="https://www.esri.com/en-us/privacy/overview" target="_blank" rel="noopener">Esri Privacy Policy</a></li>
+      <li><a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">OpenStreetMap Foundation Privacy Policy</a></li>
+      <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a></li>
+    </ul>
+
+    <h2 id="sharing">6. Data Sharing</h2>
+    <p>We do not sell, rent, trade, or otherwise commercially transfer your personal information to third parties. We share your information only in the following limited and specifically defined circumstances:</p>
+
+    <h3>6.1 Third-Party Service Providers</h3>
+    <p>We share information with the third-party services identified in Section 5 solely to the extent necessary for them to perform their respective functions in connection with the Service. These providers act as data processors on our behalf (where applicable) and are contractually obligated to use your information only for the purposes specified in our agreements with them.</p>
+
+    <h3>6.2 Shareable Estimate Links</h3>
+    <p>When you generate a shareable estimate link through the Service, the estimate data associated with that link (which may include property address, fence measurements, material selections, material quantities, unit prices, and total costs) becomes accessible to anyone who possesses the unique link URL. <strong>Shareable estimate links do not include your Account credentials, login information, personal contact information, or any information about other estimates in your account.</strong> Shareable links are designed to contain only the specific estimate data relevant to a single project. You are solely responsible for controlling the distribution of shareable links and for understanding that anyone with access to the link URL can view the estimate data.</p>
+
+    <h3>6.3 Legal Requirements and Lawful Disclosure</h3>
+    <p>We may disclose your information if we believe in good faith that such disclosure is reasonably necessary to:</p>
+    <ul>
+      <li>Comply with applicable law, regulation, legal process, subpoena, court order, or enforceable governmental request (including requests from law enforcement and national security agencies);</li>
+      <li>Enforce our <a href="terms.html">Terms of Service</a>, <a href="eula.html">EULA</a>, and other agreements, including investigation of potential violations thereof;</li>
+      <li>Detect, prevent, or address fraud, security incidents, abuse, or technical problems;</li>
+      <li>Protect the rights, property, personal safety, or security of RavenWing LLC, our Users, or the public as required or permitted by applicable law; or</li>
+      <li>Respond to an emergency involving danger of death or serious physical injury to any person, where disclosure is necessary to prevent such danger.</li>
+    </ul>
+    <p>Where legally permitted, we will make reasonable efforts to notify you of any such disclosure before or promptly after it occurs, unless notification is prohibited by law or court order, or would jeopardize an ongoing investigation.</p>
+
+    <h3>6.4 Business Transfers</h3>
+    <p>In the event of a merger, acquisition, reorganization, dissolution, bankruptcy, asset sale, equity sale, or other business transfer or change of control involving RavenWing LLC (whether actual or contemplated), your personal information and User Content may be among the assets transferred, disclosed during due diligence, or otherwise provided to the acquiring, surviving, or successor entity. In such event:</p>
+    <ul>
+      <li>We will provide written notice (via email to the address associated with your Account) at least thirty (30) days prior to any transfer of your personal information to a new controlling entity;</li>
+      <li>The successor entity will be bound by the terms of this Privacy Policy with respect to your previously collected personal information until such time as the successor entity provides you with notice of any changes and an opportunity to exercise your rights; and</li>
+      <li>You will have the option to request deletion of your Account and personal information prior to the completion of any such transfer.</li>
+    </ul>
+
+    <h3>6.5 Aggregated and De-Identified Data</h3>
+    <p>We may create, use, and share aggregated, de-identified, or anonymized data sets that cannot reasonably be used to identify you, any of your customers, or any specific project. Such data may be used for industry research, analytics, benchmarking, trend analysis, and other purposes. Aggregated and de-identified data is not considered personal information under this Privacy Policy or applicable data protection laws.</p>
+
+    <h3>6.6 With Your Consent</h3>
+    <p>We may share your personal information with third parties when we have your explicit, informed consent to do so for a specific, stated purpose.</p>
+
+    <h2 id="storage">7. Data Storage Location</h2>
+    <p>All Service data, including your Account information, estimates, User Content, analytics data, and system logs, is stored on Amazon Web Services (AWS) infrastructure located in the <strong>US-East-1 (Northern Virginia)</strong> region within the United States of America.</p>
+    <p>AWS US-East-1 data centers maintain the following security certifications and compliance frameworks:</p>
+    <ul>
+      <li>SOC 1 (Type II), SOC 2 (Type II), and SOC 3 reports</li>
+      <li>ISO 27001, ISO 27017, and ISO 27018 certifications</li>
+      <li>PCI DSS Level 1 compliance</li>
+      <li>FedRAMP authorization (applicable to government workloads)</li>
+      <li>HIPAA eligibility (though FenceCalc does not process protected health information)</li>
+    </ul>
+    <p>Database backups are maintained within the same AWS US-East-1 region for redundancy, disaster recovery, and business continuity purposes. Backups are encrypted at rest using AES-256 encryption and are retained in accordance with the retention periods described in Section 9.</p>
+    <p>Content delivery for static assets (such as web fonts and CSS files) may be served through content delivery networks (CDNs) with edge locations in various geographic regions, but no personal information or User Content is stored at CDN edge locations.</p>
+
+    <h2 id="security">8. Data Security</h2>
+    <p>We implement administrative, technical, and physical security measures designed to protect your personal information from unauthorized access, disclosure, alteration, destruction, and loss. These measures are commensurate with the sensitivity of the information processed and include, but are not limited to:</p>
+
+    <h3>8.1 Technical Safeguards</h3>
+    <ul>
+      <li><strong>Encryption in Transit:</strong> All data transmitted between your browser and our servers is encrypted using TLS 1.2 or higher (Transport Layer Security) / HTTPS. We enforce HTTP Strict Transport Security (HSTS) headers to prevent protocol downgrade attacks.</li>
+      <li><strong>Encryption at Rest:</strong> All data stored on our servers, databases, and backup systems is encrypted at rest using AES-256 encryption (Advanced Encryption Standard with 256-bit keys) managed through AWS Key Management Service (KMS).</li>
+      <li><strong>Password Security:</strong> User passwords are hashed using bcrypt with unique per-user salts and a cost factor calibrated to current hardware capabilities. We never store, log, display, or have access to plaintext passwords. Password reset tokens are cryptographically random, single-use, and time-limited.</li>
+      <li><strong>Session Security:</strong> User sessions are managed using secure, httpOnly, and SameSite cookies with cryptographically random session identifiers. Sessions expire after periods of inactivity and may be terminated remotely by the user.</li>
+      <li><strong>CSRF Protection:</strong> Cross-site request forgery tokens are used on all state-changing operations to prevent unauthorized actions on behalf of authenticated users.</li>
+      <li><strong>Input Validation:</strong> All user input is validated, sanitized, and parameterized to prevent injection attacks (including SQL injection, XSS, and command injection).</li>
+    </ul>
+
+    <h3>8.2 Access Controls</h3>
+    <ul>
+      <li><strong>Principle of Least Privilege:</strong> Access to production systems, databases, and user data is restricted to authorized personnel on a need-to-know basis. Each team member has only the minimum permissions required for their role.</li>
+      <li><strong>Multi-Factor Authentication:</strong> Multi-factor authentication (MFA) is required for all administrative access to production systems, cloud infrastructure, and developer tools.</li>
+      <li><strong>Audit Logging:</strong> All administrative access to production systems is logged with timestamps, user identifiers, and actions performed. Audit logs are retained and reviewed regularly.</li>
+    </ul>
+
+    <h3>8.3 Infrastructure Security</h3>
+    <ul>
+      <li><strong>Network Security:</strong> Our hosting infrastructure on AWS employs Virtual Private Cloud (VPC) network isolation, security groups (firewalls), network access control lists (NACLs), and network segmentation to restrict traffic flow.</li>
+      <li><strong>Monitoring:</strong> We employ continuous monitoring, log aggregation, and alerting for security events, anomalous behavior, and system health.</li>
+      <li><strong>Vulnerability Management:</strong> We conduct periodic security assessments, code reviews, dependency vulnerability scanning, and infrastructure audits to identify and remediate vulnerabilities.</li>
+    </ul>
+
+    <h3>8.4 Incident Response</h3>
+    <p>We maintain a documented incident response plan to address security breaches and data incidents promptly and effectively. In the event of a data breach affecting your personal information:</p>
+    <ul>
+      <li>We will investigate the incident and take immediate steps to contain and remediate the breach;</li>
+      <li>We will notify affected users via email without unreasonable delay, and in any event within seventy-two (72) hours of confirming the breach (or as otherwise required by applicable law);</li>
+      <li>We will notify relevant data protection authorities and law enforcement as required by applicable law; and</li>
+      <li>We will provide affected users with a description of the nature of the breach, the categories of data affected, the likely consequences, and the measures taken or proposed to address the breach.</li>
+    </ul>
+
+    <p><strong>No method of electronic transmission or storage is 100% secure.</strong> While we implement reasonable precautions and industry-standard safeguards to protect your information, we cannot guarantee absolute security against all threats. You are responsible for maintaining the confidentiality of your Account credentials and for reporting any suspected security incidents promptly to <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>.</p>
+
+    <h2 id="retention">9. Data Retention</h2>
+    <p>We retain your personal information for as long as reasonably necessary to fulfill the purposes described in this Privacy Policy, to comply with our legal obligations, to resolve disputes, and to enforce our agreements. Specific retention periods for each category of data are as follows:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Data Category</th>
+          <th>Retention Period</th>
+          <th>Basis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Account Information (email, name, company)</td>
+          <td>Duration of active Account, plus 90 days after cancellation or termination</td>
+          <td>Contract performance; reactivation window</td>
+        </tr>
+        <tr>
+          <td>Estimate and Project Data</td>
+          <td>Duration of active Account, plus 90 days after cancellation or termination</td>
+          <td>Contract performance; data export window</td>
+        </tr>
+        <tr>
+          <td>Payment and Billing Records</td>
+          <td>Seven (7) years from the date of each transaction</td>
+          <td>Legal obligation (IRS record-keeping requirements; state tax compliance)</td>
+        </tr>
+        <tr>
+          <td>Usage and Analytics Data</td>
+          <td>Twenty-four (24) months from the date of collection</td>
+          <td>Legitimate interest (service improvement and trend analysis)</td>
+        </tr>
+        <tr>
+          <td>Device and Technical Information</td>
+          <td>Twenty-four (24) months from the date of collection</td>
+          <td>Legitimate interest (security monitoring and analytics)</td>
+        </tr>
+        <tr>
+          <td>Server Access Logs</td>
+          <td>Ninety (90) days from the date of collection</td>
+          <td>Legitimate interest (security monitoring, incident investigation)</td>
+        </tr>
+        <tr>
+          <td>Support Correspondence</td>
+          <td>Three (3) years from the date of last interaction in the support thread</td>
+          <td>Legitimate interest (service quality, dispute resolution)</td>
+        </tr>
+        <tr>
+          <td>Cookie Data</td>
+          <td>See Section 11 (Cookie Policy) for specific durations per cookie</td>
+          <td>Varies by cookie type (see Section 11)</td>
+        </tr>
+        <tr>
+          <td>Database Backups</td>
+          <td>Up to 180 days after data is deleted from active systems</td>
+          <td>Legitimate interest (disaster recovery, business continuity)</td>
+        </tr>
+        <tr>
+          <td>Security Audit Logs</td>
+          <td>Two (2) years from the date of the logged event</td>
+          <td>Legitimate interest (security compliance, incident forensics)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Upon expiration of the applicable retention period, personal information will be securely deleted or irreversibly anonymized using industry-standard data destruction methods. Certain information may be retained beyond these periods only as strictly necessary to comply with legal obligations, resolve pending disputes, enforce our agreements, or respond to active litigation holds.</p>
+
+    <h2 id="rights">10. Your Rights</h2>
+    <p>Depending on your jurisdiction and applicable data protection laws (including the EU GDPR, UK GDPR, California CCPA/CPRA, Virginia VCDPA, Colorado CPA, Connecticut CTDPA, and similar frameworks), you may have the following rights regarding your personal information:</p>
+
+    <h3>10.1 Right of Access</h3>
+    <p>You have the right to request a copy of the personal information we hold about you. Upon a verified request, we will provide this information in a commonly used, structured, machine-readable format (such as JSON or CSV) within thirty (30) days of receiving your verified request. If the request is complex or voluminous, we may extend this period by an additional thirty (30) days with written notice to you.</p>
+
+    <h3>10.2 Right to Correction (Rectification)</h3>
+    <p>You have the right to request that we correct any inaccurate, incomplete, or outdated personal information we hold about you. You may update most of your Account information (including name, email, company name, and business details) directly through the Service at any time. For corrections that cannot be made through the Service interface, contact us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>.</p>
+
+    <h3>10.3 Right to Deletion (Erasure / Right to Be Forgotten)</h3>
+    <p>You have the right to request that we delete your personal information, subject to certain exceptions. We may retain information where deletion would conflict with our legal obligations (such as tax record-keeping requirements), where the data is necessary to resolve pending disputes, or where retention is otherwise permitted by applicable law. To request deletion of your Account and all associated data, contact us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>. Deletion requests will be processed within thirty (30) business days.</p>
+
+    <h3>10.4 Right to Data Portability</h3>
+    <p>You have the right to request a copy of your data in a structured, commonly used, machine-readable format. This includes your estimate data, project data, customer data you have entered, and Account information. You may request your data in JSON, CSV, or PDF format. We will provide the requested data within thirty (30) days of your verified request.</p>
+
+    <h3>10.5 Right to Opt Out</h3>
+    <p>You may opt out of:</p>
+    <ul>
+      <li><strong>Marketing communications:</strong> By clicking the "unsubscribe" link in any marketing email, by adjusting your communication preferences in your Account settings, or by contacting us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>. Opting out of marketing emails does not affect transactional or Service-related communications (such as billing receipts, security alerts, and Terms updates), which are necessary for the operation of your Account.</li>
+      <li><strong>Non-essential cookies:</strong> By adjusting your browser cookie settings or by using the cookie preference mechanisms described in Section 11. Note that blocking strictly necessary cookies may impair the functionality of the Service.</li>
+      <li><strong>Analytics data collection:</strong> By contacting us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> to request that we exclude your Account from analytics data collection. This will not affect the core functionality of the Service.</li>
+    </ul>
+
+    <h3>10.6 Right to Restrict Processing</h3>
+    <p>You have the right to request that we restrict the processing of your personal information in certain circumstances, including: when you contest the accuracy of your data (during the period we verify accuracy); when you object to our processing and we are evaluating whether our legitimate interests override your rights; when our processing is unlawful but you prefer restriction over deletion; or when we no longer need the data but you require it for legal claims.</p>
+
+    <h3>10.7 Right to Object</h3>
+    <p>You have the right to object to our processing of your personal information where we rely on legitimate interest as our legal basis. Upon receiving your objection, we will cease processing the relevant data unless we can demonstrate compelling legitimate grounds for the processing that override your interests, rights, and freedoms, or where the processing is necessary for the establishment, exercise, or defense of legal claims.</p>
+
+    <h3>10.8 Right to Withdraw Consent</h3>
+    <p>Where our processing of your personal information is based on your consent, you have the right to withdraw that consent at any time. Withdrawal of consent does not affect the lawfulness of processing that was based on consent before it was withdrawn.</p>
+
+    <h3>10.9 Exercising Your Rights</h3>
+    <p>To exercise any of the rights described above, please contact us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> with the subject line "Privacy Rights Request." Please include in your request: (a) your full name; (b) the email address associated with your Account; (c) the specific right(s) you wish to exercise; and (d) any additional information that may help us locate and verify your data.</p>
+    <p>We may require you to verify your identity before processing your request to protect against unauthorized access to your data. Verification may include confirming ownership of the email address associated with your Account. We will respond to all valid, verified requests within thirty (30) days. If we require additional time due to the complexity of the request, we will inform you of the reason and the expected completion date within the initial thirty (30) day period.</p>
+    <p><strong>You will not be discriminated against, penalized, or subjected to any adverse consequence for exercising any of your privacy rights.</strong> We will not deny you the Service, charge you different prices, provide you with a different level or quality of Service, or suggest that you will receive any of the foregoing as a result of exercising your rights.</p>
+
+    <h2 id="cookies">11. Cookie Policy</h2>
+    <p>FenceCalc uses cookies and similar client-side storage technologies (including local storage and session storage in your web browser) to provide, secure, and improve the Service. A "cookie" is a small data file placed on your device by your web browser when you visit a website. This section describes the specific cookies we use, their purposes, and how you can manage them.</p>
+
+    <h3>11.1 Categories of Cookies</h3>
+    <p>We categorize the cookies used in the Service as follows:</p>
+    <ul>
+      <li><strong>Strictly Necessary Cookies:</strong> Required for the Service to function. These cookies enable core functionality such as user authentication, session management, and security protection. The Service cannot operate correctly without these cookies. You cannot opt out of strictly necessary cookies.</li>
+      <li><strong>Functional Cookies:</strong> Enable enhanced functionality and personalization, such as remembering your preferences, default settings, and display options. These cookies are not strictly necessary but improve your experience.</li>
+      <li><strong>Analytics Cookies:</strong> Collect anonymized information about how the Service is used, including pages visited, features used, and session duration. This data helps us understand usage patterns and improve the Service. Analytics cookies do not contain personally identifiable information.</li>
+    </ul>
+
+    <h3>11.2 Specific Cookies We Use</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Cookie Name</th>
+          <th>Category</th>
+          <th>Purpose</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>fc_session</code></td>
+          <td>Strictly Necessary</td>
+          <td>Maintains your authenticated session after login. Contains a cryptographically random session identifier. Required for the Service to recognize you as a logged-in user.</td>
+          <td>Session (expires when browser is closed), or 30 days if "Remember me" is selected during login</td>
+        </tr>
+        <tr>
+          <td><code>fc_csrf</code></td>
+          <td>Strictly Necessary</td>
+          <td>Cross-site request forgery (CSRF) protection token. Prevents unauthorized third-party websites from performing actions on your behalf while you are logged in.</td>
+          <td>Session (expires when browser is closed)</td>
+        </tr>
+        <tr>
+          <td><code>fc_consent</code></td>
+          <td>Strictly Necessary</td>
+          <td>Records your cookie consent preferences (which categories of cookies you have accepted or declined).</td>
+          <td>1 year</td>
+        </tr>
+        <tr>
+          <td><code>fc_prefs</code></td>
+          <td>Functional</td>
+          <td>Stores your application preferences, including default fence type, preferred map view, measurement units, and display settings.</td>
+          <td>1 year</td>
+        </tr>
+        <tr>
+          <td><code>fc_theme</code></td>
+          <td>Functional</td>
+          <td>Stores your display theme preference (if applicable).</td>
+          <td>1 year</td>
+        </tr>
+        <tr>
+          <td><code>fc_analytics</code></td>
+          <td>Analytics</td>
+          <td>Collects anonymized, non-personally-identifiable usage data to help us understand how the Service is used, identify popular features, and detect areas for improvement.</td>
+          <td>1 year</td>
+        </tr>
+        <tr>
+          <td><code>fc_ref</code></td>
+          <td>Analytics</td>
+          <td>Records the referral source that brought you to the Service (e.g., search engine, direct link, marketing campaign). Used for marketing attribution and channel analysis.</td>
+          <td>30 days</td>
+        </tr>
+        <tr>
+          <td><code>fc_ab</code></td>
+          <td>Analytics</td>
+          <td>Assigns you to A/B test groups for feature experiments. Contains only a randomized group identifier, no personal information.</td>
+          <td>90 days</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>11.3 Third-Party Cookies</h3>
+    <p>Certain third-party services integrated into FenceCalc may set their own cookies on your device when you use the Service:</p>
+    <ul>
+      <li><strong>Stripe:</strong> Sets cookies necessary for secure payment processing, fraud detection, and bot prevention when you interact with payment forms. See <a href="https://stripe.com/cookie-settings" target="_blank" rel="noopener">Stripe's cookie policy</a> for details.</li>
+      <li><strong>Google Fonts:</strong> May set cookies or use other tracking mechanisms when loading font files from Google's content delivery network. See <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener">Google's cookie policy</a> for details.</li>
+    </ul>
+    <p>We do not control third-party cookies and are not responsible for their content, duration, or data collection practices.</p>
+
+    <h3>11.4 Local Storage and Session Storage</h3>
+    <p>In addition to cookies, the Service may use your browser's local storage and session storage APIs to store application state, cached data, and user preferences locally on your device. Data stored in local storage persists until explicitly cleared by you or by the application. Data stored in session storage is automatically cleared when you close your browser tab.</p>
+
+    <h3>11.5 Managing Cookies</h3>
+    <p>You can control and manage cookies through your browser settings. Most modern browsers allow you to view, block, or delete cookies for specific websites. However, please note that blocking or deleting strictly necessary cookies (such as <code>fc_session</code> and <code>fc_csrf</code>) will prevent the Service from functioning correctly, and you may be unable to log in or use the Service.</p>
+    <p>Instructions for managing cookies in common browsers:</p>
+    <ul>
+      <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener">Google Chrome</a></li>
+      <li><a href="https://support.mozilla.org/en-US/kb/enhanced-tracking-protection-firefox-desktop" target="_blank" rel="noopener">Mozilla Firefox</a></li>
+      <li><a href="https://support.apple.com/guide/safari/manage-cookies-sfri11471" target="_blank" rel="noopener">Apple Safari</a></li>
+      <li><a href="https://support.microsoft.com/en-us/microsoft-edge/manage-cookies-in-microsoft-edge-168dab11-0753-043d-7c16-ede5947fc64d" target="_blank" rel="noopener">Microsoft Edge</a></li>
+    </ul>
+
+    <h2 id="children">12. Children's Privacy</h2>
+    <p>FenceCalc is a business-to-business software tool designed for use by fencing professionals, contractors, and related businesses. The Service is <strong>not intended for, directed at, or designed to attract individuals under the age of eighteen (18)</strong>.</p>
+    <p>In compliance with the Children's Online Privacy Protection Act (COPPA), we do not knowingly collect, solicit, use, or maintain personal information from children under the age of thirteen (13). In compliance with our <a href="terms.html">Terms of Service</a>, we do not permit individuals under the age of eighteen (18) to create Accounts or use the Service.</p>
+    <p>If we become aware that we have inadvertently collected personal information from an individual under the age of eighteen (18), we will take immediate steps to:</p>
+    <ul>
+      <li>Delete all personal information associated with the individual from our active systems and backups;</li>
+      <li>Terminate the associated Account; and</li>
+      <li>Notify the individual (or their parent or legal guardian, if applicable) of the deletion.</li>
+    </ul>
+    <p>If you believe that a child under the age of eighteen (18) has provided us with personal information or created an Account, please contact us immediately at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> with the subject line "COPPA Concern" so that we can promptly investigate and take appropriate action.</p>
+
+    <h2 id="international">13. International Data Transfers</h2>
+    <p>The Service is operated from, and all data is stored and processed in, the United States of America (specifically, the AWS US-East-1 region in Northern Virginia). If you access the Service from outside the United States, you acknowledge and understand that your personal information will be transferred to, processed in, and stored in the United States, where data protection and privacy laws may differ from, and may provide fewer protections than, those in your country, state, or jurisdiction of residence.</p>
+    <p>By accessing and using the Service, you explicitly consent to the transfer of your personal information to the United States for processing and storage as described in this Privacy Policy.</p>
+
+    <h3>13.1 European Economic Area (EEA), United Kingdom, and Switzerland</h3>
+    <p>If you are located in the European Economic Area (EEA), the United Kingdom, or Switzerland, the transfer of your personal information to the United States constitutes a transfer to a country that has not been found to provide an adequate level of data protection by the European Commission or the UK Information Commissioner's Office. To ensure that your personal information receives an adequate level of protection, we rely on the following lawful transfer mechanisms as applicable:</p>
+    <ul>
+      <li><strong>Your explicit consent</strong> to the transfer, provided at the time of Account creation;</li>
+      <li><strong>Performance of a contract</strong> between you and RavenWing LLC (i.e., providing the Service you have subscribed to);</li>
+      <li><strong>Standard Contractual Clauses (SCCs)</strong> approved by the European Commission (Commission Implementing Decision (EU) 2021/914), where applicable to transfers to our sub-processors; and</li>
+      <li><strong>Any other applicable transfer mechanism</strong> recognized under applicable data protection law.</li>
+    </ul>
+    <p>You may request a copy of the safeguards we use for international data transfers by contacting us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>.</p>
+
+    <h3>13.2 Other Jurisdictions</h3>
+    <p>If you are located in any other jurisdiction that imposes restrictions on cross-border data transfers, by using the Service you consent to the transfer of your personal information to the United States as described in this Privacy Policy. If applicable law requires specific transfer mechanisms, we will take reasonable steps to implement them.</p>
+
+    <h2 id="ccpa">14. California Privacy Rights (CCPA/CPRA)</h2>
+    <p>If you are a California resident, the California Consumer Privacy Act of 2018 (CCPA), as amended by the California Privacy Rights Act of 2020 (CPRA), provides you with additional rights regarding your personal information. This section supplements the rest of this Privacy Policy with disclosures specific to California residents.</p>
+
+    <h3>14.1 Right to Know</h3>
+    <p>You have the right to request that we disclose the following information covering the twelve (12) month period preceding your request:</p>
+    <ul>
+      <li>The categories of personal information we have collected about you;</li>
+      <li>The categories of sources from which the personal information was collected;</li>
+      <li>The business or commercial purposes for collecting or selling the personal information;</li>
+      <li>The categories of third parties with whom we share personal information; and</li>
+      <li>The specific pieces of personal information we have collected about you.</li>
+    </ul>
+
+    <h3>14.2 Right to Delete</h3>
+    <p>You have the right to request that we delete personal information we have collected from you, subject to certain exceptions permitted by the CCPA/CPRA (including retention required to complete a transaction, comply with legal obligations, detect security incidents, exercise free speech, or for internal uses reasonably aligned with your expectations).</p>
+
+    <h3>14.3 Right to Correct</h3>
+    <p>You have the right to request that we correct inaccurate personal information that we maintain about you, taking into account the nature of the personal information and the purposes of processing.</p>
+
+    <h3>14.4 Right to Opt Out of Sale or Sharing</h3>
+    <p><strong>We do not sell personal information.</strong> We have not sold personal information in the preceding twelve (12) months and do not intend to sell personal information in the future. We do not share personal information with third parties for cross-context behavioral advertising purposes. As we do not sell or share personal information as defined by the CCPA/CPRA, no opt-out mechanism for sale or sharing is required or offered.</p>
+
+    <h3>14.5 Right to Limit Use of Sensitive Personal Information</h3>
+    <p>We do not collect or process sensitive personal information as defined by the CCPA/CPRA (such as Social Security numbers, driver's license numbers, financial account credentials, precise geolocation of your person, racial or ethnic origin, religious beliefs, genetic data, biometric data, health information, or sex life/sexual orientation information).</p>
+
+    <h3>14.6 Right to Non-Discrimination</h3>
+    <p>We will not discriminate against you for exercising any of your CCPA/CPRA rights. Specifically, we will not: deny you the Service; charge you different prices or rates; provide you with a different level or quality of the Service; or suggest that you will receive any of the foregoing differential treatment as a result of exercising your privacy rights.</p>
+
+    <h3>14.7 Categories of Information Collected</h3>
+    <p>In the preceding twelve (12) months, we have collected the following categories of personal information as defined by the CCPA/CPRA:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>CCPA Category</th>
+          <th>Examples Collected</th>
+          <th>Source</th>
+          <th>Business Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A. Identifiers</td>
+          <td>Email address, name, IP address, Stripe Customer ID, Account ID</td>
+          <td>Directly from you; automatically collected</td>
+          <td>Account management, authentication, communication</td>
+        </tr>
+        <tr>
+          <td>B. Personal Information (Cal. Civ. Code 1798.80(e))</td>
+          <td>Name, company name, email address, billing address</td>
+          <td>Directly from you; from Stripe</td>
+          <td>Account management, billing, service delivery</td>
+        </tr>
+        <tr>
+          <td>D. Commercial Information</td>
+          <td>Subscription records, payment history, transaction amounts, estimates created, features used</td>
+          <td>Directly from you; from Stripe; automatically collected</td>
+          <td>Billing, service delivery, analytics</td>
+        </tr>
+        <tr>
+          <td>F. Internet or Network Activity</td>
+          <td>Browsing history within the Service, pages visited, features used, session duration, interaction data, referral source</td>
+          <td>Automatically collected</td>
+          <td>Service improvement, analytics, security</td>
+        </tr>
+        <tr>
+          <td>G. Geolocation Data</td>
+          <td>Property addresses and geographic coordinates entered into estimates (not your personal real-time location)</td>
+          <td>Directly from you</td>
+          <td>Service delivery (map display, estimate generation)</td>
+        </tr>
+        <tr>
+          <td>K. Inferences</td>
+          <td>Usage patterns, feature preferences, subscription likelihood (derived from usage data)</td>
+          <td>Derived from collected information</td>
+          <td>Service improvement, product development</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>14.8 Retention of Personal Information</h3>
+    <p>We retain each category of personal information for the period described in Section 9 (Data Retention) of this Privacy Policy.</p>
+
+    <h3>14.9 Exercising Your California Privacy Rights</h3>
+    <p>To exercise your rights under the CCPA/CPRA, you may:</p>
+    <ul>
+      <li>Email us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> with the subject line "California Privacy Rights Request"</li>
+    </ul>
+    <p>You may also designate an authorized agent to submit a request on your behalf. If you use an authorized agent, we may require: (a) proof of your written authorization for the agent; and (b) verification of your own identity directly with us.</p>
+    <p>We will verify your identity before fulfilling any request by confirming ownership of the email address associated with your Account. We will respond to verified requests within forty-five (45) days. If we require additional time (up to an additional forty-five (45) days), we will notify you of the extension and the reason therefor within the initial forty-five (45) day period. You may submit up to two (2) verifiable consumer requests within a twelve (12) month period.</p>
+
+    <h2 id="changes">15. Changes to This Privacy Policy</h2>
+    <p>We may update this Privacy Policy from time to time to reflect changes in our data practices, the Service's features, applicable laws, or other factors. When we make changes to this Privacy Policy:</p>
+    <ul>
+      <li>We will update the "Last updated" date at the top of this page to reflect the date of the most recent revision;</li>
+      <li>For material changes (including changes to the types of data collected, new data sharing practices, changes to your rights, or new uses of personal information), we will provide notice by email to the address associated with your Account and/or by displaying a prominent notice within the Service at least thirty (30) days before the changes take effect;</li>
+      <li>For non-material changes (such as typographical corrections, clarifications, or formatting updates that do not substantively alter your rights or our data practices), changes may take effect immediately upon posting;</li>
+      <li>Your continued use of the Service after the effective date of any modification constitutes your acceptance of the updated Privacy Policy; and</li>
+      <li>If you do not agree with the updated Privacy Policy, you should discontinue use of the Service before the effective date and may request deletion of your Account and personal information.</li>
+    </ul>
+    <p>We encourage you to review this Privacy Policy periodically to stay informed about how we collect, use, and protect your information. We will maintain an archive of prior versions of this Privacy Policy, which will be available upon request.</p>
+
+    <h2 id="contact">16. Contact Information</h2>
+    <p>If you have any questions, concerns, complaints, or requests regarding this Privacy Policy or our data practices, please contact us at:</p>
+    <p>
+      <strong>RavenWing LLC</strong><br>
+      Mechanicsville, Virginia 23111<br>
+      United States of America<br>
+      Email: <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>
+    </p>
+    <p>For privacy-specific inquiries, data protection requests, privacy rights requests, or to report a data security concern, please include <strong>"Privacy"</strong> in the subject line of your email to ensure prompt routing and prioritized handling.</p>
+    <p>If you are not satisfied with our response to your privacy concern, you may have the right to lodge a complaint with your local data protection authority or supervisory authority. For EU residents, a list of data protection authorities is available at <a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en" target="_blank" rel="noopener">https://edpb.europa.eu/about-edpb/about-edpb/members_en</a>. For UK residents, you may contact the Information Commissioner's Office (ICO) at <a href="https://ico.org.uk/" target="_blank" rel="noopener">https://ico.org.uk/</a>.</p>
+    <p>RavenWing LLC is a Service-Disabled Veteran-Owned Small Business (SDVOSB) organized under the laws of the Commonwealth of Virginia.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">Fence<span class="calc">Calc</span></div>
+        <div class="footer-copy">&copy; 2026 RavenWing LLC. All rights reserved.</div>
+      </div>
+      <div class="footer-links">
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="eula.html">EULA</a>
+        <a href="mailto:support@fencecalc.com">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

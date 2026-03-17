@@ -150,6 +150,7 @@
         <button class="layer-btn" data-layer="streets" onclick="setMapLayer('streets')">Streets</button>
         <button class="layer-btn" data-layer="topo" onclick="setMapLayer('topo')">Topo</button>
       </div>
+      <div class="section-tabs" id="section-tabs" style="display:none"></div>
       <div class="map-toolbar">
         <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')" title="Draw tool (D)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
@@ -162,6 +163,10 @@
         <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
           Curve
+        </button>
+        <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="Start a new fence section">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Section
         </button>
         <button class="tool-btn" id="close-btn" style="display:none" onclick="closeFence()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
@@ -191,10 +196,8 @@
       </button>
       <div class="panel-scroll">
 
-        <div class="estimate-number" id="estimate-number">Estimate #1</div>
-
         <div class="panel-section">
-          <h3 class="section-title">Customer</h3>
+          <h3 class="section-title">Customer <span class="estimate-number" id="estimate-number">#1</span></h3>
           <div class="form-group">
             <input type="text" id="cust-name" placeholder="Name">
           </div>

@@ -342,10 +342,10 @@ describe('estimates handler', () => {
 
   // ===== DELETE =====
   describe('remove', () => {
-    test('deletes estimate', async () => {
+    test('soft deletes estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.query.mockResolvedValue({ items: [mockEstimate] });
-      db.remove.mockResolvedValue();
+      db.update.mockResolvedValue({ ...mockEstimate, status: 'deleted' });
 
       const result = await estimates.remove({
         pathParameters: { id: 'est-123' }
@@ -354,7 +354,10 @@ describe('estimates handler', () => {
 
       expect(result.statusCode).toBe(200);
       expect(body.deleted).toBe(true);
-      expect(db.remove).toHaveBeenCalledWith(mockEstimate.PK, mockEstimate.SK);
+      expect(db.update).toHaveBeenCalledWith(
+        mockEstimate.PK, mockEstimate.SK,
+        expect.objectContaining({ status: 'deleted' })
+      );
     });
 
     test('returns 404 when estimate not found', async () => {

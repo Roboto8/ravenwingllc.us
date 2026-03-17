@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service — FenceCalc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f0eb;
+      --surface: #fff;
+      --surface-2: #ede8e2;
+      --border: #d4cdc4;
+      --text: #2c2417;
+      --text-mid: #4a4030;
+      --text-muted: #6b6052;
+      --accent: #c0622e;
+      --accent-hover: #a8521f;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius: 6px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .site-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand .calc { color: var(--accent); }
+
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { font-size: 0.9rem; font-weight: 500; color: var(--text-mid); text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-links a.active { color: var(--accent); }
+
+    .legal-content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .legal-content h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .legal-date {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    .legal-content h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .legal-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    .legal-content p {
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+
+    .legal-content ul, .legal-content ol {
+      margin: 0 0 16px 20px;
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+    }
+
+    .legal-content li { margin-bottom: 6px; }
+
+    .legal-content .legal-toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+
+    .legal-toc p {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .legal-toc ol {
+      margin: 0 0 0 18px;
+      font-size: 0.88rem;
+      columns: 2;
+      column-gap: 24px;
+    }
+
+    .legal-toc li { margin-bottom: 4px; }
+
+    .legal-content .notice-box {
+      background: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 16px 20px;
+      margin: 20px 0;
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .notice-box p { margin-bottom: 0; font-size: 0.9rem; }
+    .notice-box p + p { margin-top: 10px; }
+
+    .site-footer {
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-brand {
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .footer-brand .calc { color: var(--accent); }
+
+    .footer-copy {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .footer-inner { flex-direction: column; text-align: center; gap: 12px; }
+      .legal-content h1 { font-size: 1.6rem; }
+      .legal-toc ol { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="landing.html" class="brand">Fence<span class="calc">Calc</span></a>
+      <div class="nav-links">
+        <a href="landing.html">Home</a>
+        <a href="index.html">App</a>
+        <a href="terms.html" class="active">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="eula.html">EULA</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="legal-content">
+    <h1>Terms of Service</h1>
+    <p class="legal-date">Last updated: March 16, 2026</p>
+
+    <div class="notice-box">
+      <p><strong>IMPORTANT:</strong> Please read these Terms of Service carefully before using FenceCalc. By accessing or using the Service, you agree to be bound by these Terms. If you do not agree to all of these Terms, do not access or use the Service.</p>
+    </div>
+
+    <div class="legal-toc">
+      <p>Table of Contents</p>
+      <ol>
+        <li><a href="#definitions">Definitions</a></li>
+        <li><a href="#acceptance">Acceptance of Terms</a></li>
+        <li><a href="#license">License Grant</a></li>
+        <li><a href="#restrictions">Restrictions on Use</a></li>
+        <li><a href="#accounts">Account Responsibilities</a></li>
+        <li><a href="#subscriptions">Subscriptions and Billing</a></li>
+        <li><a href="#trial">Free Trial</a></li>
+        <li><a href="#estimates">Estimate Accuracy</a></li>
+        <li><a href="#pricing">Material Pricing</a></li>
+        <li><a href="#no-advice">No Professional Advice</a></li>
+        <li><a href="#ip">Intellectual Property</a></li>
+        <li><a href="#ugc">User-Generated Content</a></li>
+        <li><a href="#retention">Data Retention and Deletion</a></li>
+        <li><a href="#availability">Service Availability</a></li>
+        <li><a href="#indemnification">Indemnification</a></li>
+        <li><a href="#liability">Limitation of Liability</a></li>
+        <li><a href="#warranty">Disclaimer of Warranties</a></li>
+        <li><a href="#disputes">Dispute Resolution</a></li>
+        <li><a href="#force-majeure">Force Majeure</a></li>
+        <li><a href="#termination">Termination</a></li>
+        <li><a href="#severability">Severability</a></li>
+        <li><a href="#entire-agreement">Entire Agreement</a></li>
+        <li><a href="#modifications">Modifications and Notice</a></li>
+        <li><a href="#contact">Contact Information</a></li>
+      </ol>
+    </div>
+
+    <h2 id="definitions">1. Definitions</h2>
+    <p>For purposes of these Terms of Service ("Terms"), the following definitions apply throughout this document and all related agreements:</p>
+    <ul>
+      <li><strong>"Service"</strong> means the FenceCalc web-based software-as-a-service (SaaS) application, including all features, tools, modules, content, application programming interfaces (APIs), algorithms, databases, documentation, updates, patches, enhancements, and all related intellectual property provided by RavenWing LLC through the FenceCalc platform.</li>
+      <li><strong>"Company," "we," "us," or "our"</strong> refers to RavenWing LLC, a Virginia limited liability company with its principal place of business in Mechanicsville, Virginia, and the sole owner, operator, and developer of the Service.</li>
+      <li><strong>"User," "you," or "your"</strong> refers to any individual or legal entity (including corporations, limited liability companies, partnerships, sole proprietorships, government agencies, and other organizations) that accesses or uses the Service, whether as a registered account holder or otherwise.</li>
+      <li><strong>"Account"</strong> means a registered user account created through the Service's registration process, which is required to access the Service's features and functionality.</li>
+      <li><strong>"Subscription"</strong> means a paid, recurring plan (monthly or annual) that grants access to the Service beyond the Free Trial period, as described on the Service's pricing page.</li>
+      <li><strong>"Estimate"</strong> means any fence material estimate, bill of materials (BOM), cost calculation, measurement output, quantity takeoff, or related output generated through the Service's proprietary algorithms based on User input.</li>
+      <li><strong>"User Content"</strong> means all data, information, text, geographic coordinates, measurements, fence line drawings, customer names, addresses, phone numbers, email addresses, project notes, annotations, and other content that you input into, create within, upload to, or generate through the Service.</li>
+      <li><strong>"BOM"</strong> means Bill of Materials, the itemized list of materials, quantities, specifications, and associated pricing generated by the Service's proprietary algorithms for a given fence configuration.</li>
+      <li><strong>"BOM Algorithms"</strong> means the proprietary calculation logic, estimation formulas, material computation methods, post-spacing algorithms, hardware quantity calculations, waste factor computations, and related computational processes embedded within the Service.</li>
+      <li><strong>"Authorized Users"</strong> means individuals within your organization who are authorized under your Account and Subscription plan to access and use the Service.</li>
+      <li><strong>"Output"</strong> means any Estimates, reports, PDF documents, shareable links, bills of materials, or other documents generated by the Service based on User Content.</li>
+      <li><strong>"Confidential Information"</strong> means all non-public information related to the Service, including source code, object code, algorithms, data structures, pricing databases, BOM Algorithms, technical specifications, architecture, trade secrets, business methods, and any information designated as confidential by the Company.</li>
+      <li><strong>"Effective Date"</strong> means the date on which you first access or use the Service, or the date on which you create an Account, whichever occurs first.</li>
+    </ul>
+
+    <h2 id="acceptance">2. Acceptance of Terms</h2>
+    <p>By creating an Account, accessing, or using the Service in any manner, you acknowledge that you have read, understood, and agree to be bound by these Terms, our <a href="privacy.html">Privacy Policy</a>, and our <a href="eula.html">End User License Agreement (EULA)</a>, all of which are incorporated herein by reference and collectively form the complete agreement between you and RavenWing LLC regarding the Service.</p>
+    <p>If you are accessing or using the Service on behalf of a company, organization, government agency, or other legal entity, you represent and warrant that: (a) you have the legal authority to bind that entity to these Terms; (b) you have read and understood these Terms on behalf of the entity; and (c) you agree to these Terms on behalf of the entity. In such cases, references to "you" or "your" throughout these Terms shall include that entity.</p>
+    <p>You must be at least eighteen (18) years of age to use the Service. By using the Service, you represent and warrant that you are at least eighteen (18) years of age, that you have the legal capacity to enter into a binding agreement, and that your use of the Service does not violate any applicable law or regulation.</p>
+    <p>If you do not agree to any provision of these Terms, you must immediately discontinue all access to and use of the Service.</p>
+
+    <h2 id="license">3. License Grant</h2>
+
+    <h3>3.1 Scope of License</h3>
+    <p>Subject to your ongoing compliance with these Terms, the <a href="eula.html">EULA</a>, and payment of all applicable Subscription fees, RavenWing LLC grants you a <strong>limited, non-exclusive, non-transferable, non-sublicensable, revocable license</strong> to access and use the Service solely for your internal business purposes during the term of your active Subscription.</p>
+
+    <h3>3.2 License Limitations</h3>
+    <p>This license does not include the right to:</p>
+    <ul>
+      <li>Grant access to the Service to any third party outside your organization, except as expressly permitted herein;</li>
+      <li>Use the Service on behalf of, or for the direct benefit of, any third party other than your direct customers for whom you are preparing fence estimates in the ordinary course of your fencing business;</li>
+      <li>Sublicense, resell, lease, rent, loan, or otherwise commercially redistribute the Service, access thereto, or any Output generated thereby to any third party;</li>
+      <li>Use the Service as a component of, or as an input to, any competing product or service;</li>
+      <li>Provide the Service on a time-sharing, outsourcing, service-bureau, or managed-service basis to third parties; or</li>
+      <li>Use the Service in any manner not expressly authorized by these Terms or the <a href="eula.html">EULA</a>.</li>
+    </ul>
+
+    <h3>3.3 Reservation of Rights</h3>
+    <p>The Service is licensed, not sold. RavenWing LLC and its licensors retain all right, title, and interest in and to the Service, including all intellectual property rights therein. All rights not expressly granted herein are reserved by RavenWing LLC. No implied licenses are granted by these Terms.</p>
+
+    <h2 id="restrictions">4. Restrictions on Use</h2>
+    <p>You agree that you shall not, directly or indirectly, and shall not authorize, permit, encourage, or enable any third party to:</p>
+    <ul>
+      <li><strong>Reverse engineer, decompile, disassemble, decode, decrypt, or otherwise attempt to derive the source code</strong>, object code, algorithms, data structures, database schemas, or underlying ideas or know-how of the Service or any component thereof, whether through analysis of the Service's output, behavior, network communications, API responses, or any other method;</li>
+      <li><strong>Scrape, crawl, spider, harvest, or use any automated means</strong> (including bots, scripts, web scrapers, browser extensions, robotic process automation, or similar tools) to access, extract, collect, index, or copy any data, content, pricing information, material data, or other information from the Service;</li>
+      <li><strong>Redistribute, sublicense, sell, resell, lease, rent, assign, transfer, or otherwise make available</strong> the Service, any derivative work based thereon, or any Output generated thereby to any third party for their independent use or benefit;</li>
+      <li><strong>Use the Service, its Output, BOM Algorithms, pricing data, material databases, or any Confidential Information obtained therefrom to design, develop, build, train, improve, market, sell, or distribute</strong> any product, service, software, algorithm, database, or tool that competes with, is substantially similar to, or serves as a replacement for the Service, in whole or in part;</li>
+      <li><strong>Copy, reproduce, modify, adapt, translate, or create derivative works</strong> of any part of the Service, including its user interface, visual design, BOM Algorithms, pricing databases, estimation logic, or documentation;</li>
+      <li><strong>Remove, alter, obscure, cover, or tamper with</strong> any proprietary notices, labels, watermarks, copyright notices, trademark designations, or other marks on or in the Service;</li>
+      <li><strong>Interfere with, disrupt, degrade, or impair</strong> the Service, its servers, networks, infrastructure, or any systems connected to the Service, or disobey any requirements, procedures, or policies of such networks;</li>
+      <li><strong>Use the Service for any unlawful, fraudulent, or deceptive purpose</strong> or in violation of any applicable local, state, national, or international law, regulation, or ordinance;</li>
+      <li><strong>Share, publish, post, or disclose your Account credentials</strong> (including username and password) to any unauthorized third party, or allow multiple individuals to use a single set of Account credentials unless each such individual is an Authorized User under your Subscription plan;</li>
+      <li><strong>Circumvent, bypass, disable, or attempt to circumvent</strong> any security features, access controls, usage limits, rate limits, copy-protection mechanisms, digital rights management, or content-protection technologies of the Service;</li>
+      <li><strong>Introduce, transmit, or upload</strong> any viruses, malware, worms, Trojan horses, ransomware, spyware, adware, or other harmful, malicious, or destructive code or content to or through the Service;</li>
+      <li><strong>Systematically download, store, cache, archive, or compile</strong> material pricing data, BOM data, algorithmic outputs, or estimation results from the Service for use outside the Service or for the purpose of building a competing dataset or database;</li>
+      <li><strong>Benchmark, performance-test, or stress-test</strong> the Service for the purpose of publishing comparative analyses or competitive evaluations without prior written consent from RavenWing LLC;</li>
+      <li><strong>Use the Service to generate Output for submission to any party</strong> while misrepresenting the source of such Output or while implying that the Output constitutes a professional survey, engineering assessment, or licensed contractor bid when it does not; or</li>
+      <li><strong>Attempt to gain unauthorized access</strong> to any portion of the Service, other user accounts, computer systems, or networks connected to the Service through hacking, password mining, brute-force attacks, social engineering, or any other means.</li>
+    </ul>
+
+    <h2 id="accounts">5. Account Responsibilities and Security</h2>
+
+    <h3>5.1 Registration Requirements</h3>
+    <p>To access the Service, you must register for an Account by providing a valid email address and creating a secure password. You agree to:</p>
+    <ul>
+      <li>Provide accurate, current, and complete information during the registration process and at all times thereafter;</li>
+      <li>Maintain and promptly update your Account information to keep it accurate, current, and complete;</li>
+      <li>Create a strong, unique password that is not used for any other service or account;</li>
+      <li>Maintain the strict confidentiality and security of your Account credentials, including your password and any authentication tokens;</li>
+      <li>Accept full responsibility for all activities that occur under your Account, whether or not authorized by you, to the extent such activities were enabled by your failure to secure your credentials;</li>
+      <li>Immediately notify RavenWing LLC at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> of any unauthorized use of your Account, any breach of security, or any suspected compromise of your Account credentials; and</li>
+      <li>Not share your Account credentials with any person outside your organization, nor allow multiple individuals to use a single Account unless each such individual is an Authorized User under your Subscription plan.</li>
+    </ul>
+
+    <h3>5.2 Account Security</h3>
+    <p>RavenWing LLC implements industry-standard security measures to protect your Account, including encrypted credential storage, secure session management, and HTTPS encryption for all data in transit. However, you acknowledge that no system is impervious to breach and that you bear primary responsibility for the security of your Account credentials.</p>
+    <p>RavenWing LLC shall not be liable for any loss, damage, cost, or expense arising from your failure to comply with the foregoing obligations, including any unauthorized access to your Account resulting from your failure to maintain adequate credential security.</p>
+
+    <h3>5.3 Account Suspension</h3>
+    <p>RavenWing LLC reserves the right to suspend your Account access, temporarily or permanently, if we reasonably believe that your Account has been compromised, is being used in violation of these Terms, or poses a security risk to the Service or other Users.</p>
+
+    <h2 id="subscriptions">6. Subscriptions and Billing</h2>
+
+    <h3>6.1 Subscription Plans</h3>
+    <p>Access to the Service beyond the Free Trial period requires an active paid Subscription. Subscription plans, pricing tiers, included features, user seat limits, and other plan attributes are described on the Service's pricing page and are subject to change. The specific terms of your Subscription (including price, billing cycle, and included features) are confirmed at the time of purchase and are recorded in your Account settings.</p>
+
+    <h3>6.2 Billing and Payment</h3>
+    <p>All payments are processed securely through Stripe, Inc. ("Stripe"), a PCI DSS Level 1 certified payment processor. By providing payment information and subscribing, you:</p>
+    <ul>
+      <li>Authorize RavenWing LLC (through Stripe) to charge the applicable Subscription fee to your designated payment method on a recurring basis (monthly or annually, as selected by you at the time of subscription);</li>
+      <li>Represent and warrant that you are authorized to use the payment method provided and that all payment information is accurate and current;</li>
+      <li>Agree to keep your payment information current, accurate, and valid at all times during the term of your Subscription;</li>
+      <li>Acknowledge that failure to maintain valid payment information may result in suspension or termination of your access to the Service; and</li>
+      <li>Acknowledge that RavenWing LLC does not store your full payment card number, CVV, or other sensitive payment credentials; such information is handled exclusively by Stripe.</li>
+    </ul>
+    <p>All fees are quoted and charged in United States Dollars (USD). You are solely responsible for all applicable taxes (including sales tax, use tax, value-added tax, goods and services tax, and any other applicable tax), duties, levies, or government-imposed fees associated with your Subscription, except for taxes based on RavenWing LLC's net income.</p>
+
+    <h3>6.3 Auto-Renewal</h3>
+    <p>All Subscriptions automatically renew at the end of each billing cycle (monthly or annually, as applicable) unless you cancel your Subscription before the renewal date. Upon each renewal, you will be charged the then-current Subscription rate for your plan. RavenWing LLC will provide at least thirty (30) days' written notice (via email to the address associated with your Account) prior to any price increase taking effect on your next renewal. If you do not agree to a price increase, you may cancel your Subscription before the renewal date at which the new pricing would take effect.</p>
+
+    <h3>6.4 Cancellation</h3>
+    <p>You may cancel your Subscription at any time through your Account settings or by contacting <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>. Cancellation takes effect at the end of the current paid billing period. Upon cancellation:</p>
+    <ul>
+      <li>You will retain full access to the Service through the end of your current paid billing period;</li>
+      <li>No prorated refunds will be issued for unused portions of a billing period;</li>
+      <li>No additional charges will be incurred after cancellation unless you reactivate your Subscription;</li>
+      <li>Your Account and User Content will be retained in accordance with Section 13 (Data Retention and Deletion); and</li>
+      <li>You may reactivate your Subscription at any time by updating your payment method and selecting a plan.</li>
+    </ul>
+
+    <h3>6.5 Refund Policy</h3>
+    <p>All Subscription fees are non-refundable except as expressly set forth herein or as required by applicable law. Specifically:</p>
+    <ul>
+      <li>No refunds will be issued for partial billing periods, unused features, or downgraded plans;</li>
+      <li>In the event of a billing error attributable to RavenWing LLC, you may request a correction by contacting <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> within thirty (30) days of the erroneous charge;</li>
+      <li>Duplicate charges resulting from system errors will be refunded in full upon verification; and</li>
+      <li>Refund requests outside the scope of this section will be evaluated on a case-by-case basis at the sole discretion of RavenWing LLC.</li>
+    </ul>
+
+    <h3>6.6 Price Changes</h3>
+    <p>RavenWing LLC reserves the right to modify Subscription pricing at any time. Any price change will be communicated to you via email at least thirty (30) days prior to the effective date. Price changes will take effect at the start of your next billing cycle following the notice period. Your continued use of the Service after the price change takes effect constitutes your acceptance of the new pricing.</p>
+
+    <h2 id="trial">7. Free Trial</h2>
+    <p>New Accounts may be eligible for a free trial period ("Free Trial") as described on the Service's registration or pricing page. During the Free Trial:</p>
+    <ul>
+      <li>You will have access to the full functionality of the Service at no charge for the duration specified at the time of registration;</li>
+      <li>No payment information is required to begin a Free Trial;</li>
+      <li>The Free Trial is limited to one (1) trial per individual, company, organization, or other legal entity; attempts to obtain multiple Free Trials through the use of different email addresses, aliases, subsidiaries, or other means constitute a material violation of these Terms and may result in immediate Account termination;</li>
+      <li>RavenWing LLC reserves the right to determine Free Trial eligibility in its sole discretion and to modify, suspend, or discontinue the Free Trial offer at any time without prior notice;</li>
+      <li>All data entered during the Free Trial will be preserved in your Account if you subscribe to a paid plan; and</li>
+      <li>At the expiration of the Free Trial, your access to the Service will be suspended until you subscribe to a paid plan. Your data will be retained for ninety (90) days following the Free Trial expiration, after which it may be permanently deleted.</li>
+    </ul>
+    <p>THE SERVICE IS PROVIDED DURING THE FREE TRIAL ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT ANY WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, OR STATUTORY. RAVENWING LLC SHALL HAVE NO LIABILITY OF ANY KIND ARISING FROM YOUR USE OF THE SERVICE DURING THE FREE TRIAL PERIOD.</p>
+
+    <h2 id="estimates">8. Estimate Accuracy Disclaimer</h2>
+    <div class="notice-box">
+      <p><strong>CRITICAL NOTICE:</strong> All Estimates generated by FenceCalc are approximations only. They are not guarantees of material quantities, measurements, dimensions, or costs. By using the Service, you acknowledge, understand, and agree to all of the following provisions in their entirety.</p>
+    </div>
+    <ul>
+      <li><strong>Approximation Only.</strong> Estimates are generated by automated proprietary algorithms based on the data you input, including fence line coordinates drawn on satellite or aerial imagery. The accuracy of any Estimate is fundamentally dependent on the accuracy, completeness, and correctness of your input. Errors in input will produce errors in output.</li>
+      <li><strong>Imagery Limitations.</strong> Satellite and aerial imagery used within the Service is sourced from third-party providers (including Esri and OpenStreetMap contributors) and may be outdated, misaligned, distorted, offset, or otherwise inaccurate. Property boundaries, terrain features, elevations, structures, vegetation, utility lines, and other physical conditions depicted in imagery may not reflect current real-world conditions. Imagery resolution varies by location and may not be sufficient for precision measurements.</li>
+      <li><strong>Standard Assumptions.</strong> Material quantities calculated by the Service are based on standard construction assumptions, industry-average specifications, and generalized installation practices. These calculations may not account for site-specific conditions including but not limited to: terrain variations, grade changes, slopes, rocky soil, root systems, high water tables, frost lines, utility easements, setback requirements, or local building code requirements.</li>
+      <li><strong>Actual Requirements May Vary.</strong> Actual material requirements for any given project may differ materially from Estimates due to waste factors, cutting patterns, material defects, supplier packaging quantities, jobsite conditions, installation methods, local practices, weather conditions, and other variables not captured by the Service.</li>
+      <li><strong>Price Fluctuation.</strong> Material prices included in Estimates are subject to market fluctuation, regional variation, supplier availability, supply chain disruptions, seasonal pricing, tariffs, import duties, shipping costs, and other factors entirely beyond the control of RavenWing LLC. Prices displayed in any Estimate may not reflect current market conditions at the time of material purchase.</li>
+      <li><strong>User Responsibility.</strong> <strong>You are solely and exclusively responsible for independently verifying all measurements, material quantities, specifications, pricing, and other information</strong> contained in any Estimate before purchasing materials, entering into contracts, submitting bids or proposals, making financial commitments, or relying on such information for any purpose whatsoever.</li>
+      <li><strong>No Liability for Reliance.</strong> RavenWing LLC shall not be liable for any loss, damage, cost, expense, penalty, or other harm of any kind arising from your reliance on any Estimate generated by the Service, including but not limited to: material shortages, material overages, cost overruns, project delays, failed bids, contractual disputes, customer complaints, rework costs, liquidated damages, or any consequential or incidental damages.</li>
+      <li><strong>Professional Verification Required.</strong> RavenWing LLC strongly recommends that all Estimates be reviewed and verified by qualified professionals (including licensed surveyors, engineers, and experienced contractors) before being used for any purpose. The Service is a preliminary estimation tool and is not a substitute for professional judgment or on-site verification.</li>
+    </ul>
+
+    <h2 id="pricing">9. Material Pricing Disclaimer</h2>
+    <p>Default material prices displayed within the Service are <strong>market averages compiled from publicly available sources</strong> and are provided solely for preliminary estimation and general reference purposes. You acknowledge and agree that:</p>
+    <ul>
+      <li>Default prices are <strong>not quotes, bids, offers, or commitments</strong> from any materials supplier, manufacturer, distributor, retailer, or any other party;</li>
+      <li>RavenWing LLC has no affiliation with, and does not represent, endorse, or act as agent for, any specific materials supplier, manufacturer, or distributor;</li>
+      <li>Actual prices you pay for materials may differ significantly (higher or lower) from the default prices displayed in the Service due to geographic location, supplier relationships, volume discounts, contractual pricing, market conditions, commodity prices, tariffs, duties, shipping costs, seasonal factors, and other variables;</li>
+      <li>Material prices fluctuate frequently and without notice, and the Service may not reflect the most current pricing available in any given market at any given time;</li>
+      <li>Default pricing data is updated periodically but RavenWing LLC makes no commitment regarding the frequency, timeliness, or accuracy of such updates;</li>
+      <li>Custom prices entered by you into the Service are your sole responsibility and are not verified, validated, or endorsed by RavenWing LLC;</li>
+      <li>RavenWing LLC makes no warranty, representation, or guarantee regarding the accuracy, completeness, currentness, or reliability of any pricing data displayed in or generated by the Service; and</li>
+      <li>You should obtain current, written price quotes directly from your chosen material suppliers before making any purchase commitments or submitting any bids or proposals based on Estimates from the Service.</li>
+    </ul>
+
+    <h2 id="no-advice">10. No Professional Advice</h2>
+    <p>The Service is a software tool designed to assist fencing professionals and related trades in creating preliminary estimates and bills of materials. <strong>The Service does not constitute, and shall not be construed as, professional surveying, engineering, architectural, structural, geotechnical, construction management, financial, legal, or other professional advice or services of any kind.</strong></p>
+    <ul>
+      <li>Estimates generated by the Service are not a substitute for professional land surveys, boundary surveys, topographic surveys, ALTA/NSPS surveys, engineering assessments, structural analyses, soil analyses, geotechnical investigations, or physical site inspections conducted by qualified professionals.</li>
+      <li>The Service does not assess or determine compliance with local building codes, zoning regulations, zoning overlays, homeowner association (HOA) covenants, conditions, and restrictions (CC&Rs), permit requirements, setback requirements, height restrictions, utility easement restrictions, environmental regulations, historic preservation requirements, ADA requirements, or other applicable legal or regulatory requirements.</li>
+      <li>You are solely responsible for obtaining all necessary professional services, surveys, permits, inspections, approvals, and regulatory clearances before commencing any fence installation, modification, or removal project.</li>
+      <li>RavenWing LLC is not a licensed contractor, licensed surveyor, licensed engineer, licensed architect, or licensed design professional. The provision of the Service does not create a professional-client, contractor-client, or any other fiduciary or professional relationship between RavenWing LLC and any User.</li>
+      <li>Nothing in the Service or any Output shall be construed as a professional opinion, professional certification, or professional endorsement of any design, specification, or installation method.</li>
+      <li>You assume all risk associated with using the Service and any Output for any purpose, including for bidding, procurement, construction, or any other commercial activity.</li>
+    </ul>
+
+    <h2 id="ip">11. Intellectual Property</h2>
+
+    <h3>11.1 Ownership</h3>
+    <p>The Service and all rights therein are and shall remain the sole and exclusive property of RavenWing LLC and its licensors. The Service is protected by copyright, trade secret, patent, trademark, and other intellectual property laws of the United States and foreign jurisdictions. Without limiting the foregoing, RavenWing LLC owns all right, title, and interest in and to:</p>
+    <ul>
+      <li>All source code, object code, software, firmware, algorithms, machine learning models, and technical architecture underlying the Service;</li>
+      <li>All BOM calculation algorithms, material estimation logic, post-spacing formulas, hardware quantity computations, waste-factor calculations, pricing methodologies, and estimation processes;</li>
+      <li>All material databases, pricing databases, product specifications databases, and related data compilations;</li>
+      <li>All user interface designs, visual elements, layouts, graphics, icons, illustrations, animations, and the overall "look and feel" and trade dress of the Service;</li>
+      <li>All documentation, training materials, help content, tooltips, instructional content, and marketing materials;</li>
+      <li>The FenceCalc and RavenWing names, logos, trademarks, service marks, trade names, domain names, and trade dress; and</li>
+      <li>All improvements, enhancements, modifications, derivative works, and updates of any of the foregoing, regardless of who suggested or requested such improvements.</li>
+    </ul>
+
+    <h3>11.2 Feedback</h3>
+    <p>If you provide any suggestions, ideas, enhancement requests, feature requests, feedback, recommendations, bug reports, or other input regarding the Service ("Feedback"), you hereby irrevocably assign to RavenWing LLC all right, title, and interest in and to such Feedback, including all intellectual property rights therein. RavenWing LLC shall be free to use, incorporate, modify, distribute, and commercialize such Feedback in any manner and for any purpose without restriction, obligation, compensation, attribution, or accounting to you. You waive any and all moral rights you may have in such Feedback.</p>
+
+    <h3>11.3 Trademarks</h3>
+    <p>FenceCalc, RavenWing, and all related names, logos, product and service names, designs, and slogans are trademarks of RavenWing LLC or its affiliates. You shall not use such marks without the prior written permission of RavenWing LLC. All other names, logos, product and service names, designs, and slogans appearing in the Service are the trademarks of their respective owners.</p>
+
+    <h2 id="ugc">12. User-Generated Content</h2>
+
+    <h3>12.1 Ownership of User Content</h3>
+    <p>You retain all ownership rights in and to all User Content that you input into the Service. Nothing in these Terms transfers ownership of your User Content to RavenWing LLC.</p>
+
+    <h3>12.2 License to User Content</h3>
+    <p>By inputting User Content into the Service, you grant RavenWing LLC a <strong>non-exclusive, worldwide, royalty-free, fully paid-up, irrevocable (during the term of your Account), sublicensable (solely to RavenWing LLC's hosting and infrastructure providers to the extent necessary to provide the Service) license</strong> to use, process, store, reproduce, display, transmit, and create derivative works of your User Content solely to the extent necessary to:</p>
+    <ul>
+      <li>Provide, operate, maintain, and improve the Service and its features;</li>
+      <li>Generate Estimates, produce Output documents (PDFs, shareable links, reports), and perform calculations as directed by you;</li>
+      <li>Create aggregated, de-identified, or anonymized data sets for Service improvement, algorithm refinement, analytics, and benchmarking purposes, provided that no individual User, customer, or specific project will be identifiable in such aggregated data;</li>
+      <li>Provide customer support and troubleshoot technical issues at your request;</li>
+      <li>Create and maintain backups for disaster recovery and business continuity purposes; and</li>
+      <li>Comply with applicable laws, regulations, or valid legal process, including lawful subpoenas, court orders, and government requests.</li>
+    </ul>
+
+    <h3>12.3 Responsibility for User Content</h3>
+    <p>You are solely responsible for the accuracy, legality, appropriateness, and non-infringement of all User Content. You represent and warrant that: (a) you have all necessary rights, licenses, consents, and permissions to input such content into the Service and to grant the license described in Section 12.2; (b) your User Content does not infringe, misappropriate, or violate any third party's intellectual property rights, privacy rights, publicity rights, or other legal rights; and (c) your User Content complies with all applicable laws and regulations.</p>
+
+    <h3>12.4 Customer Data</h3>
+    <p>To the extent that you input personal information of your own customers (such as customer names, addresses, email addresses, or phone numbers) into the Service, you represent and warrant that you have obtained all necessary consents and authorizations from such individuals for the processing of their information through the Service, and you are solely responsible for complying with all applicable privacy laws with respect to such information.</p>
+
+    <h2 id="retention">13. Data Retention and Deletion</h2>
+    <p>RavenWing LLC retains your Account information and User Content for as long as your Account remains active and your Subscription is current. Following cancellation, expiration, or termination of your Account:</p>
+    <ul>
+      <li>Your data will be retained in a read-only state for a period of ninety (90) days to allow you to reactivate your Account, export your data, or request data portability;</li>
+      <li>After the ninety (90) day retention period, RavenWing LLC may permanently and irreversibly delete your Account and all associated User Content from its active systems;</li>
+      <li>Copies of your data may persist in encrypted backup systems for an additional period not to exceed one hundred eighty (180) days following deletion from active systems, after which backup copies will be permanently purged;</li>
+      <li>Certain information may be retained for longer periods as required by law, including payment and billing records (seven years for tax compliance), legal dispute records, and information subject to litigation holds; and</li>
+      <li>Aggregated, de-identified, or anonymized data derived from your User Content may be retained indefinitely, as such data cannot be used to identify you or your customers.</li>
+    </ul>
+    <p>You may request immediate deletion of your Account and User Content at any time by contacting <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>. Deletion requests will be processed within thirty (30) business days, subject to applicable legal retention requirements. RavenWing LLC will confirm deletion in writing upon completion.</p>
+
+    <h2 id="availability">14. Service Availability</h2>
+    <p>RavenWing LLC will use commercially reasonable efforts to maintain the availability of the Service. However, you acknowledge and agree that:</p>
+    <ul>
+      <li>The Service may experience interruptions, slowdowns, or outages due to scheduled maintenance, software updates, infrastructure upgrades, or emergency repairs;</li>
+      <li>Third-party services upon which the Service depends (including Amazon Web Services for hosting, Stripe for payment processing, Esri and OpenStreetMap for map tile rendering, and Nominatim for geocoding) may experience outages, degradation, rate limiting, or service changes beyond our control;</li>
+      <li>RavenWing LLC does not guarantee any specific level of uptime, availability, or performance and does not offer a service level agreement (SLA) unless separately agreed in writing;</li>
+      <li>RavenWing LLC will use reasonable efforts to provide advance notice of planned maintenance windows but is not obligated to do so for emergency maintenance or security patches; and</li>
+      <li>RavenWing LLC shall not be liable for any loss, damage, cost, or expense arising from Service interruptions, degradation, or unavailability, whether planned or unplanned.</li>
+    </ul>
+
+    <h2 id="indemnification">15. Indemnification</h2>
+
+    <h3>15.1 Your Indemnification Obligations</h3>
+    <p>You agree to defend, indemnify, and hold harmless RavenWing LLC, its officers, directors, members, managers, employees, agents, contractors, successors, and assigns (collectively, the "Indemnified Parties") from and against any and all claims, demands, actions, suits, proceedings, damages, losses, liabilities, judgments, settlements, costs, and expenses (including reasonable attorneys' fees, expert witness fees, and court costs) arising out of or relating to:</p>
+    <ul>
+      <li>Your use of, or inability to use, the Service, including any Output generated thereby;</li>
+      <li>Your violation or alleged violation of these Terms, the <a href="eula.html">EULA</a>, or any applicable law, regulation, or ordinance;</li>
+      <li>Your reliance on any Estimate, pricing data, material quantity, measurement, or other Output generated by the Service for any purpose, including bids, proposals, contracts, purchases, or construction projects;</li>
+      <li>Any dispute, claim, or cause of action between you and your customers, subcontractors, suppliers, or other third parties arising from or related to Estimates, Output, or other information generated through the Service;</li>
+      <li>Your User Content, including any claim that your User Content infringes, misappropriates, or violates the intellectual property rights, privacy rights, or other legal rights of any third party;</li>
+      <li>Any unauthorized access to or use of the Service through your Account, to the extent caused by your failure to maintain adequate Account security; or</li>
+      <li>Any personal information of your customers that you input into the Service in violation of applicable privacy laws or without appropriate consent.</li>
+    </ul>
+
+    <h3>15.2 Defense and Control</h3>
+    <p>RavenWing LLC reserves the right, at its own expense, to assume the exclusive defense and control of any matter otherwise subject to indemnification by you, in which event you will fully cooperate with RavenWing LLC in asserting any available defenses. You shall not settle any claim subject to this Section without the prior written consent of RavenWing LLC.</p>
+
+    <h2 id="liability">16. Limitation of Liability</h2>
+    <p><strong>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:</strong></p>
+    <ul>
+      <li><strong>EXCLUSION OF CERTAIN DAMAGES.</strong> IN NO EVENT SHALL RAVENWING LLC, ITS OFFICERS, DIRECTORS, MEMBERS, MANAGERS, EMPLOYEES, AGENTS, CONTRACTORS, LICENSORS, SUPPLIERS, OR SERVICE PROVIDERS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, PUNITIVE, OR RELIANCE DAMAGES, including but not limited to damages for loss of profits, revenue, income, data, goodwill, business opportunity, business interruption, loss of anticipated savings, cost of procurement of substitute goods or services, cost of cover, or loss of use, whether based on warranty, contract, tort (including negligence and strict liability), statute, or any other legal theory, <strong>even if RavenWing LLC has been advised of the possibility of such damages</strong> and even if a limited remedy set forth herein is found to have failed of its essential purpose.</li>
+      <li><strong>AGGREGATE LIABILITY CAP.</strong> THE TOTAL AGGREGATE LIABILITY OF RAVENWING LLC AND ALL INDEMNIFIED PARTIES for any and all claims, damages, losses, and causes of action arising out of or related to these Terms, the <a href="eula.html">EULA</a>, or the Service (whether in contract, tort, strict liability, or otherwise) shall not exceed the lesser of: (a) the total amount of Subscription fees actually paid by you to RavenWing LLC during the twelve (12) month period immediately preceding the first event giving rise to the applicable claim; or (b) one thousand United States Dollars ($1,000.00 USD).</li>
+      <li><strong>ESSENTIAL BASIS.</strong> The foregoing limitations of liability are a fundamental element of the basis of the bargain between you and RavenWing LLC and shall apply regardless of whether the alleged liability is based on contract, tort, negligence, strict liability, or any other basis, even if RavenWing LLC has been advised of the possibility of such liability, and even if any limited remedy provided herein fails of its essential purpose.</li>
+    </ul>
+    <p>Some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages. In such jurisdictions, the liability of RavenWing LLC shall be limited to the maximum extent permitted by applicable law.</p>
+
+    <h2 id="warranty">17. Disclaimer of Warranties</h2>
+    <p><strong>THE SERVICE IS PROVIDED ON AN "AS IS," "AS AVAILABLE," AND "WITH ALL FAULTS" BASIS WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE.</strong> TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, RAVENWING LLC EXPRESSLY DISCLAIMS ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO:</p>
+    <ul>
+      <li><strong>IMPLIED WARRANTIES OF MERCHANTABILITY</strong>, fitness for a particular purpose, title, non-infringement, and quiet enjoyment;</li>
+      <li>Any warranty that the Service will be <strong>uninterrupted, timely, secure, error-free, virus-free</strong>, or free of other harmful components;</li>
+      <li>Any warranty regarding the <strong>accuracy, reliability, precision, completeness, or currentness</strong> of any Estimate, pricing data, material quantity, measurement, satellite imagery, map data, geocoding result, or other information provided through or generated by the Service;</li>
+      <li>Any warranty that the <strong>results obtained from the use of the Service</strong> will be accurate, reliable, or will meet your requirements, expectations, or intended purposes;</li>
+      <li>Any warranty that <strong>defects in the Service will be corrected</strong> within any particular timeframe or at all;</li>
+      <li>Any warranty that the Service will be <strong>compatible with any particular hardware, software, operating system, or browser</strong>;</li>
+      <li>Any warranty arising from <strong>course of dealing, usage of trade, course of performance</strong>, or any communication between you and RavenWing LLC; and</li>
+      <li>Any warranty that the Service or any Output will be <strong>suitable for use in connection with any government contract, procurement, or project</strong> without independent professional verification.</li>
+    </ul>
+    <p>YOU ACKNOWLEDGE THAT YOU USE THE SERVICE AT YOUR OWN RISK AND THAT YOU ARE SOLELY RESPONSIBLE FOR ANY DAMAGE TO YOUR COMPUTER SYSTEMS, DATA LOSS, FINANCIAL LOSS, OR OTHER HARM THAT RESULTS FROM YOUR USE OF THE SERVICE OR YOUR RELIANCE ON ANY OUTPUT GENERATED THEREBY.</p>
+
+    <h2 id="disputes">18. Dispute Resolution</h2>
+
+    <h3>18.1 Informal Resolution</h3>
+    <p>Before initiating any formal dispute resolution proceeding, you agree to first contact RavenWing LLC at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> with the subject line "Dispute Notice" and attempt to resolve the dispute informally for a period of at least sixty (60) days. Your dispute notice must include: (a) your name and Account email address; (b) a detailed description of the dispute; (c) the specific relief you are seeking; and (d) your signature (electronic signature is acceptable). If the dispute is not resolved within the sixty (60) day informal resolution period, either party may proceed with formal dispute resolution as described below.</p>
+
+    <h3>18.2 Binding Arbitration</h3>
+    <p>Any dispute, controversy, or claim arising out of or relating to these Terms, the <a href="eula.html">EULA</a>, the <a href="privacy.html">Privacy Policy</a>, or the Service, including the formation, interpretation, performance, breach, or termination thereof, and including disputes about the validity, scope, or enforceability of this arbitration provision ("Dispute"), shall be finally and exclusively resolved by binding arbitration administered by the American Arbitration Association ("AAA") in accordance with its Commercial Arbitration Rules then in effect. The arbitration shall be conducted by a single arbitrator selected in accordance with AAA procedures. The arbitrator shall have the authority to award any remedy that would be available in court, except that the arbitrator shall not have the authority to conduct any form of class, collective, or representative arbitration. Judgment upon the award rendered by the arbitrator may be entered and enforced in any court having jurisdiction thereof.</p>
+
+    <h3>18.3 Governing Law and Jurisdiction</h3>
+    <p>These Terms shall be governed by, and construed and interpreted in accordance with, the laws of the Commonwealth of Virginia, without regard to its conflict of law principles or rules. The arbitration shall take place in Hanover County, Virginia, unless the parties mutually agree to a different location or to conduct the arbitration remotely via videoconference. For any matter not subject to arbitration (including applications for injunctive or equitable relief), or for enforcement of an arbitration award, the parties irrevocably consent to the exclusive personal jurisdiction and venue of the state and federal courts located in or serving Hanover County, Commonwealth of Virginia, and each party waives any objection to jurisdiction and venue in such courts.</p>
+
+    <h3>18.4 Class Action Waiver</h3>
+    <p><strong>YOU AND RAVENWING LLC AGREE THAT EACH PARTY MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY, AND NOT AS A PLAINTIFF, CLASS MEMBER, OR PARTICIPANT IN ANY PURPORTED CLASS ACTION, COLLECTIVE ACTION, CONSOLIDATED ACTION, PRIVATE ATTORNEY GENERAL ACTION, OR OTHER REPRESENTATIVE PROCEEDING.</strong> The arbitrator may not consolidate the claims of more than one party, may not otherwise preside over any form of representative or class proceeding, and may not award class-wide or representative relief. If this class action waiver is found to be unenforceable, then the entirety of this arbitration provision shall be null and void, and the dispute shall be resolved exclusively in the courts identified in Section 18.3.</p>
+
+    <h3>18.5 Equitable Relief</h3>
+    <p>Notwithstanding the foregoing, RavenWing LLC may seek injunctive or other equitable relief in any court of competent jurisdiction to prevent the actual or threatened infringement, misappropriation, or violation of its intellectual property rights, trade secrets, or Confidential Information, without the requirement of posting bond or proving actual damages.</p>
+
+    <h3>18.6 Limitation on Claims</h3>
+    <p>Any cause of action or claim you may have arising out of or relating to these Terms or the Service must be commenced within one (1) year after the cause of action accrues. Otherwise, such cause of action or claim is permanently barred. This limitation applies regardless of any statute of limitations that might otherwise apply.</p>
+
+    <h2 id="force-majeure">19. Force Majeure</h2>
+    <p>RavenWing LLC shall not be liable for any delay in or failure to perform any obligation under these Terms where the delay or failure results from any cause beyond its reasonable control ("Force Majeure Event"), including but not limited to: acts of God; natural disasters (including earthquakes, hurricanes, tornadoes, floods, and wildfires); epidemics or pandemics; fire; explosion; war (declared or undeclared); armed conflict; terrorism; sabotage; civil unrest or insurrection; government actions, orders, regulations, sanctions, or embargoes; labor disputes, strikes, or shortages; utility failures; power outages; telecommunications failures; internet service disruptions or outages; domain name system (DNS) failures; distributed denial-of-service (DDoS) attacks or other cyberattacks; failures, outages, or service changes by third-party service providers (including AWS, Stripe, map tile providers, and geocoding services); supply chain disruptions; raw material shortages; or any other event or circumstance beyond the reasonable control of RavenWing LLC.</p>
+    <p>Performance obligations affected by a Force Majeure Event shall be suspended for the duration of such event. If a Force Majeure Event continues for more than ninety (90) consecutive days, either party may terminate these Terms upon written notice to the other party, without liability for such termination.</p>
+
+    <h2 id="termination">20. Termination</h2>
+
+    <h3>20.1 Termination by You</h3>
+    <p>You may terminate your Account at any time by: (a) canceling your Subscription through your Account settings; and (b) requesting Account deletion by contacting <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>. Termination by you does not entitle you to a refund of any prepaid Subscription fees.</p>
+
+    <h3>20.2 Termination by RavenWing LLC</h3>
+    <p>RavenWing LLC may suspend or terminate your access to the Service, in whole or in part, at any time and for any reason, including but not limited to:</p>
+    <ul>
+      <li>Violation of these Terms, the <a href="eula.html">EULA</a>, or any other applicable policy;</li>
+      <li>Failure to pay Subscription fees when due, following a grace period of seven (7) days;</li>
+      <li>Conduct that RavenWing LLC, in its reasonable discretion, considers harmful to the Service, other Users, or third parties;</li>
+      <li>Engagement in fraudulent, illegal, or abusive activity;</li>
+      <li>Extended periods of Account inactivity exceeding twelve (12) consecutive months;</li>
+      <li>Your becoming insolvent, filing for bankruptcy, or being subject to involuntary bankruptcy proceedings;</li>
+      <li>A request by law enforcement, a judicial body, or other government authority; or</li>
+      <li>Discontinuation of the Service or any material part thereof.</li>
+    </ul>
+    <p>RavenWing LLC will make commercially reasonable efforts to provide advance written notice (via email) before termination, except where immediate termination is necessary to: (a) protect the security or integrity of the Service; (b) comply with legal obligations; (c) prevent harm to other Users or third parties; or (d) address a material breach of Section 4 (Restrictions on Use).</p>
+
+    <h3>20.3 Effect of Termination</h3>
+    <p>Upon termination of your Account for any reason:</p>
+    <ul>
+      <li>Your right to access and use the Service ceases immediately;</li>
+      <li>You must immediately cease all use of the Service and destroy any Confidential Information of RavenWing LLC in your possession;</li>
+      <li>Your data will be handled in accordance with Section 13 (Data Retention and Deletion); and</li>
+      <li>All provisions of these Terms that by their nature should survive termination shall survive, including but not limited to: Sections 1 (Definitions), 4 (Restrictions on Use), 8 (Estimate Accuracy Disclaimer), 9 (Material Pricing Disclaimer), 10 (No Professional Advice), 11 (Intellectual Property), 12.2 (License to User Content), 15 (Indemnification), 16 (Limitation of Liability), 17 (Disclaimer of Warranties), 18 (Dispute Resolution), 19 (Force Majeure), 21 (Severability), and 22 (Entire Agreement).</li>
+    </ul>
+
+    <h2 id="severability">21. Severability</h2>
+    <p>If any provision of these Terms, or any portion thereof, is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction or arbitrator, such invalidity, illegality, or unenforceability shall not affect any other provision of these Terms. The remaining provisions shall continue in full force and effect as if such invalid, illegal, or unenforceable provision had never been included. The invalid or unenforceable provision shall be automatically modified to the minimum extent necessary to make it valid, legal, and enforceable while preserving the original intent of the parties to the maximum extent possible. If such modification is not possible, the provision shall be deemed severed from these Terms.</p>
+
+    <h2 id="entire-agreement">22. Entire Agreement</h2>
+    <p>These Terms, together with the <a href="privacy.html">Privacy Policy</a> and <a href="eula.html">End User License Agreement</a>, constitute the entire agreement between you and RavenWing LLC with respect to the subject matter hereof and supersede all prior or contemporaneous understandings, agreements, negotiations, representations, warranties, and communications, whether written, oral, electronic, or otherwise, with respect to such subject matter.</p>
+    <p>No waiver of any provision of these Terms shall be effective unless made in writing and signed by an authorized representative of RavenWing LLC. The failure of RavenWing LLC to exercise or enforce any right or provision of these Terms shall not constitute a waiver of such right or provision and shall not preclude RavenWing LLC from exercising or enforcing such right or provision at any later time. No course of dealing between the parties shall modify or supplement these Terms unless expressly agreed in writing.</p>
+    <p>In the event of any conflict between these Terms and any other agreement you may have with RavenWing LLC (other than the EULA and Privacy Policy), these Terms shall prevail unless the other agreement expressly states that it supersedes these Terms with respect to the specific subject matter at issue.</p>
+
+    <h2 id="modifications">23. Modifications and Notice</h2>
+    <p>RavenWing LLC reserves the right to modify, amend, or update these Terms at any time in its sole discretion. If we make material changes to these Terms, we will provide notice by one or more of the following methods:</p>
+    <ul>
+      <li>Sending an email to the address associated with your Account at least thirty (30) days before the changes take effect;</li>
+      <li>Displaying a prominent notice within the Service (such as a banner or modal dialog) at least thirty (30) days before the changes take effect; or</li>
+      <li>Updating the "Last updated" date at the top of this page.</li>
+    </ul>
+    <p>For material changes (including changes to dispute resolution procedures, liability limitations, or warranty disclaimers), we will provide at least thirty (30) days' advance notice before the changes take effect. For non-material changes (such as typographical corrections, formatting updates, or clarifications that do not substantively alter your rights or obligations), changes may take effect immediately upon posting.</p>
+    <p>Your continued use of the Service after the effective date of any modification constitutes your acceptance of the modified Terms. If you do not agree to the modified Terms, you must discontinue all use of the Service and cancel your Subscription before the effective date of the modification. Your sole remedy for disagreement with any modification to these Terms is to cancel your Subscription and terminate your Account.</p>
+
+    <h2 id="contact">24. Contact Information</h2>
+    <p>If you have any questions, concerns, complaints, or requests regarding these Terms of Service, please contact us at:</p>
+    <p>
+      <strong>RavenWing LLC</strong><br>
+      Mechanicsville, Virginia 23111<br>
+      United States of America<br>
+      Email: <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>
+    </p>
+    <p>For legal notices, dispute notices, or formal correspondence, please include "Legal" in the subject line of your email. For time-sensitive security matters, please include "URGENT: Security" in the subject line.</p>
+    <p>RavenWing LLC is a Service-Disabled Veteran-Owned Small Business (SDVOSB) organized under the laws of the Commonwealth of Virginia.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">Fence<span class="calc">Calc</span></div>
+        <div class="footer-copy">&copy; 2026 RavenWing LLC. All rights reserved.</div>
+      </div>
+      <div class="footer-links">
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="eula.html">EULA</a>
+        <a href="mailto:support@fencecalc.com">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
