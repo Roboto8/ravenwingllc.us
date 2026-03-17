@@ -350,9 +350,169 @@ function customItemsTotal(items) {
   return items.reduce((sum, i) => sum + (i.qty * i.unitCost), 0);
 }
 
+// === Mulch Data ===
+const MULCH = {
+  hardwood: { name: 'Hardwood Mulch', bagCuFt: 2, bagCost: 4.50, bulkCuYdCost: 35 },
+  cedar: { name: 'Cedar Mulch', bagCuFt: 2, bagCost: 5.50, bulkCuYdCost: 45 },
+  cypress: { name: 'Cypress Mulch', bagCuFt: 2, bagCost: 5.00, bulkCuYdCost: 40 },
+  'pine-bark': { name: 'Pine Bark Mulch', bagCuFt: 2, bagCost: 4.00, bulkCuYdCost: 30 },
+  'dyed-black': { name: 'Dyed Black Mulch', bagCuFt: 2, bagCost: 4.75, bulkCuYdCost: 38 },
+  'dyed-red': { name: 'Dyed Red Mulch', bagCuFt: 2, bagCost: 4.75, bulkCuYdCost: 38 },
+  rubber: { name: 'Rubber Mulch', bagCuFt: 0.8, bagCost: 8.00, bulkCuYdCost: 120 },
+  'river-rock': { name: 'River Rock', bagCuFt: 0.5, bagCost: 6.00, bulkCuYdCost: 75, isRock: true },
+  'pea-gravel': { name: 'Pea Gravel', bagCuFt: 0.5, bagCost: 5.50, bulkCuYdCost: 50, isRock: true },
+  'lava-rock': { name: 'Lava Rock', bagCuFt: 0.5, bagCost: 7.00, bulkCuYdCost: 110, isRock: true }
+};
+
+/**
+ * Calculate polygon area in square feet from lat/lng points using the Shoelace formula.
+ * Projects to local meters first to account for earth curvature.
+ */
+function calculatePolygonArea(points) {
+  if (points.length < 3) return 0;
+
+  // Convert lat/lng to local x/y meters using first point as origin
+  var origin = points[0];
+  var cosLat = Math.cos(origin.lat * Math.PI / 180);
+  var metersPerDegLat = 111320;
+  var metersPerDegLng = 111320 * cosLat;
+
+  var xy = points.map(function(p) {
+    return {
+      x: (p.lng - origin.lng) * metersPerDegLng,
+      y: (p.lat - origin.lat) * metersPerDegLat
+    };
+  });
+
+  // Shoelace formula
+  var area = 0;
+  for (var i = 0; i < xy.length; i++) {
+    var j = (i + 1) % xy.length;
+    area += xy[i].x * xy[j].y;
+    area -= xy[j].x * xy[i].y;
+  }
+  area = Math.abs(area) / 2;
+
+  // Convert square meters to square feet
+  return Math.round(area * 10.7639);
+}
+
+/**
+ * Calculate polygon perimeter in feet from lat/lng points.
+ */
+function calculatePolygonPerimeter(points) {
+  if (points.length < 2) return 0;
+  var total = 0;
+  for (var i = 0; i < points.length; i++) {
+    var j = (i + 1) % points.length;
+    total += distBetween(points[i], points[j]);
+  }
+  return Math.round(total * 3.28084);
+}
+
+/**
+ * Calculate Bill of Materials for mulch.
+ * @param {number} areaSqFt - area in square feet
+ * @param {string} materialType - key from MULCH object
+ * @param {number} depthInches - depth in inches (2, 3, 4)
+ * @param {object} [options]
+ * @param {string} [options.deliveryMode] - 'bags' or 'bulk'
+ * @param {boolean} [options.addFabric] - include landscape fabric
+ * @param {number} [options.perimeterFt] - perimeter for edging calculation
+ * @param {boolean} [options.addEdging] - include landscape edging
+ * @param {object} [options.customPricing] - custom pricing overrides
+ */
+function calculateMulchBOM(areaSqFt, materialType, depthInches, options) {
+  options = options || {};
+  var deliveryMode = options.deliveryMode || 'bags';
+  var customPricing = options.customPricing || {};
+
+  var mat = MULCH[materialType];
+  if (!mat) return null;
+
+  var cubicFeet = (areaSqFt * depthInches) / 12;
+  var cubicYards = cubicFeet / 27;
+  var items = [];
+  var materialTotal = 0;
+
+  function mp(key, fallback) {
+    var path = 'mulch.' + materialType + '.' + key;
+    return customPricing[path] !== undefined ? customPricing[path] : fallback;
+  }
+
+  if (deliveryMode === 'bulk') {
+    var yds = Math.ceil(cubicYards * 10) / 10; // round up to nearest 0.1
+    items.push({
+      name: mat.name + ' (bulk)',
+      qty: yds,
+      unit: 'cu yd',
+      unitCost: mp('bulkCuYdCost', mat.bulkCuYdCost)
+    });
+  } else {
+    var bags = Math.ceil(cubicFeet / mat.bagCuFt);
+    items.push({
+      name: mat.name + ' (2 cu ft bags)',
+      qty: bags,
+      unit: 'bags',
+      unitCost: mp('bagCost', mat.bagCost)
+    });
+  }
+
+  if (options.addFabric) {
+    // Landscape fabric comes in 3ft x 50ft rolls = 150 sq ft
+    var fabricRolls = Math.ceil(areaSqFt / 150);
+    items.push({
+      name: 'Landscape fabric (3x50ft)',
+      qty: fabricRolls,
+      unit: 'rolls',
+      unitCost: mp('fabricCost', 18)
+    });
+    // Fabric staples — 1 per 2 sq ft
+    var staples = Math.ceil(areaSqFt / 2);
+    var staplePacks = Math.ceil(staples / 75);
+    items.push({
+      name: 'Fabric staples (75-pack)',
+      qty: staplePacks,
+      unit: 'packs',
+      unitCost: mp('stapleCost', 8)
+    });
+  }
+
+  if (options.addEdging && options.perimeterFt) {
+    // Landscape edging in 20ft sections
+    var edgingSections = Math.ceil(options.perimeterFt / 20);
+    items.push({
+      name: 'Landscape edging (20ft)',
+      qty: edgingSections,
+      unit: 'ea',
+      unitCost: mp('edgingCost', 12)
+    });
+    // Stakes — 1 per 3 ft
+    var stakes = Math.ceil(options.perimeterFt / 3);
+    items.push({
+      name: 'Edging stakes',
+      qty: stakes,
+      unit: 'ea',
+      unitCost: mp('stakeCost', 1.50)
+    });
+  }
+
+  var filtered = items.filter(function(i) { return i.qty > 0; }).map(function(i) {
+    i.total = Math.round(i.qty * i.unitCost * 100) / 100;
+    materialTotal += i.total;
+    return i;
+  });
+
+  return { items: filtered, materialTotal: Math.round(materialTotal), cubicYards: Math.round(cubicYards * 10) / 10 };
+}
+
 module.exports = {
   BOM,
+  MULCH,
   calculateBOM,
+  calculateMulchBOM,
+  calculatePolygonArea,
+  calculatePolygonPerimeter,
   catmullRom,
   getSplinePoints,
   calculateFootage,

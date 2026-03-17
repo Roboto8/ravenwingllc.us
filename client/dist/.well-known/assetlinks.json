@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ravenwingllc.fencetrace",
+    "sha256_cert_fingerprints": [
+      "9A:93:C6:4C:ED:A4:49:9A:B2:91:8D:C7:9A:46:0C:34:90:6D:BE:D6:AB:C1:53:E7:29:79:B1:14:03:A8:C0:22"
+    ]
+  }
+}]
