@@ -48,6 +48,12 @@ const API = {
   getTrash() { return this._fetch('/api/estimates/trash'); },
   restoreEstimate(id) { return this._fetch('/api/estimates/' + id + '/restore', { method: 'POST' }); },
 
+  // Team
+  getTeam() { return this._fetch('/api/team'); },
+  inviteMember(email) { return this._fetch('/api/team/invite', { method: 'POST', body: JSON.stringify({ email }) }); },
+  revokeInvite(token) { return this._fetch('/api/team/invite/' + token, { method: 'DELETE' }); },
+  removeMember(email) { return this._fetch('/api/team/' + encodeURIComponent(email), { method: 'DELETE' }); },
+
   // Billing
   getStatus() { return this._fetch('/api/billing/status'); },
   createCheckout(returnUrl) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },

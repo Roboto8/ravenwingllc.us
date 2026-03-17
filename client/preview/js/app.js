@@ -200,7 +200,26 @@ function getTotalFootageAllSections() {
   });
   return Math.round(totalMeters * 3.28084);
 }
+var baseFencePrices = { wood: 25, vinyl: 35, 'chain-link': 15, aluminum: 40, iron: 55 };
 let selectedFence = { type: 'wood', price: 25 };
+
+function updateFencePricesForRegion() {
+  var mult = (typeof REGIONS !== 'undefined' && typeof companyRegion !== 'undefined' && REGIONS[companyRegion])
+    ? REGIONS[companyRegion].multiplier : 1;
+  document.querySelectorAll('.fence-type-btn').forEach(function(btn) {
+    var type = btn.getAttribute('onclick').match(/'([^']+)'/);
+    if (!type) return;
+    type = type[1];
+    var base = baseFencePrices[type] || 25;
+    var adjusted = Math.round(base * mult);
+    btn.dataset.price = adjusted;
+    var priceEl = btn.querySelector('.fence-price');
+    if (priceEl) priceEl.textContent = '$' + adjusted + '/ft';
+  });
+  // Update selectedFence price too
+  var adjPrice = Math.round((baseFencePrices[selectedFence.type] || 25) * mult);
+  selectedFence.price = adjPrice;
+}
 let selectedHeight = 6;
 let terrainMultiplier = 1.0;
 
@@ -226,6 +245,61 @@ function initMap() {
     zoom: 18,
     zoomControl: false
   });
+
+  // Scale bar — shows real-world distance on the map
+  L.control.scale({
+    imperial: true,
+    metric: false,
+    position: 'bottomleft',
+    maxWidth: 150
+  }).addTo(map);
+
+  // Zoom indicator with accuracy info
+  var zoomIndicator = L.control({ position: 'bottomright' });
+  zoomIndicator.onAdd = function() {
+    var div = L.DomUtil.create('div', 'zoom-indicator');
+    div.id = 'zoom-indicator';
+    updateZoomIndicator(div, map.getZoom());
+    return div;
+  };
+  zoomIndicator.addTo(map);
+
+  map.on('zoomend', function() {
+    var div = document.getElementById('zoom-indicator');
+    if (div) updateZoomIndicator(div, map.getZoom());
+  });
+
+  function updateZoomIndicator(div, zoom) {
+    // Approximate feet per pixel at equator, adjusted for typical US latitudes (~38°)
+    var metersPerPixel = 156543.03 * Math.cos(38 * Math.PI / 180) / Math.pow(2, zoom);
+    var feetPerPixel = metersPerPixel * 3.28084;
+    var accuracy;
+    var color;
+    if (zoom >= 20) { accuracy = 'Excellent'; color = '#2d6e28'; }
+    else if (zoom >= 18) { accuracy = 'Good'; color = '#2d6e28'; }
+    else if (zoom >= 16) { accuracy = 'Fair'; color = '#d4870e'; }
+    else { accuracy = 'Low'; color = '#b93a2a'; }
+
+    div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + feetPerPixel.toFixed(1) + ' ft/px';
+    div.title = 'Zoom ' + zoom + ' — each pixel ≈ ' + feetPerPixel.toFixed(1) + ' feet. Zoom in for more precise placement.';
+  }
+
+  // Detect TWA / standalone mode and add padding for "Not Secure" bar
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      document.referrer.includes('android-app://') ||
+      navigator.standalone === true) {
+    document.body.classList.add('twa-mode');
+  }
+
+  // Handle viewport resize (browser chrome, "Not Secure" bar, keyboard, etc.)
+  function handleResize() {
+    document.body.style.height = (window.visualViewport ? window.visualViewport.height : window.innerHeight) + 'px';
+    map.invalidateSize();
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleResize);
+  }
+  window.addEventListener('resize', function() { setTimeout(handleResize, 100); });
 
   baseLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 22,
@@ -265,7 +339,154 @@ function setMapLayer(layerName) {
   if (btn) btn.classList.add('active');
 }
 
+// === Drone Photo Overlay ===
+var droneOverlay = null;
+var droneOverlayData = null;
+
+function toggleDronePhoto() {
+  // If overlay exists, remove it
+  if (droneOverlay) {
+    removeDroneOverlay();
+    return;
+  }
+  // Otherwise, open file picker
+  document.getElementById('drone-input').click();
+}
+
+function closeDroneBanner() {
+  document.getElementById('drone-banner').style.display = 'none';
+}
+
+function handleDroneUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 50 * 1024 * 1024) {
+    showToast('Image too large (max 50MB)');
+    input.value = '';
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      // Place overlay centered on current map view, sized to fit
+      var center = map.getCenter();
+      var bounds = map.getBounds();
+      var aspect = img.width / img.height;
+
+      // Make the overlay cover roughly 60% of the current view
+      var latSpan = (bounds.getNorth() - bounds.getSouth()) * 0.6;
+      var lngSpan = latSpan * aspect;
+
+      var overlayBounds = L.latLngBounds(
+        [center.lat - latSpan / 2, center.lng - lngSpan / 2],
+        [center.lat + latSpan / 2, center.lng + lngSpan / 2]
+      );
+
+      // Remove old overlay
+      if (droneOverlay) map.removeLayer(droneOverlay);
+
+      droneOverlay = L.imageOverlay(e.target.result, overlayBounds, {
+        opacity: 0.7,
+        interactive: false
+      }).addTo(map);
+
+      // Make it draggable and resizable via corner handles
+      makeDroneAdjustable(overlayBounds);
+
+      droneOverlayData = {
+        dataUrl: e.target.result,
+        bounds: [[overlayBounds.getSouth(), overlayBounds.getWest()],
+                 [overlayBounds.getNorth(), overlayBounds.getEast()]]
+      };
+
+      document.getElementById('drone-banner').style.display = '';
+      document.getElementById('drone-btn').classList.add('active');
+      markUnsaved();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+var droneCorners = [];
+
+function makeDroneAdjustable(bounds) {
+  // Remove old corners
+  droneCorners.forEach(function(m) { map.removeLayer(m); });
+  droneCorners = [];
+
+  var corners = [
+    bounds.getSouthWest(),
+    bounds.getNorthWest(),
+    bounds.getNorthEast(),
+    bounds.getSouthEast()
+  ];
+
+  corners.forEach(function(latlng, idx) {
+    var marker = L.marker(latlng, {
+      draggable: true,
+      icon: L.divIcon({
+        className: 'drone-handle',
+        html: '<div style="width:14px;height:14px;background:#c0622e;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:move"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      })
+    }).addTo(map);
+
+    marker.on('drag', function() {
+      updateDroneFromCorners();
+    });
+    marker.on('dragend', function() {
+      updateDroneFromCorners();
+      markUnsaved();
+    });
+
+    droneCorners.push(marker);
+  });
+}
+
+function updateDroneFromCorners() {
+  if (droneCorners.length < 4 || !droneOverlay) return;
+  var lats = droneCorners.map(function(m) { return m.getLatLng().lat; });
+  var lngs = droneCorners.map(function(m) { return m.getLatLng().lng; });
+  var newBounds = L.latLngBounds(
+    [Math.min.apply(null, lats), Math.min.apply(null, lngs)],
+    [Math.max.apply(null, lats), Math.max.apply(null, lngs)]
+  );
+  droneOverlay.setBounds(newBounds);
+  if (droneOverlayData) {
+    droneOverlayData.bounds = [[newBounds.getSouth(), newBounds.getWest()],
+                                [newBounds.getNorth(), newBounds.getEast()]];
+  }
+}
+
+function setDroneOpacity(val) {
+  if (droneOverlay) droneOverlay.setOpacity(val / 100);
+}
+
+function removeDroneOverlay() {
+  if (droneOverlay) { map.removeLayer(droneOverlay); droneOverlay = null; }
+  droneCorners.forEach(function(m) { map.removeLayer(m); });
+  droneCorners = [];
+  droneOverlayData = null;
+  document.getElementById('drone-banner').style.display = 'none';
+  document.getElementById('drone-btn').classList.remove('active');
+  markUnsaved();
+  showToast('Drone photo removed');
+}
+
 function onMapClick(e) {
+  // Warn if zoomed too far out for accurate placement
+  if (map.getZoom() < 16 && (currentTool === 'draw' || currentTool === 'gate')) {
+    showToast('Zoom in closer for accurate placement');
+    return;
+  }
+  if (map.getZoom() < 18 && currentTool === 'draw' && fencePoints.length === 0) {
+    showToast('Tip: zoom to 18+ for best accuracy (~0.5 ft/pixel)');
+  }
   if (currentTool === 'draw' && !fenceClosed) {
     addFencePoint(e.latlng);
   } else if (currentTool === 'gate') {
@@ -1314,6 +1535,9 @@ function calculateBOM(feet, fenceType, height) {
   const items = [];
   let materialTotal = 0;
 
+  // Get regional + pricebook pricing
+  var customPricing = (typeof getEffectivePricing === 'function') ? getEffectivePricing() : {};
+
   // Helper to get price with custom override
   function p(key, fallback) { const path = fenceType+'.'+height+'.'+key; return customPricing[path] !== undefined ? customPricing[path] : fallback; }
   function pe(key, fallback) { const path = fenceType+'.extra.'+key; return customPricing[path] !== undefined ? customPricing[path] : fallback; }
@@ -2007,7 +2231,7 @@ async function generatePDF() {
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(192, 98, 46);
-  doc.text('FenceCalc', margin, y);
+  doc.text('FenceTrace', margin, y);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(140, 127, 110);
@@ -2225,10 +2449,10 @@ async function generatePDF() {
   doc.setFontSize(8);
   doc.setTextColor(140, 127, 110);
   doc.text('This estimate is valid for 30 days. Actual costs may vary based on site conditions.', margin, y);
-  doc.text('Generated by FenceCalc', margin, y + 12);
+  doc.text('Generated by FenceTrace', margin, y + 12);
 
   // Save
-  var filename = 'FenceCalc-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';
+  var filename = 'FenceTrace-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';
   doc.save(filename);
   showToast('PDF downloaded');
   } catch (e) {

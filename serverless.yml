@@ -14,6 +14,12 @@ custom:
   tableName: fencecalc-${sls:stage}
   assetsBucket: fencecalc-assets-${sls:stage}
 
+package:
+  patterns:
+    - '!android/**'
+    - '!client/**'
+    - '!tests/**'
+
 provider:
   name: aws
   runtime: nodejs16.x
@@ -200,6 +206,49 @@ functions:
           authorizer:
             name: cognitoAuthorizer
 
+  listTeam:
+    handler: handlers/team.list
+    events:
+      - httpApi:
+          path: /api/team
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  inviteTeam:
+    handler: handlers/team.invite
+    events:
+      - httpApi:
+          path: /api/team/invite
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+  revokeInvite:
+    handler: handlers/team.revoke
+    events:
+      - httpApi:
+          path: /api/team/invite/{token}
+          method: DELETE
+          authorizer:
+            name: cognitoAuthorizer
+
+  removeTeamMember:
+    handler: handlers/team.remove
+    events:
+      - httpApi:
+          path: /api/team/{email}
+          method: DELETE
+          authorizer:
+            name: cognitoAuthorizer
+
+  validateInvite:
+    handler: handlers/team.validate
+    events:
+      - httpApi:
+          path: /api/team/invite/{token}/validate
+          method: GET
+
   stripeWebhook:
     handler: handlers/webhook.handler
     events:
@@ -255,6 +304,9 @@ resources:
             RequireSymbols: false
         Schema:
           - Name: companyName
+            AttributeDataType: String
+            Mutable: true
+          - Name: inviteToken
             AttributeDataType: String
             Mutable: true
 

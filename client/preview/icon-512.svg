@@ -1,4 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
   <rect width="512" height="512" rx="102" fill="#c0622e"/>
-  <text x="256" y="340" font-size="256" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="700" fill="white" text-anchor="middle" letter-spacing="-6">FC</text>
+
+  <!-- Fence pickets -->
+  <rect x="105" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+  <rect x="170" y="160" width="32" height="180" rx="4" fill="white" opacity="0.95"/>
+  <rect x="235" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+  <rect x="300" y="160" width="32" height="180" rx="4" fill="white" opacity="0.95"/>
+  <rect x="365" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+
+  <!-- Pointed tops on pickets -->
+  <polygon points="105,140 121,108 137,140" fill="white" opacity="0.95"/>
+  <polygon points="170,160 186,128 202,160" fill="white" opacity="0.95"/>
+  <polygon points="235,140 251,108 267,140" fill="white" opacity="0.95"/>
+  <polygon points="300,160 316,128 332,160" fill="white" opacity="0.95"/>
+  <polygon points="365,140 381,108 397,140" fill="white" opacity="0.95"/>
+
+  <!-- Horizontal rails -->
+  <rect x="95" y="195" width="312" height="16" rx="3" fill="white" opacity="0.7"/>
+  <rect x="95" y="275" width="312" height="16" rx="3" fill="white" opacity="0.7"/>
+
+  <!-- Trace line (dotted path going along the fence) -->
+  <path d="M80 390 L160 375 L260 395 L360 370 L440 385"
+        stroke="white" stroke-width="6" fill="none"
+        stroke-dasharray="16,10" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Trace dots / map pins at fence corners -->
+  <circle cx="80" cy="390" r="12" fill="white"/>
+  <circle cx="80" cy="390" r="5" fill="#c0622e"/>
+
+  <circle cx="260" cy="395" r="12" fill="white"/>
+  <circle cx="260" cy="395" r="5" fill="#c0622e"/>
+
+  <circle cx="440" cy="385" r="12" fill="white"/>
+  <circle cx="440" cy="385" r="5" fill="#c0622e"/>
 </svg>

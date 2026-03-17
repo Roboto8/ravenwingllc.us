@@ -49,6 +49,7 @@ module.exports.create = async (event) => {
     totalFeet: body.totalFeet || 0,
     totalCost: body.totalCost || 0,
     materialsCost: body.materialsCost || 0,
+    droneOverlay: body.droneOverlay || null,
     status: 'draft',
     createdAt: now,
     updatedAt: now
@@ -84,7 +85,7 @@ module.exports.update = async (event) => {
     'customerName', 'customerPhone', 'customerAddress',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
     'fencePoints', 'fenceClosed', 'gates', 'addons', 'bom',
-    'totalFeet', 'totalCost', 'materialsCost', 'status'
+    'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay'
   ];
 
   const updates = {};

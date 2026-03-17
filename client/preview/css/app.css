@@ -23,6 +23,7 @@
 }
 
 html, body { height: 100%; overflow: hidden; margin: 0; -webkit-user-select: none; user-select: none; }
+html { height: 100dvh; }
 
 body {
   font-family: var(--font);
@@ -32,6 +33,21 @@ body {
   display: flex;
   flex-direction: column;
   font-size: 15px;
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* TWA / standalone: when running inside an app wrapper on HTTP,
+   the browser may show a "Not Secure" bar that overlaps the top.
+   This adds breathing room so the nav isn't clipped. */
+@media all and (display-mode: standalone) {
+  body { padding-top: env(safe-area-inset-top, 0); }
+}
+
+/* Also handle TWA explicitly via JS class */
+body.twa-mode {
+  padding-top: 28px;
 }
 
 /* Block printing */
@@ -52,12 +68,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  height: 52px;
-  min-height: 52px;
+  min-height: 48px;
   background: var(--surface);
   border-bottom: 2px solid var(--border);
   z-index: 1000;
   flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .nav { padding: 4px 8px; gap: 4px; }
+  .nav-tagline { display: none; }
+  .nav-right { gap: 3px; }
+  .nav-right .btn-sm { padding: 6px 8px; font-size: 0.72rem; min-height: 32px; }
 }
 
 .nav-left {
@@ -799,6 +821,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 /* Leaflet overrides */
 .leaflet-container { background: var(--surface-2); }
+
+.zoom-indicator {
+  background: rgba(255,255,255,0.92);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-mid);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: help;
+  pointer-events: auto;
+}
+
+.leaflet-control-scale-line {
+  background: rgba(255,255,255,0.85) !important;
+  border-color: var(--text-mid) !important;
+  font-family: var(--font) !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  color: var(--text-mid) !important;
+  padding: 2px 6px !important;
+}
 
 /* Panel toggle (mobile only) */
 .panel-toggle { display: none; }

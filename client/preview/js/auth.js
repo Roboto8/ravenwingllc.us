@@ -31,15 +31,19 @@ const Auth = {
     return data;
   },
 
-  async signup(email, password, companyName) {
+  async signup(email, password, companyName, inviteToken) {
+    var attrs = [
+      { Name: 'email', Value: email },
+      { Name: 'custom:companyName', Value: companyName || 'My Company' }
+    ];
+    if (inviteToken) {
+      attrs.push({ Name: 'custom:inviteToken', Value: inviteToken });
+    }
     await this._call('SignUp', {
       ClientId: this.clientId,
       Username: email,
       Password: password,
-      UserAttributes: [
-        { Name: 'email', Value: email },
-        { Name: 'custom:companyName', Value: companyName }
-      ]
+      UserAttributes: attrs
     });
   },
 

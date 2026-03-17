@@ -1,4 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
   <rect width="192" height="192" rx="38" fill="#c0622e"/>
-  <text x="96" y="128" font-size="96" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="700" fill="white" text-anchor="middle" letter-spacing="-2">FC</text>
+  <rect x="38" y="52" width="13" height="76" rx="2" fill="white" opacity="0.95"/>
+  <rect x="63" y="60" width="13" height="68" rx="2" fill="white" opacity="0.95"/>
+  <rect x="88" y="52" width="13" height="76" rx="2" fill="white" opacity="0.95"/>
+  <rect x="113" y="60" width="13" height="68" rx="2" fill="white" opacity="0.95"/>
+  <rect x="138" y="52" width="13" height="76" rx="2" fill="white" opacity="0.95"/>
+  <polygon points="38,52 44.5,40 51,52" fill="white" opacity="0.95"/>
+  <polygon points="63,60 69.5,48 76,60" fill="white" opacity="0.95"/>
+  <polygon points="88,52 94.5,40 101,52" fill="white" opacity="0.95"/>
+  <polygon points="113,60 119.5,48 126,60" fill="white" opacity="0.95"/>
+  <polygon points="138,52 144.5,40 151,52" fill="white" opacity="0.95"/>
+  <rect x="34" y="73" width="120" height="6" rx="2" fill="white" opacity="0.7"/>
+  <rect x="34" y="103" width="120" height="6" rx="2" fill="white" opacity="0.7"/>
+  <path d="M30 148 L60 141 L98 149 L136 139 L165 145" stroke="white" stroke-width="3" fill="none" stroke-dasharray="7,5" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="30" cy="148" r="5" fill="white"/><circle cx="30" cy="148" r="2" fill="#c0622e"/>
+  <circle cx="98" cy="149" r="5" fill="white"/><circle cx="98" cy="149" r="2" fill="#c0622e"/>
+  <circle cx="165" cy="145" r="5" fill="white"/><circle cx="165" cy="145" r="2" fill="#c0622e"/>
 </svg>

@@ -19,7 +19,9 @@ module.exports.get = async (event) => {
     address: company.address,
     logoKey: company.logoKey,
     subscriptionStatus: company.subscriptionStatus,
-    trialEndsAt: company.trialEndsAt
+    trialEndsAt: company.trialEndsAt,
+    region: company.region || 'national',
+    pricebook: company.pricebook || {}
   });
 };
 
@@ -28,7 +30,7 @@ module.exports.update = async (event) => {
   if (!companyId) return res.forbidden('No company found');
 
   const body = JSON.parse(event.body || '{}');
-  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey'];
+  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'region', 'pricebook'];
   const updates = {};
 
   for (const key of allowed) {

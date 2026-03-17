@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Draw fence lines on satellite imagery, calculate materials, and generate professional estimates in seconds. Built for fence contractors.">
-  <title>FenceCalc | RavenWing LLC</title>
+  <title>FenceTrace | RavenWing LLC</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="apple-touch-icon" href="icon-192.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +16,11 @@
   <meta name="theme-color" content="#c0622e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
 </head>
 <body>
 
@@ -27,7 +32,7 @@
     gap: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   ">
     <div style="font-size: 1.8rem; font-weight: 800; color: #2c2417; letter-spacing: -0.03em;">
-      Fence<span style="color: #c0622e;">Calc</span>
+      Fence<span style="color: #c0622e;">Trace</span>
     </div>
     <div style="
       width: 28px; height: 28px;
@@ -74,7 +79,7 @@
   <div class="modal-overlay" id="auth-modal" style="display:none">
     <div class="modal" style="position:relative">
       <button class="auth-close" id="auth-close" onclick="hideAuthUI()" style="display:none">&times;</button>
-      <h2 class="modal-title">Fence<span class="accent">Calc</span></h2>
+      <h2 class="modal-title">Fence<span class="accent">Trace</span></h2>
       <p class="auth-gate-msg" id="auth-gate-msg" style="display:none"></p>
       <p class="modal-sub">14-day free trial. No card required.</p>
 
@@ -122,7 +127,7 @@
 
   <nav class="nav">
     <div class="nav-left">
-      <span class="nav-brand">Fence<span class="accent">Calc</span></span>
+      <span class="nav-brand">Fence<span class="accent">Trace</span></span>
       <span class="nav-tagline">Satellite fence estimates</span>
     </div>
     <div class="nav-right">
@@ -149,6 +154,23 @@
         <button class="layer-btn" data-layer="hybrid" onclick="setMapLayer('hybrid')">Hybrid</button>
         <button class="layer-btn" data-layer="streets" onclick="setMapLayer('streets')">Streets</button>
         <button class="layer-btn" data-layer="topo" onclick="setMapLayer('topo')">Topo</button>
+        <button class="layer-btn" id="drone-btn" onclick="toggleDronePhoto()" title="Add or remove a drone/aerial photo overlay">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          Drone
+        </button>
+      </div>
+      <input type="file" id="drone-input" accept="image/*" style="display:none" onchange="handleDroneUpload(this)">
+      <div id="drone-banner" style="display:none;position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:1001;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:12px 16px;font-size:0.82rem;max-width:340px;text-align:center;line-height:1.4">
+        <p style="font-weight:700;margin-bottom:6px;color:var(--accent)">Drone Photo Overlay</p>
+        <p style="margin-bottom:8px;color:var(--text-mid)">Drag the <b>orange corners</b> to align the photo with the property. Use the slider to adjust transparency.</p>
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:0.75rem;white-space:nowrap;color:var(--text-muted)">See-through</span>
+          <input type="range" id="drone-opacity" min="10" max="100" value="70" oninput="setDroneOpacity(this.value)" style="flex:1">
+        </label>
+        <div style="display:flex;gap:6px;justify-content:center">
+          <button class="btn btn-sm" onclick="closeDroneBanner()">Got it</button>
+          <button class="btn btn-sm btn-outline" style="color:var(--red);border-color:var(--red)" onclick="removeDroneOverlay()">Remove Photo</button>
+        </div>
       </div>
       <div class="section-tabs" id="section-tabs" style="display:none"></div>
       <div class="map-toolbar">
@@ -207,6 +229,13 @@
           <div class="form-group">
             <input type="text" id="cust-address" placeholder="Address">
           </div>
+        </div>
+
+        <div class="panel-section" style="padding-bottom:8px">
+          <h3 class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+            Region
+            <select id="main-region-select" onchange="saveRegion(this.value)" style="padding:4px 8px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.78rem;max-width:200px"></select>
+          </h3>
         </div>
 
         <div class="panel-section">
@@ -404,6 +433,44 @@
       </div>
 
       <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Team</p>
+        <div id="team-list" style="margin-bottom:10px;font-size:0.85rem;color:var(--text)">Loading...</div>
+        <div style="display:flex;gap:6px">
+          <input type="email" id="invite-email" placeholder="Email address" style="flex:1;padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.85rem;outline:none">
+          <button class="btn btn-sm" onclick="inviteTeamMember()">Invite</button>
+        </div>
+        <div id="invite-status" style="font-size:0.78rem;margin-top:6px;color:var(--text-muted)"></div>
+      </div>
+
+      <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Pricing Region</p>
+        <select id="region-select" onchange="saveRegion(this.value)" style="width:100%;padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.85rem;margin-bottom:8px"></select>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px">Adjusts default material prices for your area. You can override individual prices below.</p>
+
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px;margin-top:16px">Price Book</p>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">Override any material price. Leave blank to use regional default.</p>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <select id="pricebook-type" onchange="renderPricebook()" style="flex:1;padding:6px 8px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.82rem">
+            <option value="wood">Wood</option>
+            <option value="vinyl">Vinyl</option>
+            <option value="chain-link">Chain Link</option>
+            <option value="aluminum">Aluminum</option>
+            <option value="iron">Iron</option>
+          </select>
+          <select id="pricebook-height" onchange="renderPricebook()" style="width:70px;padding:6px 8px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.82rem">
+            <option value="4">4 ft</option>
+            <option value="6" selected>6 ft</option>
+            <option value="8">8 ft</option>
+          </select>
+        </div>
+        <div id="pricebook-list" style="max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-outline" onclick="savePricebook()">Save Prices</button>
+          <button class="btn btn-sm btn-outline" onclick="resetPricebook()">Reset to Defaults</button>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Keyboard Shortcuts</p>
         <div class="shortcuts-list">
           <span class="shortcut-key">D</span><span class="shortcut-desc">Draw tool</span>
@@ -463,6 +530,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/regions.js"></script>
   <script src="js/app.js"></script>
   <script>
     // === CONFIG — Update these after first deploy ===
@@ -497,6 +565,26 @@
       localStorage.setItem('fc_onboarded', 'true');
     }
 
+    // === Invite detection ===
+    (function checkInvite() {
+      var invite = (new URLSearchParams(window.location.search)).get('invite');
+      if (invite && !Auth.isLoggedIn()) {
+        // Validate the invite and show signup
+        fetch(FC_CONFIG.apiUrl + '/api/team/invite/' + invite + '/validate')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.valid) {
+              showAuthUI();
+              showSignup();
+              document.getElementById('signup-company').value = data.companyName;
+              document.getElementById('signup-company').disabled = true;
+              if (data.email) document.getElementById('signup-email').value = data.email;
+              authError('You\'ve been invited to join ' + data.companyName + '!');
+            }
+          }).catch(function() {});
+      }
+    })();
+
     // === Auth UI ===
     function showAuthUI() { document.getElementById('auth-modal').style.display = 'flex'; }
     function hideAuthUI() {
@@ -519,14 +607,18 @@
 
     let pendingEmail = '';
 
+    // Detect invite token from URL
+    var pendingInvite = (new URLSearchParams(window.location.search)).get('invite') || '';
+
     async function handleSignup() {
       authError('');
       const company = document.getElementById('signup-company').value.trim();
       const email = document.getElementById('signup-email').value.trim();
       const password = document.getElementById('signup-password').value;
-      if (!company || !email || !password) return authError('All fields required');
+      if (!email || !password) return authError('Email and password required');
+      if (!company && !pendingInvite) return authError('Company name required');
       try {
-        await Auth.signup(email, password, company);
+        await Auth.signup(email, password, company, pendingInvite);
         pendingEmail = email;
         document.getElementById('auth-login').style.display = 'none';
         document.getElementById('auth-signup').style.display = 'none';
@@ -609,21 +701,183 @@
         // If status is 'active' — no banner, no paywall, just let them work
       } catch (e) { /* API not deployed yet, skip */ }
 
-      // Load company branding
+      // Load company branding + pricing
       try {
         const company = await API.getCompany();
         if (company.accentColor) {
           document.documentElement.style.setProperty('--accent', company.accentColor);
         }
+        if (company.region) {
+          companyRegion = company.region;
+          localStorage.setItem('fc_region', company.region);
+        }
+        if (company.pricebook && typeof company.pricebook === 'object') {
+          companyPricebook = company.pricebook;
+          localStorage.setItem('fc_pricebook', JSON.stringify(company.pricebook));
+        }
       } catch (e) { /* skip */ }
+
+      // Init region dropdown on main panel and update per-foot prices
+      initRegionSelect();
+      updateFencePricesForRegion();
 
       // Show onboarding for first-time users
       showOnboarding();
     }
 
+    // === Region & Price Book ===
+    var companyRegion = localStorage.getItem('fc_region') || 'national';
+    var companyPricebook = JSON.parse(localStorage.getItem('fc_pricebook') || '{}');
+
+    function initRegionSelect() {
+      var selectors = [document.getElementById('region-select'), document.getElementById('main-region-select')];
+      selectors.forEach(function(sel) {
+        if (!sel) return;
+        sel.innerHTML = '';
+        Object.keys(REGIONS).forEach(function(key) {
+          var opt = document.createElement('option');
+          opt.value = key;
+          var pct = Math.round((REGIONS[key].multiplier - 1) * 100);
+          var pctStr = pct === 0 ? '' : ' (' + (pct > 0 ? '+' : '') + pct + '%)';
+          opt.textContent = REGIONS[key].name + pctStr;
+          sel.appendChild(opt);
+        });
+        sel.value = companyRegion;
+      });
+    }
+
+    function saveRegion(val) {
+      companyRegion = val;
+      localStorage.setItem('fc_region', val);
+      // Sync both dropdowns
+      var main = document.getElementById('main-region-select');
+      var acct = document.getElementById('region-select');
+      if (main) main.value = val;
+      if (acct) acct.value = val;
+      // Save to company profile
+      if (Auth.isLoggedIn()) {
+        API.updateCompany({ region: val }).catch(function() {});
+      }
+      updateFencePricesForRegion();
+      recalculate();
+      showToast('Region: ' + REGIONS[val].name);
+    }
+
+    function renderPricebook() {
+      var type = document.getElementById('pricebook-type').value;
+      var height = parseInt(document.getElementById('pricebook-height').value);
+      var spec = BOM[type];
+      if (!spec || !spec.heights[height]) return;
+
+      var h = spec.heights[height];
+      var ex = spec.extras;
+      var mult = REGIONS[companyRegion] ? REGIONS[companyRegion].multiplier : 1;
+      var html = '';
+
+      // Collect all price keys for this type/height
+      var prices = [];
+      Object.keys(h).forEach(function(k) {
+        if (k.endsWith('Cost')) {
+          var label = k.replace('Cost', '').replace(/([A-Z])/g, ' $1').trim();
+          // Find the matching description
+          var descKey = k.replace('Cost', 'Desc');
+          var desc = h[descKey] || h[k.replace('Cost', 'Length')] ? label : label;
+          prices.push({ key: type + '.' + height + '.' + k, label: label, base: h[k] });
+        }
+      });
+      Object.keys(ex).forEach(function(k) {
+        if (k.endsWith('Cost')) {
+          var label = k.replace('Cost', '').replace(/([A-Z])/g, ' $1').trim();
+          prices.push({ key: type + '.extra.' + k, label: label, base: ex[k] });
+        }
+      });
+
+      prices.forEach(function(p) {
+        var regional = Math.round(p.base * mult * 100) / 100;
+        var custom = companyPricebook[p.key];
+        var displayVal = custom !== undefined ? custom : '';
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.8rem">';
+        html += '<span style="flex:1;color:var(--text-mid);text-transform:capitalize">' + p.label + '</span>';
+        html += '<span style="color:var(--text-muted);font-size:0.72rem;min-width:50px;text-align:right">$' + regional.toFixed(2) + '</span>';
+        html += '<input type="number" step="0.01" min="0" placeholder="$' + regional.toFixed(2) + '" value="' + displayVal + '" data-key="' + p.key + '" ';
+        html += 'style="width:72px;padding:4px 6px;background:var(--bg);border:1.5px solid var(--border);border-radius:3px;color:var(--text);font-size:0.8rem;text-align:right">';
+        html += '</div>';
+      });
+
+      document.getElementById('pricebook-list').innerHTML = html;
+    }
+
+    function savePricebook() {
+      var inputs = document.querySelectorAll('#pricebook-list input[data-key]');
+      inputs.forEach(function(inp) {
+        var key = inp.dataset.key;
+        var val = inp.value.trim();
+        if (val === '') {
+          delete companyPricebook[key];
+        } else {
+          companyPricebook[key] = parseFloat(val);
+        }
+      });
+      localStorage.setItem('fc_pricebook', JSON.stringify(companyPricebook));
+      // Save to company profile
+      if (Auth.isLoggedIn()) {
+        API.updateCompany({ pricebook: companyPricebook }).catch(function() {});
+      }
+      recalculate();
+      showToast('Price book saved');
+    }
+
+    function resetPricebook() {
+      var type = document.getElementById('pricebook-type').value;
+      // Remove all keys for this type
+      Object.keys(companyPricebook).forEach(function(k) {
+        if (k.startsWith(type + '.')) delete companyPricebook[k];
+      });
+      localStorage.setItem('fc_pricebook', JSON.stringify(companyPricebook));
+      if (Auth.isLoggedIn()) {
+        API.updateCompany({ pricebook: companyPricebook }).catch(function() {});
+      }
+      renderPricebook();
+      recalculate();
+      showToast('Prices reset to regional defaults');
+    }
+
+    // Get effective pricing for BOM calculations (regional + pricebook overrides)
+    function getEffectivePricing() {
+      var mult = REGIONS[companyRegion] ? REGIONS[companyRegion].multiplier : 1;
+      var effective = {};
+      // Apply regional multiplier to all base prices, then overlay pricebook
+      Object.keys(BOM).forEach(function(type) {
+        var spec = BOM[type];
+        [4, 6, 8].forEach(function(ht) {
+          if (!spec.heights[ht]) return;
+          Object.keys(spec.heights[ht]).forEach(function(k) {
+            if (k.endsWith('Cost')) {
+              var path = type + '.' + ht + '.' + k;
+              effective[path] = Math.round(spec.heights[ht][k] * mult * 100) / 100;
+            }
+          });
+        });
+        Object.keys(spec.extras).forEach(function(k) {
+          if (k.endsWith('Cost')) {
+            var path = type + '.extra.' + k;
+            effective[path] = Math.round(spec.extras[k] * mult * 100) / 100;
+          }
+        });
+      });
+      // Pricebook overrides take priority
+      Object.keys(companyPricebook).forEach(function(k) {
+        effective[k] = companyPricebook[k];
+      });
+      return effective;
+    }
+
     async function showAccountPanel() {
       document.getElementById('account-modal').style.display = 'flex';
       document.getElementById('account-email').textContent = Auth.user ? Auth.user.email : '—';
+      initRegionSelect();
+      renderPricebook();
+      loadTeamList();
 
       try {
         var status = await API.getStatus();
@@ -658,6 +912,78 @@
       document.getElementById('account-modal').style.display = 'none';
     }
 
+    async function loadTeamList() {
+      var el = document.getElementById('team-list');
+      try {
+        var data = await API.getTeam();
+        var html = '';
+
+        // Members
+        data.members.forEach(function(m) {
+          html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface-2)">';
+          html += '<div><span style="font-weight:600">' + escapeHtml(m.email) + '</span>';
+          html += ' <span style="font-size:0.75rem;color:var(--text-muted);background:var(--surface-2);padding:1px 6px;border-radius:3px">' + m.role + '</span></div>';
+          if (m.role !== 'owner' && m.email !== (Auth.user && Auth.user.email)) {
+            html += '<button class="btn btn-sm" style="font-size:0.7rem;padding:2px 8px" onclick="removeTeamMember(\'' + escapeHtml(m.email) + '\')">Remove</button>';
+          }
+          html += '</div>';
+        });
+
+        // Pending invites
+        data.invites.forEach(function(inv) {
+          html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface-2)">';
+          html += '<div><span style="color:var(--text-muted)">' + escapeHtml(inv.email) + '</span>';
+          html += ' <span style="font-size:0.75rem;color:#c0622e;background:rgba(192,98,46,0.1);padding:1px 6px;border-radius:3px">pending</span></div>';
+          html += '<button class="btn btn-sm" style="font-size:0.7rem;padding:2px 8px" onclick="revokeTeamInvite(\'' + inv.token + '\')">Revoke</button>';
+          html += '</div>';
+        });
+
+        if (!html) html = '<div style="color:var(--text-muted);font-size:0.8rem">Just you so far. Invite your team below.</div>';
+        el.innerHTML = html;
+      } catch (e) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem">Could not load team</div>';
+      }
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function inviteTeamMember() {
+      var input = document.getElementById('invite-email');
+      var status = document.getElementById('invite-status');
+      var email = input.value.trim();
+      if (!email) return;
+
+      status.textContent = 'Sending invite...';
+      try {
+        var result = await API.inviteMember(email);
+        var inviteUrl = window.location.origin + '/?invite=' + result.token;
+        status.innerHTML = 'Invite sent! Share this link:<br><input type="text" value="' + inviteUrl + '" readonly onclick="this.select()" style="width:100%;padding:4px 6px;margin-top:4px;font-size:0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">';
+        input.value = '';
+        loadTeamList();
+      } catch (e) {
+        status.textContent = e.message || 'Invite failed';
+      }
+    }
+
+    async function revokeTeamInvite(token) {
+      try {
+        await API.revokeInvite(token);
+        showToast('Invite revoked');
+        loadTeamList();
+      } catch (e) { showToast('Failed to revoke'); }
+    }
+
+    async function removeTeamMember(email) {
+      if (!confirm('Remove ' + email + ' from your team?')) return;
+      try {
+        await API.removeMember(email);
+        showToast('Member removed');
+        loadTeamList();
+      } catch (e) { showToast('Failed to remove'); }
+    }
+
     async function handleManageBilling() {
       try {
         var result = await API.createPortal(window.location.href);
@@ -673,7 +999,7 @@
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'fencecalc-export-' + new Date().toISOString().slice(0, 10) + '.json';
+        a.download = 'fencetrace-export-' + new Date().toISOString().slice(0, 10) + '.json';
         a.click();
         URL.revokeObjectURL(url);
         showToast('Data exported');
@@ -715,7 +1041,8 @@
           bom: bom ? bom.items : [],
           totalFeet: feet,
           totalCost: document.getElementById('sum-total').textContent,
-          materialsCost: bom ? bom.materialTotal : 0
+          materialsCost: bom ? bom.materialTotal : 0,
+          droneOverlay: droneOverlayData ? { bounds: droneOverlayData.bounds } : null
         });
         showToast('Estimate saved');
         clearUnsaved();
