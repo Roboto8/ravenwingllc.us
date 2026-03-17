@@ -445,6 +445,23 @@
       </div>
 
       <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Roles</p>
+        <div id="roles-list" style="margin-bottom:10px;font-size:0.85rem;color:var(--text)">Loading...</div>
+        <div id="role-editor" style="display:none;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:10px">
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input type="text" id="role-name-input" placeholder="Role name" style="flex:1;padding:6px 8px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.82rem">
+            <input type="color" id="role-color-input" value="#6b6052" style="width:36px;height:32px;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;padding:1px">
+          </div>
+          <div id="role-permissions" style="margin-bottom:8px"></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm" onclick="saveRoleEditor()">Save Role</button>
+            <button class="btn btn-sm btn-outline" onclick="closeRoleEditor()">Cancel</button>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="openRoleEditor()" id="add-role-btn">+ New Role</button>
+      </div>
+
+      <div style="margin-top:20px;border-top:1px solid var(--surface-2);padding-top:16px">
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Pricing Region</p>
         <select id="region-select" onchange="saveRegion(this.value)" style="width:100%;padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.85rem;margin-bottom:8px"></select>
         <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px">Adjusts default material prices for your area. You can override individual prices below.</p>
@@ -879,6 +896,7 @@
       document.getElementById('account-email').textContent = Auth.user ? Auth.user.email : '—';
       initRegionSelect();
       renderPricebook();
+      loadRoles();
       loadTeamList();
 
       try {
@@ -922,13 +940,26 @@
 
         // Members
         data.members.forEach(function(m) {
+          var roleObj = allRoles.find(function(r) { return r.name === m.role; });
+          var roleColor = roleObj ? roleObj.color : '#6b6052';
           html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface-2)">';
-          html += '<div><span style="font-weight:600">' + escapeHtml(m.email) + '</span>';
-          html += ' <span style="font-size:0.75rem;color:var(--text-muted);background:var(--surface-2);padding:1px 6px;border-radius:3px">' + m.role + '</span></div>';
-          if (m.role !== 'owner' && m.email !== (Auth.user && Auth.user.email)) {
-            html += '<button class="btn btn-sm" style="font-size:0.7rem;padding:2px 8px" onclick="removeTeamMember(\'' + escapeHtml(m.email) + '\')">Remove</button>';
+          html += '<div style="flex:1;min-width:0"><span style="font-weight:600;font-size:0.82rem">' + escapeHtml(m.email) + '</span></div>';
+          html += '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">';
+          if (m.role === 'owner') {
+            html += '<span style="font-size:0.72rem;color:' + roleColor + ';background:' + roleColor + '20;padding:2px 8px;border-radius:3px;font-weight:600">owner</span>';
+          } else {
+            html += '<select onchange="changeRole(\'' + escapeHtml(m.email) + '\', this.value)" style="padding:2px 6px;font-size:0.72rem;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text)">';
+            allRoles.forEach(function(r) {
+              if (r.name === 'owner') return;
+              var sel = r.name === m.role ? ' selected' : '';
+              html += '<option value="' + r.name + '"' + sel + '>' + r.name + '</option>';
+            });
+            html += '</select>';
+            if (m.email !== (Auth.user && Auth.user.email)) {
+              html += '<button class="btn btn-sm" style="font-size:0.65rem;padding:2px 6px" onclick="removeTeamMember(\'' + escapeHtml(m.email) + '\')">X</button>';
+            }
           }
-          html += '</div>';
+          html += '</div></div>';
         });
 
         // Pending invites
@@ -984,6 +1015,140 @@
         showToast('Member removed');
         loadTeamList();
       } catch (e) { showToast('Failed to remove'); }
+    }
+
+    // === Roles ===
+    var allRoles = [];
+    var allPermissions = [];
+    var editingRole = null;
+
+    var PERM_LABELS = {
+      'estimates.create': 'Create estimates',
+      'estimates.edit': 'Edit estimates',
+      'estimates.delete': 'Delete estimates',
+      'estimates.view': 'View estimates',
+      'team.invite': 'Invite members',
+      'team.remove': 'Remove members',
+      'team.roles': 'Manage roles',
+      'billing.manage': 'Manage billing',
+      'company.edit': 'Edit company settings',
+      'export.data': 'Export data'
+    };
+
+    async function loadRoles() {
+      var el = document.getElementById('roles-list');
+      try {
+        var data = await API.getRoles();
+        allRoles = data.roles;
+        allPermissions = data.allPermissions;
+        renderRoles();
+      } catch (e) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem">Could not load roles</div>';
+      }
+    }
+
+    function renderRoles() {
+      var el = document.getElementById('roles-list');
+      var html = '';
+      allRoles.forEach(function(r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface-2)">';
+        html += '<div style="display:flex;align-items:center;gap:8px">';
+        html += '<span style="width:12px;height:12px;border-radius:50%;background:' + escapeHtml(r.color) + ';flex-shrink:0"></span>';
+        html += '<div>';
+        html += '<span style="font-weight:600;text-transform:capitalize">' + escapeHtml(r.name) + '</span>';
+        if (r.builtIn) html += ' <span style="font-size:0.65rem;color:var(--text-muted);background:var(--surface-2);padding:1px 5px;border-radius:2px">built-in</span>';
+        html += '<div style="font-size:0.7rem;color:var(--text-muted)">' + r.permissions.length + ' permissions</div>';
+        html += '</div></div>';
+        if (!r.builtIn || r.name === 'member') {
+          html += '<div style="display:flex;gap:4px">';
+          html += '<button class="btn btn-sm" style="font-size:0.65rem;padding:2px 6px" onclick="editRole(\'' + escapeHtml(r.name) + '\')">Edit</button>';
+          if (!r.builtIn) html += '<button class="btn btn-sm btn-outline" style="font-size:0.65rem;padding:2px 6px;color:var(--red);border-color:var(--red)" onclick="deleteRole(\'' + escapeHtml(r.name) + '\')">Delete</button>';
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+      el.innerHTML = html || '<div style="color:var(--text-muted);font-size:0.8rem">No custom roles yet</div>';
+    }
+
+    function renderPermissionToggles(selected) {
+      var el = document.getElementById('role-permissions');
+      var html = '';
+      allPermissions.forEach(function(p) {
+        var checked = selected.includes(p) ? 'checked' : '';
+        var label = PERM_LABELS[p] || p;
+        html += '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:0.8rem;cursor:pointer">';
+        html += '<input type="checkbox" value="' + p + '" ' + checked + ' style="accent-color:var(--accent)">';
+        html += label + '</label>';
+      });
+      el.innerHTML = html;
+    }
+
+    function openRoleEditor(existingName) {
+      editingRole = existingName || null;
+      var editor = document.getElementById('role-editor');
+      editor.style.display = '';
+
+      if (existingName) {
+        var role = allRoles.find(function(r) { return r.name === existingName; });
+        document.getElementById('role-name-input').value = role ? role.name : '';
+        document.getElementById('role-name-input').disabled = role && role.builtIn;
+        document.getElementById('role-color-input').value = role ? role.color : '#6b6052';
+        renderPermissionToggles(role ? role.permissions : []);
+      } else {
+        document.getElementById('role-name-input').value = '';
+        document.getElementById('role-name-input').disabled = false;
+        document.getElementById('role-color-input').value = '#6b6052';
+        renderPermissionToggles([]);
+      }
+    }
+
+    function closeRoleEditor() {
+      document.getElementById('role-editor').style.display = 'none';
+      editingRole = null;
+    }
+
+    function editRole(name) {
+      openRoleEditor(name);
+    }
+
+    async function saveRoleEditor() {
+      var name = document.getElementById('role-name-input').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+      var color = document.getElementById('role-color-input').value;
+      var perms = [];
+      document.querySelectorAll('#role-permissions input:checked').forEach(function(cb) {
+        perms.push(cb.value);
+      });
+
+      if (!name || name.length < 2) return showToast('Role name must be 2+ characters');
+
+      try {
+        if (editingRole) {
+          await API.updateRole(editingRole, { permissions: perms, color: color });
+          showToast('Role updated');
+        } else {
+          await API.createRole({ name: name, permissions: perms, color: color });
+          showToast('Role created');
+        }
+        closeRoleEditor();
+        loadRoles();
+      } catch (e) { showToast(e.message || 'Failed to save role'); }
+    }
+
+    async function deleteRole(name) {
+      if (!confirm('Delete role "' + name + '"? Members with this role will be set to "member".')) return;
+      try {
+        await API.deleteRole(name);
+        showToast('Role deleted');
+        loadRoles();
+      } catch (e) { showToast(e.message || 'Failed to delete'); }
+    }
+
+    async function changeRole(email, newRole) {
+      try {
+        await API.assignRole(email, newRole);
+        showToast(email + ' → ' + newRole);
+        loadTeamList();
+      } catch (e) { showToast(e.message || 'Failed to assign role'); }
     }
 
     async function handleManageBilling() {

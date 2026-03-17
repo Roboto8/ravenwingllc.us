@@ -249,6 +249,51 @@ functions:
           path: /api/team/invite/{token}/validate
           method: GET
 
+  listRoles:
+    handler: handlers/roles.list
+    events:
+      - httpApi:
+          path: /api/roles
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  createRole:
+    handler: handlers/roles.create
+    events:
+      - httpApi:
+          path: /api/roles
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+  updateRole:
+    handler: handlers/roles.update
+    events:
+      - httpApi:
+          path: /api/roles/{name}
+          method: PUT
+          authorizer:
+            name: cognitoAuthorizer
+
+  deleteRole:
+    handler: handlers/roles.remove
+    events:
+      - httpApi:
+          path: /api/roles/{name}
+          method: DELETE
+          authorizer:
+            name: cognitoAuthorizer
+
+  assignRole:
+    handler: handlers/roles.assign
+    events:
+      - httpApi:
+          path: /api/roles/assign
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
   stripeWebhook:
     handler: handlers/webhook.handler
     events:

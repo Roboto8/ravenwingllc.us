@@ -54,6 +54,13 @@ const API = {
   revokeInvite(token) { return this._fetch('/api/team/invite/' + token, { method: 'DELETE' }); },
   removeMember(email) { return this._fetch('/api/team/' + encodeURIComponent(email), { method: 'DELETE' }); },
 
+  // Roles
+  getRoles() { return this._fetch('/api/roles'); },
+  createRole(data) { return this._fetch('/api/roles', { method: 'POST', body: JSON.stringify(data) }); },
+  updateRole(name, data) { return this._fetch('/api/roles/' + name, { method: 'PUT', body: JSON.stringify(data) }); },
+  deleteRole(name) { return this._fetch('/api/roles/' + name, { method: 'DELETE' }); },
+  assignRole(email, role) { return this._fetch('/api/roles/assign', { method: 'POST', body: JSON.stringify({ email, role }) }); },
+
   // Billing
   getStatus() { return this._fetch('/api/billing/status'); },
   createCheckout(returnUrl) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
