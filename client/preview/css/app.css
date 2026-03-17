@@ -22,7 +22,7 @@
   --min-touch: 44px;
 }
 
-html, body { height: 100%; overflow: hidden; margin: 0; }
+html, body { height: 100%; overflow: hidden; margin: 0; -webkit-user-select: none; user-select: none; }
 
 body {
   font-family: var(--font);
@@ -33,6 +33,12 @@ body {
   flex-direction: column;
   font-size: 15px;
 }
+
+/* Block printing */
+@media print { body { display: none !important; } }
+
+/* Allow text selection in inputs */
+input, textarea, select { -webkit-user-select: text; user-select: text; }
 
 /* Focus styles for accessibility */
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
@@ -493,17 +499,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 .bom-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 4px 0;
   font-size: 0.88rem;
   border-bottom: 1px solid var(--surface-2);
   gap: 6px;
+  flex-wrap: wrap;
 }
 .bom-row:last-child { border-bottom: none; }
-.bom-name { color: var(--text-mid); flex: 1; font-size: 0.82rem; }
+.bom-name { color: var(--text-mid); width: 100%; font-size: 0.82rem; }
 .bom-qty {
-  width: 52px;
+  width: 56px;
   padding: 4px 6px;
   min-height: 32px;
   background: var(--bg);
@@ -515,9 +521,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   text-align: right;
   outline: none;
   flex-shrink: 0;
+  margin-left: auto;
 }
 .bom-qty:focus { border-color: var(--accent); }
-.bom-cost { color: var(--text); font-weight: 600; white-space: nowrap; min-width: 55px; text-align: right; }
+.bom-cost { color: var(--text); font-weight: 600; white-space: nowrap; text-align: right; flex-shrink: 0; }
 
 .bom-total-row {
   display: flex;
@@ -801,6 +808,36 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   color: var(--text-muted);
   font-size: 0.9rem;
   margin-bottom: 20px;
+}
+
+.auth-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  min-width: var(--min-touch);
+  min-height: var(--min-touch);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.auth-close:hover { color: var(--text); }
+
+.auth-gate-msg {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
 }
 
 .auth-form .form-group { margin-bottom: 8px; }

@@ -855,6 +855,7 @@ function renderCustomItems() {
 
 // === Pricing Editor ===
 function showPricingEditor() {
+  if (typeof requireAuth === 'function' && !requireAuth('customize pricing')) return;
   const type = selectedFence.type;
   const h = selectedHeight;
   const spec = BOM[type];
@@ -1005,6 +1006,7 @@ document.getElementById('address-input').addEventListener('keydown', function(e)
 
 // === Share Link ===
 function shareEstimate() {
+  if (typeof requireAuth === 'function' && !requireAuth('share estimates')) return;
   const data = {
     p: fencePoints.map(p => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6]),
     g: gates.map(g => ({ t: g.type, lt: Math.round(g.latlng.lat * 1e6) / 1e6, ln: Math.round(g.latlng.lng * 1e6) / 1e6 })),
@@ -1052,6 +1054,8 @@ function fallbackCopy(text) {
   ta.value = text;
   ta.style.position = 'fixed';
   ta.style.left = '-9999px';
+  ta.style.userSelect = 'text';
+  ta.style.webkitUserSelect = 'text';
   document.body.appendChild(ta);
   ta.select();
   try {
@@ -1311,6 +1315,7 @@ function captureMap() {
 
 // === PDF Generation ===
 async function generatePDF() {
+  if (typeof requireAuth === 'function' && !requireAuth('download PDF estimates')) return;
   try {
   showToast('Generating PDF...');
 
@@ -1603,6 +1608,35 @@ function togglePanel() {
   // Let the map resize after the panel animates
   setTimeout(() => map.invalidateSize(), 350);
 }
+
+// === Screenshot Prevention ===
+// Block PrintScreen and common screenshot shortcuts
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'PrintScreen') {
+    e.preventDefault();
+    showToast('Screenshots are disabled');
+  }
+  // Ctrl+Shift+S (Windows Snip), Cmd+Shift+3/4/5 (Mac)
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 's' || e.key === 'S' || e.key === '3' || e.key === '4' || e.key === '5')) {
+    e.preventDefault();
+    showToast('Screenshots are disabled');
+  }
+  // Ctrl+P (Print)
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+    e.preventDefault();
+    showToast('Printing is disabled. Use Save as PDF instead.');
+  }
+});
+
+// Block right-click context menu
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+});
+
+// Detect visibility change (screen recording indicator on some browsers)
+document.addEventListener('visibilitychange', function() {
+  // Could log this but don't block — too many false positives
+});
 
 // === Init ===
 initMap();

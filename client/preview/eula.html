@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>End User License Agreement — FenceCalc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f0eb;
+      --surface: #fff;
+      --surface-2: #ede8e2;
+      --border: #d4cdc4;
+      --text: #2c2417;
+      --text-mid: #4a4030;
+      --text-muted: #6b6052;
+      --accent: #c0622e;
+      --accent-hover: #a8521f;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius: 6px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .site-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand .calc { color: var(--accent); }
+
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { font-size: 0.9rem; font-weight: 500; color: var(--text-mid); text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-links a.active { color: var(--accent); }
+
+    .legal-content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .legal-content h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .legal-date {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    .legal-content h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .legal-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    .legal-content p {
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+
+    .legal-content ul, .legal-content ol {
+      margin: 0 0 16px 20px;
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+    }
+
+    .legal-content li { margin-bottom: 6px; }
+
+    .legal-content .legal-toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+
+    .legal-toc p {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .legal-toc ol {
+      margin: 0 0 0 18px;
+      font-size: 0.88rem;
+      columns: 2;
+      column-gap: 24px;
+    }
+
+    .legal-toc li { margin-bottom: 4px; }
+
+    .legal-content .notice-box {
+      background: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 16px 20px;
+      margin: 20px 0;
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .notice-box p { margin-bottom: 0; font-size: 0.9rem; }
+    .notice-box p + p { margin-top: 10px; }
+
+    .site-footer {
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-brand {
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .footer-brand .calc { color: var(--accent); }
+
+    .footer-copy {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .footer-inner { flex-direction: column; text-align: center; gap: 12px; }
+      .legal-content h1 { font-size: 1.6rem; }
+      .legal-toc ol { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="landing.html" class="brand">Fence<span class="calc">Calc</span></a>
+      <div class="nav-links">
+        <a href="landing.html">Home</a>
+        <a href="index.html">App</a>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="eula.html" class="active">EULA</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="legal-content">
+    <h1>End User License Agreement</h1>
+    <p class="legal-date">Last updated: March 16, 2026</p>
+
+    <div class="notice-box">
+      <p><strong>IMPORTANT -- READ CAREFULLY BEFORE USING THE SOFTWARE:</strong> This End User License Agreement ("EULA" or "Agreement") is a legally binding contract between you (either an individual or a single legal entity, referred to herein as "Licensee," "you," or "your") and RavenWing LLC, a Virginia limited liability company ("Licensor," "we," "us," or "our"). By creating an Account, accessing, installing, copying, or using the FenceCalc software application in any manner ("Software"), you acknowledge that you have read, understood, and agree to be bound by all of the terms and conditions of this Agreement. If you do not agree to all of the terms of this Agreement, do not access or use the Software.</p>
+      <p>If you are accepting this Agreement on behalf of a company, government agency, or other legal entity, you represent and warrant that you have the authority to bind that entity to this Agreement, and all references to "you" or "Licensee" shall refer to that entity.</p>
+    </div>
+
+    <div class="legal-toc">
+      <p>Table of Contents</p>
+      <ol>
+        <li><a href="#definitions">Definitions</a></li>
+        <li><a href="#grant">Software License Grant</a></li>
+        <li><a href="#scope">Scope of Use</a></li>
+        <li><a href="#prohibited">Prohibited Uses</a></li>
+        <li><a href="#screenshots">Screenshot and Recording Restrictions</a></li>
+        <li><a href="#proprietary">Proprietary Rights and Trade Secrets</a></li>
+        <li><a href="#export">Export Restrictions</a></li>
+        <li><a href="#government">Government Use Rights</a></li>
+        <li><a href="#updates">Updates and Modifications</a></li>
+        <li><a href="#support">Support and Maintenance</a></li>
+        <li><a href="#termination">Termination</a></li>
+        <li><a href="#warranty">Warranty Disclaimer</a></li>
+        <li><a href="#liability">Limitation of Liability</a></li>
+        <li><a href="#indemnification">Indemnification</a></li>
+        <li><a href="#general">General Provisions</a></li>
+        <li><a href="#contact">Contact Information</a></li>
+      </ol>
+    </div>
+
+    <h2 id="definitions">1. Definitions</h2>
+    <p>The following terms have the meanings set forth below when used in this Agreement. Capitalized terms used but not defined herein shall have the meanings given to them in the <a href="terms.html">Terms of Service</a>.</p>
+    <ul>
+      <li><strong>"Software"</strong> means the FenceCalc web-based software-as-a-service (SaaS) application, including all features, modules, tools, user interfaces, algorithms, databases, documentation, help content, updates, patches, bug fixes, enhancements, new versions, and all related intellectual property provided by Licensor through the FenceCalc platform.</li>
+      <li><strong>"Licensor"</strong> means RavenWing LLC, a Virginia limited liability company, the sole owner, developer, and operator of the Software, with its principal place of business in Mechanicsville, Virginia.</li>
+      <li><strong>"Licensee"</strong> means the individual or legal entity (including corporations, limited liability companies, partnerships, sole proprietorships, government agencies, and other organizations) that has agreed to this EULA and is granted a license to use the Software.</li>
+      <li><strong>"Authorized Users"</strong> means individuals within the Licensee's organization who are specifically authorized by the Licensee to access and use the Software under the Licensee's Account and Subscription plan, up to the number of user seats permitted by the applicable plan.</li>
+      <li><strong>"BOM Algorithms"</strong> means the proprietary bill-of-materials calculation algorithms, estimation logic, material computation methods, post-spacing formulas, rail quantity calculations, hardware quantity computations, waste-factor calculations, gate hardware algorithms, and all related computational processes, formulas, lookup tables, and decision trees embedded within or used by the Software.</li>
+      <li><strong>"Confidential Information"</strong> means all non-public information related to the Software, the Licensor's business, or the Licensor's technology, including but not limited to: source code, object code, bytecode, compiled code, algorithms, data structures, database schemas, API specifications, pricing data, pricing databases, pricing update methodologies, BOM Algorithms, material databases, product specification databases, technical specifications, system architecture, network topology, security configurations, trade secrets, business methods, business plans, financial information, customer lists, vendor relationships, and any information designated as confidential by Licensor or that a reasonable person would understand to be confidential given the nature of the information and the circumstances of disclosure.</li>
+      <li><strong>"Output"</strong> means any estimates, reports, PDF documents, shareable links, bills of materials, cost summaries, material lists, or other documents or data generated by the Software based on Licensee's input and configuration.</li>
+      <li><strong>"Documentation"</strong> means all user guides, help articles, tooltips, tutorials, API documentation, release notes, and other instructional or reference materials provided by Licensor in connection with the Software.</li>
+      <li><strong>"Subscription"</strong> means the paid, recurring plan (monthly or annual) under which the Licensee is granted access to the Software, as described on the Software's pricing page and in the <a href="terms.html">Terms of Service</a>.</li>
+    </ul>
+
+    <h2 id="grant">2. Software License Grant</h2>
+
+    <h3>2.1 Grant of License</h3>
+    <p>Subject to your ongoing compliance with all terms and conditions of this Agreement and the <a href="terms.html">Terms of Service</a>, and subject to your timely payment of all applicable Subscription fees, Licensor hereby grants you a <strong>limited, non-exclusive, non-transferable, non-sublicensable, revocable license</strong> to access and use the Software solely for your internal business purposes during the term of your active Subscription. This license is granted solely for the purpose of enabling you to use the Software in the manner permitted by this Agreement.</p>
+
+    <h3>2.2 Reservation of Rights</h3>
+    <p>The Software is licensed, not sold. This Agreement does not convey to you any ownership interest in or to the Software, any copy thereof, or any intellectual property rights therein. Licensor and its licensors retain all right, title, and interest in and to the Software, including all patent, copyright, trade secret, trademark, and other intellectual property rights therein and thereto, whether registered or unregistered, and all applications and registrations therefor. All rights not expressly granted herein are reserved by Licensor. No implied licenses or rights are granted by this Agreement, whether by estoppel, implication, exhaustion, or otherwise.</p>
+
+    <h3>2.3 License Restrictions</h3>
+    <p>The license granted under this Agreement is subject to, limited by, and conditioned upon your compliance with the restrictions set forth in Section 4 (Prohibited Uses), Section 5 (Screenshot and Recording Restrictions), Section 6 (Proprietary Rights and Trade Secrets), and all other terms and conditions of this Agreement, the <a href="terms.html">Terms of Service</a>, and the <a href="privacy.html">Privacy Policy</a>. Any use of the Software beyond the scope of this license is strictly prohibited and constitutes a material breach of this Agreement and an infringement of Licensor's intellectual property rights.</p>
+
+    <h3>2.4 No Right to Source Code</h3>
+    <p>Nothing in this Agreement grants you any right to receive, access, view, or obtain the source code of the Software. The source code of the Software is and shall remain the exclusive property and trade secret of Licensor.</p>
+
+    <h2 id="scope">3. Scope of Use</h2>
+
+    <h3>3.1 Per-Company License</h3>
+    <p>The Software is licensed on a per-company (or per-entity) basis. A single Subscription permits use of the Software by the subscribing company, organization, or legal entity and its Authorized Users, up to the number of user seats included in the applicable Subscription plan. Each separate company, legal entity, subsidiary, affiliate, division, joint venture, or other distinct organizational unit that wishes to independently use the Software must obtain its own separate Subscription. For the avoidance of doubt, a parent company and its subsidiaries are separate entities for licensing purposes unless they share a single Subscription plan that expressly covers multiple entities.</p>
+
+    <h3>3.2 Authorized Users</h3>
+    <p>The maximum number of Authorized Users permitted under your Subscription is determined by your Subscription plan. You are solely responsible for: (a) designating which individuals within your organization are Authorized Users; (b) ensuring that only designated Authorized Users access the Software through your Account; (c) maintaining the confidentiality of all Account credentials used by your Authorized Users; and (d) ensuring that all Authorized Users comply with this Agreement. You shall not permit any individual who is not a designated Authorized User to access or use the Software using your credentials, Account, or Subscription. Any action taken by an Authorized User within the Software shall be deemed to be an action taken by the Licensee.</p>
+
+    <h3>3.3 Permitted Use</h3>
+    <p>You may use the Software solely for the following purposes in the ordinary course of your business operations:</p>
+    <ul>
+      <li>Creating fence material estimates, bills of materials, and cost calculations for your own projects or for projects you are bidding on, quoting, or performing for your direct customers;</li>
+      <li>Generating PDF documents, printable reports, and shareable estimate links for distribution to your customers, prospects, subcontractors, and business partners in connection with specific fence projects;</li>
+      <li>Managing, organizing, searching, and archiving your fence estimates and project data within the Software;</li>
+      <li>Entering and managing customer contact information within the Software for the purpose of associating customers with specific estimates;</li>
+      <li>Customizing material prices, markup percentages, tax rates, and other financial parameters within the Software for your own estimates; and</li>
+      <li>Using Output generated by the Software in the ordinary course of your fencing, contracting, or related business operations, subject to the accuracy disclaimers and limitations set forth in the <a href="terms.html">Terms of Service</a>.</li>
+    </ul>
+
+    <h3>3.4 Single-Purpose Restriction</h3>
+    <p>The license granted herein is limited to the use of the Software as a fence estimation and bill-of-materials tool. You may not use the Software, its algorithms, its data, or its Output for any purpose other than fence estimation and related activities as described in Section 3.3, unless Licensor provides prior written consent for an alternative use.</p>
+
+    <h2 id="prohibited">4. Prohibited Uses</h2>
+    <p>You shall not, directly or indirectly, and shall not authorize, assist, encourage, or enable any third party to:</p>
+
+    <h3>4.1 Reverse Engineering and Decompilation</h3>
+    <ul>
+      <li>Reverse engineer, decompile, disassemble, decode, decrypt, or otherwise attempt to derive or gain unauthorized access to the source code, object code, bytecode, or underlying structure, algorithms, data models, data structures, or ideas of the Software or any component thereof;</li>
+      <li>Attempt to reconstruct, discover, identify, or determine any source code, underlying ideas, algorithms, file formats, data schemas, or programming interfaces of the Software through observation, analysis of the Software's output or behavior, analysis of network traffic or API communications, or any other method (sometimes referred to as "black box" reverse engineering);</li>
+      <li>Use any debugging, decompilation, disassembly, profiling, monitoring, packet sniffing, or instrumentation tools to analyze, probe, or examine the internal operations, memory contents, or data flows of the Software, except to the extent that such restriction is expressly prohibited by applicable law notwithstanding a contractual restriction.</li>
+    </ul>
+
+    <h3>4.2 Unauthorized Copying and Distribution</h3>
+    <ul>
+      <li>Copy, reproduce, duplicate, distribute, publish, display, broadcast, sublicense, sell, resell, rent, lease, lend, pledge, encumber, or otherwise make available the Software, or any portion, feature, or functionality thereof, to any third party;</li>
+      <li>Use the Software to provide bureau services, time-sharing, hosting, outsourced processing, application service provider (ASP) services, managed services, or any form of service bureau arrangement for third parties;</li>
+      <li>Permit any individual or entity not authorized under your Subscription to access, use, view, or interact with the Software through your Account or through any other means;</li>
+      <li>Frame, mirror, or create any proxy for the Software or any portion of its user interface.</li>
+    </ul>
+
+    <h3>4.3 Competitive Use and Misappropriation</h3>
+    <ul>
+      <li>Use the Software, its Output, its BOM Algorithms, its pricing data, its material databases, or any Confidential Information obtained therefrom to design, develop, build, create, train, improve, market, sell, license, distribute, or otherwise make available any product, service, software, algorithm, database, dataset, or tool that competes with, is substantially similar to, or could serve as a replacement or substitute for, the Software, in whole or in part;</li>
+      <li>Conduct competitive analysis, benchmarking, or performance testing of the Software for the purpose of publishing comparative analyses, reviews, or evaluations without prior written consent from Licensor;</li>
+      <li>Use the Software for the purpose of evaluating, replicating, reverse-engineering, undermining, or otherwise harming the Software's competitive position in the market;</li>
+      <li>Hire, engage, or collaborate with any third party to perform any of the prohibited activities described in this Section 4.3 on your behalf.</li>
+    </ul>
+
+    <h3>4.4 Data Extraction and Harvesting</h3>
+    <ul>
+      <li>Scrape, crawl, spider, harvest, mine, or use any automated or semi-automated means (including bots, scripts, browser automation tools, browser extensions, robotic process automation, or similar technologies) to access, extract, collect, index, compile, or copy any data, content, pricing information, material specifications, BOM data, algorithmic outputs, or other information from the Software;</li>
+      <li>Systematically download, copy, store, cache, archive, or compile material pricing data, BOM outputs, algorithmic results, estimation parameters, or material database contents for use outside the Software or for the purpose of building a competing or supplementary dataset, database, or reference;</li>
+      <li>Build, populate, train, or enhance any database, dataset, data repository, machine learning model, artificial intelligence system, or knowledge base using data obtained from or generated by the Software.</li>
+    </ul>
+
+    <h3>4.5 Modification, Tampering, and Circumvention</h3>
+    <ul>
+      <li>Modify, adapt, alter, translate, localize, port, or create derivative works based on the Software or any part thereof, including its user interface, visual design, icons, graphics, documentation, or any other element;</li>
+      <li>Remove, alter, obscure, cover, deface, or tamper with any proprietary notices, labels, watermarks, copyright notices, trademark designations, confidentiality legends, or other marks on, within, or generated by the Software;</li>
+      <li>Circumvent, disable, bypass, defeat, or interfere with any security features, access controls, authentication mechanisms, usage limits, rate limits, digital rights management, content-protection technologies, screenshot-prevention measures, or any other technical protection measures of the Software;</li>
+      <li>Introduce, transmit, upload, or embed any virus, malware, worm, Trojan horse, ransomware, spyware, adware, rootkit, keylogger, or other malicious, harmful, or unauthorized code, script, or agent into or through the Software;</li>
+      <li>Interfere with, disrupt, degrade, overload, or impair the operation, performance, availability, or security of the Software, its servers, networks, databases, infrastructure, or any systems connected thereto.</li>
+    </ul>
+
+    <h2 id="screenshots">5. Screenshot and Recording Restrictions</h2>
+
+    <h3>5.1 Content Protection Measures</h3>
+    <p>The Software implements technical content-protection measures designed to safeguard proprietary and trade-secret information displayed within the Software's interface. These measures are deployed to protect Licensor's BOM Algorithms, pricing data, material databases, estimation logic, and other Confidential Information from unauthorized capture, reproduction, and dissemination. Content-protection measures may include, but are not limited to:</p>
+    <ul>
+      <li>CSS-based visual obfuscation and content-hiding techniques that activate when screenshot, screen recording, or screen-sharing software is detected;</li>
+      <li>JavaScript-based detection of screen capture events, print screen key presses, and clipboard operations targeting protected content areas;</li>
+      <li>Browser API-based detection of screen recording, screen sharing, and remote desktop sessions;</li>
+      <li>DOM manipulation to prevent selection, copying, or extraction of protected content through browser developer tools or accessibility APIs; and</li>
+      <li>Watermarking or visual overlays on protected content areas to deter unauthorized capture.</li>
+    </ul>
+
+    <h3>5.2 Licensee Obligations Regarding Content Protection</h3>
+    <p>You acknowledge, understand, and agree that:</p>
+    <ul>
+      <li>The content-protection measures described in Section 5.1 are implemented to protect Licensor's legitimate trade secrets, proprietary algorithms, and Confidential Information;</li>
+      <li>You shall not attempt to circumvent, bypass, disable, defeat, remove, or interfere with any content-protection measures implemented within the Software, whether through technical means (such as browser extensions, custom scripts, modified browsers, virtual machines, or other tools) or non-technical means;</li>
+      <li>You shall not use any third-party tool, browser extension, screen capture utility, virtual machine, or other technology specifically designed or primarily used to circumvent or defeat the Software's content-protection measures;</li>
+      <li>Circumvention of the Software's content-protection measures constitutes a <strong>material breach</strong> of this Agreement and may also constitute a violation of applicable law, including the Digital Millennium Copyright Act (DMCA), 17 U.S.C. Section 1201 (circumvention of technological measures), the Computer Fraud and Abuse Act (CFAA), 18 U.S.C. Section 1030, the Defend Trade Secrets Act (DTSA), 18 U.S.C. Sections 1831-1839, and analogous state laws; and</li>
+      <li>Licensor reserves all rights and remedies available at law and in equity for any circumvention of its content-protection measures, including injunctive relief, actual damages, statutory damages, and recovery of attorneys' fees.</li>
+    </ul>
+
+    <h3>5.3 Permitted Captures</h3>
+    <p>Notwithstanding the foregoing restrictions, you may capture screenshots, print, or record your own Output (including estimates, PDF documents, cost summaries, and shareable estimate links) for use in the ordinary course of your business operations, provided that such captures:</p>
+    <ul>
+      <li>Are limited to your own Output and do not expose, reveal, or capture proprietary BOM Algorithms, pricing database contents, estimation parameters, material database schemas, or other Confidential Information of Licensor;</li>
+      <li>Are used solely for your internal business purposes or for communication with your direct customers, prospects, and business partners regarding specific fence projects; and</li>
+      <li>Are not distributed, published, or made available in any manner that could enable a third party to derive, reconstruct, or infer Licensor's proprietary algorithms, pricing methodologies, or Confidential Information.</li>
+    </ul>
+
+    <h3>5.4 Incidental Captures</h3>
+    <p>Licensor acknowledges that incidental captures of non-protected portions of the Software's user interface may occur in the ordinary course of business (for example, when demonstrating the Software to a prospective customer). Such incidental captures do not constitute a breach of this Agreement, provided that they are not used for any prohibited purpose and do not capture or expose Confidential Information.</p>
+
+    <h2 id="proprietary">6. Proprietary Rights and Trade Secrets</h2>
+
+    <h3>6.1 Acknowledgment of Trade Secrets</h3>
+    <p>You expressly acknowledge and agree that the Software contains valuable trade secrets and Confidential Information of Licensor that have been developed through significant investment of time, effort, and resources. The following elements of the Software constitute trade secrets and Confidential Information of Licensor (this list is illustrative, not exhaustive):</p>
+    <ul>
+      <li><strong>BOM Algorithms:</strong> The proprietary algorithms, formulas, computation logic, decision trees, lookup tables, and conditional rules used to calculate material quantities (including post counts, post spacing, rail counts, rail lengths, picket counts, panel counts, hardware quantities, concrete volumes, and gate component requirements) for various fence types, styles, heights, and configurations;</li>
+      <li><strong>Pricing Data and Methodologies:</strong> The material pricing databases, pricing sources, pricing aggregation methods, pricing update frequencies, regional pricing adjustment factors, and cost estimation models used to generate default and suggested material prices within the Software;</li>
+      <li><strong>Estimation Logic:</strong> The rules, heuristics, standard assumptions, waste factors, and engineering judgment encoded within the Software's estimation engine, including how the Software handles corner posts, end posts, line posts, gate posts, transitions between fence types, grade changes, and irregular lot shapes;</li>
+      <li><strong>Technical Architecture:</strong> The software architecture, system design, database schemas, data models, API designs, data flow diagrams, system integration approaches, and deployment configurations of the Software;</li>
+      <li><strong>User Interface and User Experience Design:</strong> The layout, visual design, interaction patterns, workflow sequences, information architecture, and user experience elements of the Software that constitute original creative expression; and</li>
+      <li><strong>Business Methods:</strong> The business processes, workflows, methodologies, customer acquisition strategies, and competitive intelligence embedded within or derivable from the Software.</li>
+    </ul>
+
+    <h3>6.2 Confidentiality Obligations</h3>
+    <p>During the term of this Agreement and for a period of five (5) years following its termination (or, for trade secrets, for as long as the information remains a trade secret under applicable law), you agree to:</p>
+    <ul>
+      <li>Hold all Confidential Information in strict confidence and protect it from unauthorized disclosure, access, and use;</li>
+      <li>Not disclose, publish, disseminate, transmit, or otherwise make available any Confidential Information to any third party without the prior written consent of Licensor;</li>
+      <li>Not use Confidential Information for any purpose other than as expressly permitted under this Agreement (i.e., using the Software for your permitted internal business purposes);</li>
+      <li>Limit access to Confidential Information within your organization to only those Authorized Users who have a legitimate need to access the Software in connection with their job duties;</li>
+      <li>Ensure that all Authorized Users who access the Software are aware of the confidential nature of the Confidential Information and are bound by confidentiality obligations at least as protective as those set forth in this Agreement;</li>
+      <li>Take reasonable precautions to prevent unauthorized disclosure, access, or use of Confidential Information, using at least the same degree of care you use to protect your own most valuable confidential and trade secret information, but in no event less than reasonable care; and</li>
+      <li>Promptly notify Licensor in writing of any actual or suspected unauthorized disclosure, access, or use of Confidential Information of which you become aware, and cooperate with Licensor in mitigating the effects of such breach.</li>
+    </ul>
+
+    <h3>6.3 Exceptions to Confidentiality</h3>
+    <p>The obligations set forth in Section 6.2 do not apply to information that: (a) is or becomes publicly available through no fault of yours; (b) was rightfully in your possession before receipt from Licensor, as evidenced by your written records; (c) is independently developed by you without use of or reference to any Confidential Information, as evidenced by your written records; or (d) is rightfully obtained by you from a third party who is not under an obligation of confidentiality to Licensor.</p>
+
+    <h3>6.4 Compelled Disclosure</h3>
+    <p>If you are compelled by law, regulation, legal process, or court order to disclose Confidential Information, you shall: (a) provide Licensor with prompt written notice of the compelled disclosure (to the extent legally permitted) so that Licensor may seek a protective order or other appropriate remedy; (b) cooperate with Licensor in seeking such protective order; and (c) disclose only the minimum amount of Confidential Information necessary to comply with the legal obligation. Any Confidential Information disclosed pursuant to a legal compulsion shall retain its confidential status under this Agreement.</p>
+
+    <h3>6.5 Intellectual Property Ownership</h3>
+    <p>All title, ownership rights, and intellectual property rights in and to the Software (including all source code, object code, algorithms, data structures, databases, images, photographs, animations, video, audio, text, user interface designs, and other content incorporated into or generated by the Software), the Documentation, and any copies thereof, are and shall remain the sole and exclusive property of Licensor or its licensors. The Software is protected by United States copyright laws (17 U.S.C. Section 101 et seq.), international copyright treaties (including the Berne Convention and the WIPO Copyright Treaty), the Defend Trade Secrets Act (18 U.S.C. Sections 1831-1839), the Lanham Act (15 U.S.C. Section 1051 et seq.), and other applicable intellectual property laws and treaties. Unauthorized reproduction, distribution, or disclosure of the Software or any of its components may result in civil and criminal penalties.</p>
+
+    <h3>6.6 No Implied Rights</h3>
+    <p>Nothing in this Agreement shall be construed to grant you, by implication, estoppel, or otherwise, any license or right to any patent, copyright, trademark, trade secret, or other intellectual property right of Licensor except as expressly set forth herein.</p>
+
+    <h2 id="export">7. Export Restrictions</h2>
+    <p>The Software and its underlying technology may be subject to United States export control laws and regulations, including the Export Administration Regulations (EAR, 15 C.F.R. Parts 730-774) administered by the U.S. Department of Commerce, Bureau of Industry and Security (BIS), and sanctions programs administered by the U.S. Department of the Treasury, Office of Foreign Assets Control (OFAC). By using the Software, you represent, warrant, and covenant that:</p>
+    <ul>
+      <li>You are not located in, and will not access or use the Software from, any country, territory, or region that is subject to a comprehensive U.S. Government embargo or that has been designated by the U.S. Government as a "terrorist supporting" country or region (which, as of the date of this Agreement, include Cuba, Iran, North Korea, Syria, and the Crimea, Donetsk, and Luhansk regions of Ukraine);</li>
+      <li>You are not listed on, and are not owned or controlled by any person or entity listed on, any U.S. Government list of prohibited or restricted parties, including the Specially Designated Nationals and Blocked Persons List (SDN List) maintained by OFAC, the Denied Persons List maintained by BIS, the Entity List maintained by BIS, the Unverified List maintained by BIS, or the Nonproliferation Sanctions lists maintained by the U.S. Department of State;</li>
+      <li>You will not export, re-export, transfer, divert, or otherwise make available the Software, any technical data obtained from the Software, or any direct product thereof, in violation of any applicable export control laws, regulations, or sanctions;</li>
+      <li>You will not use the Software for any purpose prohibited by U.S. export control laws, including the development, design, manufacture, production, stockpiling, or use of nuclear, chemical, or biological weapons, missile technology, or any other weapons of mass destruction; and</li>
+      <li>You will comply with all applicable anti-boycott laws and regulations, including those administered by the U.S. Department of Commerce (15 C.F.R. Part 760) and the U.S. Department of the Treasury (26 U.S.C. Section 999).</li>
+    </ul>
+    <p>You agree to indemnify and hold harmless Licensor from and against any and all claims, damages, losses, liabilities, costs, and expenses arising from your violation of this Section 7.</p>
+
+    <h2 id="government">8. Government Use Rights</h2>
+
+    <h3>8.1 Commercial Item Classification</h3>
+    <p>The Software is a "commercial item" as that term is defined in Federal Acquisition Regulation (FAR) 2.101, consisting of "commercial computer software" and "commercial computer software documentation," as those terms are defined and used in FAR 12.212, FAR 27.405-3, and Defense Federal Acquisition Regulation Supplement (DFARS) 227.7202. In accordance with FAR 12.212 and DFARS 227.7202-1 through 227.7202-4, all United States Government end users acquire the Software and its Documentation with only those rights set forth in this Agreement, which are the same rights customarily provided to the public. No additional government rights are granted.</p>
+
+    <h3>8.2 Government License Rights</h3>
+    <p>If the Software is acquired by or on behalf of any agency, department, instrumentality, or other unit of the United States Government ("Government"), the Government acknowledges and agrees that:</p>
+    <ul>
+      <li>The Software and its Documentation were developed exclusively at private expense by RavenWing LLC;</li>
+      <li>The Software is provided to the Government as a commercial item subject to the terms of this EULA;</li>
+      <li>The Government's rights in the Software are limited to the rights customarily provided to the public as set forth in this Agreement;</li>
+      <li>No unlimited rights, government purpose rights, special license rights, or rights beyond those granted to commercial customers in this Agreement are conveyed unless separately negotiated and agreed to in writing by an authorized representative of Licensor;</li>
+      <li>The Software contains trade secrets and commercial or financial information that is privileged and confidential, and is exempt from disclosure under the Freedom of Information Act (FOIA), 5 U.S.C. Section 552(b)(4), and similar state open-records laws; and</li>
+      <li>Use, reproduction, release, modification, disclosure, or transfer of the Software is restricted in accordance with the terms of this Agreement.</li>
+    </ul>
+
+    <h3>8.3 SDVOSB Status and Small Business Considerations</h3>
+    <p>RavenWing LLC is a certified Service-Disabled Veteran-Owned Small Business (SDVOSB) as defined by the Small Business Act (15 U.S.C. Section 632) and the Veterans Entrepreneurship and Small Business Development Act of 1999. Government agencies and prime contractors may consider this status in procurement decisions in accordance with applicable regulations, including:</p>
+    <ul>
+      <li>FAR Part 19 (Small Business Programs), including Subpart 19.14 (Service-Disabled Veteran-Owned Small Business Procurement Program);</li>
+      <li>Veterans Benefits, Health Care, and Information Technology Act of 2006 (Public Law 109-461), as applicable to Department of Veterans Affairs (VA) procurements;</li>
+      <li>Executive Order 13360, providing for increased opportunities for service-disabled veteran-owned small businesses; and</li>
+      <li>Applicable state and local veteran-owned small business preference programs.</li>
+    </ul>
+    <p>This EULA is compatible with the standard terms and conditions applicable to government contracts with small businesses, and the Software meets the requirements for commercial item acquisition under FAR Part 12. The Software's commercial item status and the rights granted herein are consistent with the government's commercial item procurement policies.</p>
+
+    <h3>8.4 Government-Specific Terms and Conflicts</h3>
+    <p>To the extent that any provision of this EULA directly conflicts with any mandatory, non-waivable provision of federal acquisition law or regulation (including the FAR and DFARS) that is applicable to the acquisition of the Software by the U.S. Government under a specific government contract or order, such mandatory provision shall take precedence, but <strong>only to the minimum extent necessary to resolve the direct conflict</strong>. All other provisions of this EULA shall remain in full force and effect. Any claim of conflict must be identified in writing by the Government contracting officer, and Licensor reserves the right to contest any such claim.</p>
+
+    <h3>8.5 Contractor and Subcontractor Use</h3>
+    <p>If you are a government contractor or subcontractor using the Software in connection with a government contract, you acknowledge that: (a) the license rights granted herein are commercial license rights and are not government-furnished rights; (b) the Software is not a deliverable under any government contract unless Licensor has separately agreed in writing; and (c) you are responsible for ensuring that your use of the Software complies with all applicable government contract requirements, including but not limited to data rights, cybersecurity, and record-keeping requirements.</p>
+
+    <h2 id="updates">9. Updates and Modifications</h2>
+
+    <h3>9.1 Software Updates</h3>
+    <p>Licensor may, at its sole discretion, provide updates, patches, bug fixes, security patches, enhancements, new features, or new versions of the Software ("Updates") from time to time. All Updates shall be deemed part of the Software and shall be subject to all terms and conditions of this Agreement. Licensor is under no obligation to provide any specific Updates, to continue to support or maintain compatibility with any prior version of the Software, or to provide Updates on any particular schedule.</p>
+
+    <h3>9.2 Feature Changes</h3>
+    <p>Licensor reserves the right to modify, enhance, deprecate, remove, or discontinue any feature, functionality, module, or component of the Software at any time, with or without prior notice. Licensor will make commercially reasonable efforts to provide advance notice of material changes to Software functionality, but the absence of such notice shall not limit Licensor's rights under this section.</p>
+
+    <h3>9.3 Backward Compatibility</h3>
+    <p>Licensor does not guarantee backward compatibility of Updates with prior versions of the Software or with your existing data, configurations, or workflows. You are responsible for reviewing and adapting to changes in the Software.</p>
+
+    <h2 id="support">10. Support and Maintenance</h2>
+
+    <h3>10.1 Technical Support</h3>
+    <p>During the term of your active Subscription, Licensor will provide reasonable email-based technical support via <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>. Technical support is limited to issues directly related to the Software's functionality, features, and documented capabilities. Technical support does not include: custom development, software customization, data migration, integration consulting, training services, on-site support, or consulting services.</p>
+
+    <h3>10.2 Response Times</h3>
+    <p>Licensor will use commercially reasonable efforts to respond to technical support requests in a timely manner. However, Licensor does not guarantee any specific response time, resolution time, or outcome for any support request. Support requests are handled in the order received, with priority given to issues affecting service availability and data integrity.</p>
+
+    <h3>10.3 Support Exclusions</h3>
+    <p>Licensor is not obligated to provide support for issues arising from: (a) your use of the Software in a manner inconsistent with this Agreement or the Documentation; (b) modifications or alterations to the Software not made by Licensor; (c) use of the Software in conjunction with unsupported browsers, operating systems, or hardware; (d) internet connectivity issues, network problems, or third-party service outages; or (e) your failure to implement Updates or patches recommended by Licensor.</p>
+
+    <h2 id="termination">11. Termination</h2>
+
+    <h3>11.1 Termination by Licensee</h3>
+    <p>You may terminate this Agreement at any time by canceling your Subscription through your Account settings and ceasing all use of the Software. Termination by you does not entitle you to a refund of any prepaid Subscription fees.</p>
+
+    <h3>11.2 Termination by Licensor</h3>
+    <p>Licensor may terminate this Agreement and your license to use the Software immediately upon written notice (email to the address associated with your Account) if:</p>
+    <ul>
+      <li>You breach any provision of this Agreement and fail to cure such breach within fifteen (15) days after receiving written notice specifying the nature of the breach (provided that breaches of Sections 4, 5, or 6 are not subject to cure and may result in immediate termination);</li>
+      <li>You breach any provision of Section 4 (Prohibited Uses), Section 5 (Screenshot and Recording Restrictions), or Section 6 (Proprietary Rights and Trade Secrets), in which case termination shall be effective immediately without any opportunity to cure, due to the irreparable nature of the harm caused by such breaches;</li>
+      <li>You fail to pay any Subscription fees when due and such failure continues for seven (7) days following written notice of the delinquency;</li>
+      <li>You become insolvent, file for bankruptcy or reorganization under any applicable bankruptcy law, make a general assignment for the benefit of creditors, or are the subject of involuntary bankruptcy or receivership proceedings that are not dismissed within sixty (60) days of filing;</li>
+      <li>You engage in conduct that materially harms or threatens to harm Licensor, the Software, other users, or third parties;</li>
+      <li>Licensor discontinues the Software entirely (in which case Licensor will provide at least ninety (90) days' advance notice); or</li>
+      <li>Continued provision of the Software to you would violate applicable law, regulation, or court order.</li>
+    </ul>
+
+    <h3>11.3 Effect of Termination</h3>
+    <p>Upon termination of this Agreement for any reason:</p>
+    <ul>
+      <li>Your license to access and use the Software immediately and automatically terminates;</li>
+      <li>You must immediately cease all access to and use of the Software;</li>
+      <li>You must promptly destroy, delete, or return (at Licensor's election) all copies of any Confidential Information of Licensor in your possession, custody, or control, and shall, upon request, provide written certification of such destruction or deletion signed by an authorized representative;</li>
+      <li>Your Account and User Content will be handled in accordance with the data retention provisions of the <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>;</li>
+      <li>You may request export of your User Content (estimates, customer data, and project data) within thirty (30) days following termination, subject to the data portability provisions of the <a href="privacy.html">Privacy Policy</a>; and</li>
+      <li>All provisions of this Agreement that by their nature should survive termination shall survive indefinitely, including but not limited to: Sections 1 (Definitions), 4 (Prohibited Uses), 5 (Screenshot and Recording Restrictions), 6 (Proprietary Rights and Trade Secrets), 7 (Export Restrictions), 12 (Warranty Disclaimer), 13 (Limitation of Liability), 14 (Indemnification), and 15 (General Provisions).</li>
+    </ul>
+
+    <h3>11.4 Post-Termination Audit</h3>
+    <p>Licensor reserves the right to request written confirmation from you, within thirty (30) days following termination, that you have complied with your post-termination obligations under Section 11.3, including the destruction or deletion of all Confidential Information.</p>
+
+    <h2 id="warranty">12. Warranty Disclaimer</h2>
+    <p><strong>THE SOFTWARE IS PROVIDED "AS IS," "AS AVAILABLE," AND "WITH ALL FAULTS" WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE.</strong> TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, LICENSOR EXPRESSLY DISCLAIMS ALL WARRANTIES AND CONDITIONS OF ANY KIND, INCLUDING BUT NOT LIMITED TO:</p>
+    <ul>
+      <li><strong>IMPLIED WARRANTIES AND CONDITIONS OF MERCHANTABILITY</strong>, merchantable quality, fitness for a particular purpose, title, non-infringement, and quiet enjoyment;</li>
+      <li>Any warranty or condition that the Software will be <strong>uninterrupted, timely, secure, error-free, bug-free, virus-free</strong>, or free of other harmful components;</li>
+      <li>Any warranty or condition that <strong>estimates, measurements, material quantities, material specifications, pricing data, cost calculations, or other Output</strong> generated by the Software will be accurate, reliable, precise, complete, current, or fit for any particular purpose;</li>
+      <li>Any warranty or condition that the Software will <strong>meet your specific requirements</strong>, achieve any particular results, or satisfy any particular performance benchmarks;</li>
+      <li>Any warranty or condition that <strong>satellite or aerial imagery</strong> displayed within the Software is accurate, current, properly aligned, or complete;</li>
+      <li>Any warranty or condition that <strong>material pricing data</strong> reflects actual current market prices, supplier quotes, or available pricing at the time of use in any geographic market;</li>
+      <li>Any warranty or condition that the Software is <strong>suitable for use</strong> in connection with any government contract, procurement, project, or regulatory submission without independent professional verification;</li>
+      <li>Any warranty or condition that <strong>defects will be corrected</strong> within any particular timeframe or at all; and</li>
+      <li>Any warranty or condition arising from <strong>course of dealing, usage of trade, course of performance</strong>, or any communication between you and Licensor, whether written, oral, or electronic.</li>
+    </ul>
+    <p>YOU EXPRESSLY ACKNOWLEDGE AND AGREE THAT YOUR USE OF THE SOFTWARE IS AT YOUR SOLE RISK. YOU ARE SOLELY RESPONSIBLE FOR ANY DAMAGE TO YOUR COMPUTER SYSTEMS, LOSS OF DATA, FINANCIAL LOSS, OR OTHER HARM THAT RESULTS FROM YOUR USE OF THE SOFTWARE OR YOUR RELIANCE ON ANY OUTPUT GENERATED THEREBY.</p>
+    <p>SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF IMPLIED WARRANTIES OR CONDITIONS. IN SUCH JURISDICTIONS, THE ABOVE EXCLUSIONS AND LIMITATIONS SHALL APPLY TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, AND LICENSOR'S LIABILITY SHALL BE LIMITED TO THE GREATEST EXTENT PERMITTED.</p>
+
+    <h2 id="liability">13. Limitation of Liability</h2>
+    <p><strong>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:</strong></p>
+    <ul>
+      <li><strong>EXCLUSION OF CONSEQUENTIAL AND INCIDENTAL DAMAGES.</strong> IN NO EVENT SHALL LICENSOR, ITS OFFICERS, DIRECTORS, MEMBERS, MANAGERS, EMPLOYEES, AGENTS, CONTRACTORS, LICENSORS, SUPPLIERS, OR SERVICE PROVIDERS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, PUNITIVE, OR RELIANCE DAMAGES OF ANY KIND, including but not limited to damages for loss of profits, revenue, income, goodwill, data, business opportunity, contracts, anticipated savings, business interruption, cost of procurement of substitute goods or services, cost of cover, or loss of use, whether based on warranty, contract, tort (including negligence and strict liability), statute, or any other legal or equitable theory, <strong>even if Licensor has been advised of, knew of, or should have known of the possibility of such damages</strong>, and even if any limited remedy provided herein fails of its essential purpose.</li>
+      <li><strong>SPECIFIC EXCLUSIONS.</strong> Without limiting the generality of the foregoing, Licensor shall have no liability whatsoever for any damages, losses, costs, or expenses arising from or related to:
+        <ul>
+          <li>Inaccurate, incomplete, or erroneous estimates, measurements, material quantities, specifications, or pricing generated by the Software;</li>
+          <li>Material shortages, material overages, material waste, or cost overruns resulting from reliance on the Software's Output;</li>
+          <li>Your use of estimates or Output in customer proposals, bids, contracts, purchase orders, or any other commercial transaction;</li>
+          <li>Decisions made based on satellite imagery, aerial imagery, map data, or geocoding results displayed in or by the Software;</li>
+          <li>Any dispute between you and your customers, subcontractors, suppliers, or other parties arising from estimates or Output generated by the Software;</li>
+          <li>Any interruption, suspension, degradation, or termination of the Software or any feature thereof; or</li>
+          <li>Any unauthorized access to or breach of the Software's security, to the extent such access was not caused by Licensor's gross negligence.</li>
+        </ul>
+      </li>
+      <li><strong>AGGREGATE LIABILITY CAP.</strong> THE TOTAL AGGREGATE LIABILITY OF LICENSOR AND ALL OF ITS OFFICERS, DIRECTORS, MEMBERS, EMPLOYEES, AND AGENTS, COLLECTIVELY, for any and all claims, damages, losses, and causes of action arising out of or related to this Agreement or the Software (whether in contract, tort, strict liability, statute, or otherwise) shall not exceed the lesser of: (a) the total amount of Subscription fees actually paid by you to Licensor during the twelve (12) month period immediately preceding the first event giving rise to the applicable claim; or (b) one thousand United States Dollars ($1,000.00 USD).</li>
+      <li><strong>ESSENTIAL BASIS OF THE BARGAIN.</strong> The parties acknowledge and agree that the limitations of liability set forth in this Section 13 are a fundamental element of the basis of the bargain between the parties, that Licensor would not have entered into this Agreement without such limitations, and that the pricing of the Software reflects the allocation of risk embodied in these limitations. These limitations shall apply regardless of whether the alleged liability or damages are based on contract, tort, negligence, strict liability, or any other basis, and shall apply even if Licensor has been advised of the possibility of such damages.</li>
+    </ul>
+    <p>Some jurisdictions do not allow the exclusion or limitation of certain types of damages. In such jurisdictions, the liability of Licensor shall be limited to the maximum extent permitted by applicable law.</p>
+
+    <h2 id="indemnification">14. Indemnification</h2>
+
+    <h3>14.1 Your Indemnification Obligations</h3>
+    <p>You agree to defend, indemnify, and hold harmless Licensor, its officers, directors, members, managers, employees, agents, contractors, successors, and assigns (collectively, the "Licensor Indemnified Parties") from and against any and all claims, demands, actions, suits, proceedings, investigations, damages, losses, liabilities, judgments, settlements, fines, penalties, costs, and expenses (including reasonable attorneys' fees, expert witness fees, and court costs) arising out of or relating to:</p>
+    <ul>
+      <li>Your use of the Software in violation of this Agreement, the <a href="terms.html">Terms of Service</a>, or any applicable law or regulation;</li>
+      <li>Your breach of any representation, warranty, covenant, or obligation under this Agreement;</li>
+      <li>Your reliance on any Output generated by the Software, including any claim related to the accuracy, completeness, or fitness of such Output for any purpose;</li>
+      <li>Any claim by a third party (including your customers, subcontractors, suppliers, and employees) arising from your use of the Software, any Output, or any estimate or bid prepared using the Software;</li>
+      <li>Your violation of any applicable law, regulation, ordinance, building code, or third-party right (including intellectual property rights and privacy rights);</li>
+      <li>Any unauthorized access to or use of the Software or Confidential Information by your Authorized Users or through your Account;</li>
+      <li>Your circumvention or attempted circumvention of any content-protection measures described in Section 5; or</li>
+      <li>Your violation of the export restrictions described in Section 7.</li>
+    </ul>
+
+    <h3>14.2 Defense and Control</h3>
+    <p>Licensor reserves the right, at its sole option and expense, to assume the exclusive defense and control of any matter otherwise subject to indemnification by you, in which event you shall fully cooperate with Licensor in asserting any available defenses and shall not settle or compromise any such claim without Licensor's prior written consent. You shall not enter into any settlement that (a) imposes any obligation on any Licensor Indemnified Party, (b) admits fault or liability on behalf of any Licensor Indemnified Party, or (c) grants any rights in Licensor's intellectual property, without Licensor's prior written consent.</p>
+
+    <h2 id="general">15. General Provisions</h2>
+
+    <h3>15.1 Governing Law</h3>
+    <p>This Agreement shall be governed by, and construed and interpreted in accordance with, the substantive laws of the Commonwealth of Virginia, without regard to its conflict of law principles, rules, or provisions that would direct the application of the laws of any other jurisdiction. The United Nations Convention on Contracts for the International Sale of Goods (CISG) shall not apply to this Agreement.</p>
+
+    <h3>15.2 Dispute Resolution</h3>
+    <p>Any dispute, controversy, or claim arising out of or relating to this Agreement, including the formation, interpretation, performance, breach, validity, or termination thereof, shall be resolved in accordance with the dispute resolution provisions set forth in Section 18 of the <a href="terms.html">Terms of Service</a>, including the binding arbitration requirement, the class action waiver, the informal resolution requirement, and the equitable relief provision. Those provisions are incorporated herein by reference and apply with full force and effect to this Agreement.</p>
+
+    <h3>15.3 Injunctive Relief</h3>
+    <p>You acknowledge and agree that any breach or threatened breach of Sections 4, 5, or 6 of this Agreement may cause Licensor irreparable harm for which monetary damages would be an inadequate remedy. Accordingly, Licensor shall be entitled to seek injunctive or other equitable relief (including temporary restraining orders, preliminary injunctions, and permanent injunctions) in any court of competent jurisdiction to restrain any such breach or threatened breach, <strong>without the requirement of posting a bond, proving actual damages, or establishing irreparable harm</strong> (to the extent permitted by applicable law). Such equitable relief shall be in addition to, and not in lieu of, any other remedies available to Licensor at law or in equity, including monetary damages and arbitration.</p>
+
+    <h3>15.4 Severability</h3>
+    <p>If any provision of this Agreement, or any portion thereof, is held by a court of competent jurisdiction or arbitrator to be invalid, illegal, void, or unenforceable for any reason, such holding shall not invalidate or render unenforceable any other provision of this Agreement, and all other provisions shall remain in full force and effect. The invalid or unenforceable provision shall be automatically reformed and construed to the minimum extent necessary to render it valid, legal, and enforceable while preserving the original intent of the parties to the maximum extent possible.</p>
+
+    <h3>15.5 Entire Agreement</h3>
+    <p>This Agreement, together with the <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>, constitutes the entire agreement between you and Licensor with respect to the licensing, access, and use of the Software. This Agreement supersedes all prior or contemporaneous agreements, understandings, discussions, negotiations, representations, warranties, and communications between the parties, whether written, oral, or electronic, with respect to the subject matter hereof. No terms or conditions contained in any purchase order, order confirmation, invoice, or similar document issued by you shall modify, supersede, or supplement the terms of this Agreement, even if Licensor fails to object to such terms.</p>
+
+    <h3>15.6 Assignment</h3>
+    <p>You may not assign, transfer, delegate, or sublicense this Agreement or any of your rights, obligations, or licenses hereunder, in whole or in part, whether voluntarily, by operation of law, or otherwise, without the prior written consent of Licensor. Any attempted assignment, transfer, delegation, or sublicense without such consent shall be null, void, and of no effect. Licensor may freely assign, transfer, or delegate this Agreement and any of its rights or obligations hereunder without restriction and without your consent, including in connection with a merger, acquisition, corporate reorganization, or sale of all or substantially all of its assets.</p>
+
+    <h3>15.7 Waiver</h3>
+    <p>The failure of Licensor to exercise or enforce any right, remedy, or provision of this Agreement at any time shall not constitute a waiver of that right, remedy, or provision and shall not preclude Licensor from exercising or enforcing such right, remedy, or provision at any later time. No waiver of any provision of this Agreement shall be effective unless made in writing and signed by an authorized representative of Licensor. A waiver of any provision on one occasion shall not be construed as a waiver of such provision on any subsequent occasion.</p>
+
+    <h3>15.8 Notices</h3>
+    <p>All notices, requests, demands, and other communications required or permitted under this Agreement shall be in writing and shall be deemed duly given when: (a) sent by email to the email addresses specified below (or to such other email addresses as either party may designate in writing); and (b) a delivery confirmation or read receipt is received, or three (3) business days have elapsed since sending, whichever occurs first. Notices to Licensor shall be sent to <a href="mailto:support@fencecalc.com">support@fencecalc.com</a> with "Legal Notice" in the subject line. Notices to you shall be sent to the email address associated with your Account.</p>
+
+    <h3>15.9 Force Majeure</h3>
+    <p>Licensor shall not be liable for any failure or delay in performing its obligations under this Agreement where such failure or delay results from circumstances beyond its reasonable control (a "Force Majeure Event"), including but not limited to: acts of God; natural disasters; epidemics or pandemics; fire; flood; earthquake; war (declared or undeclared); armed conflict; terrorism; sabotage; civil unrest; government actions, orders, regulations, or sanctions; labor disputes or shortages; utility or telecommunications failures; power outages; internet service disruptions; cyberattacks (including DDoS attacks); failures of third-party service providers (including cloud hosting, payment processing, map tile, and geocoding providers); supply chain disruptions; or any other event beyond Licensor's reasonable control. Licensor's performance obligations shall be excused and suspended for the duration of any Force Majeure Event.</p>
+
+    <h3>15.10 Third-Party Beneficiaries</h3>
+    <p>This Agreement does not create any third-party beneficiary rights in any individual or entity that is not a party to this Agreement. No third party shall have any right to enforce any provision of this Agreement.</p>
+
+    <h3>15.11 Construction and Interpretation</h3>
+    <p>The headings in this Agreement are for convenience of reference only and shall not affect the interpretation of this Agreement. The words "include," "includes," and "including" shall be deemed to be followed by "without limitation." The word "or" is not exclusive. References to "days" mean calendar days unless otherwise specified. This Agreement shall be construed without regard to any presumption or rule requiring construction or interpretation against the party drafting or causing any instrument to be drafted.</p>
+
+    <h3>15.12 Cumulative Remedies</h3>
+    <p>All rights and remedies of Licensor under this Agreement are cumulative and are in addition to, and not in lieu of, any other rights and remedies available to Licensor at law, in equity, or under any other agreement. The exercise of one remedy shall not preclude the exercise of any other remedy.</p>
+
+    <h2 id="contact">16. Contact Information</h2>
+    <p>If you have any questions, concerns, or requests regarding this End User License Agreement, please contact us at:</p>
+    <p>
+      <strong>RavenWing LLC</strong><br>
+      Mechanicsville, Virginia 23111<br>
+      United States of America<br>
+      Email: <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>
+    </p>
+    <p>For licensing inquiries, enterprise Subscription questions, government procurement inquiries, or SDVOSB-related matters, please include <strong>"Licensing"</strong> or <strong>"Government"</strong> in the subject line of your email to ensure prompt routing to the appropriate team.</p>
+    <p>For legal notices, dispute notices, or formal correspondence under this Agreement, please include <strong>"Legal Notice -- EULA"</strong> in the subject line.</p>
+    <p>RavenWing LLC is a Service-Disabled Veteran-Owned Small Business (SDVOSB) organized under the laws of the Commonwealth of Virginia.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">Fence<span class="calc">Calc</span></div>
+        <div class="footer-copy">&copy; 2026 RavenWing LLC. All rights reserved.</div>
+      </div>
+      <div class="footer-links">
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="eula.html">EULA</a>
+        <a href="mailto:support@fencecalc.com">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

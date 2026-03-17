@@ -96,13 +96,17 @@ const Auth = {
   },
 
   isLoggedIn() {
-    if (!this.tokens && this.tokens.idToken) return false;
-    const payload = this._parseToken(this.tokens.idToken);
-    return payload.exp * 1000 > Date.now();
+    if (!this.tokens || !this.tokens.idToken) return false;
+    try {
+      var payload = this._parseToken(this.tokens.idToken);
+      return payload.exp * 1000 > Date.now();
+    } catch (e) {
+      return false;
+    }
   },
 
   getAuthHeader() {
-    if (!this.tokens && this.tokens.idToken) return {};
+    if (!this.tokens || !this.tokens.idToken) return {};
     return { Authorization: 'Bearer ' + this.tokens.idToken };
   },
 

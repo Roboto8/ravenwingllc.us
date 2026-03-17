@@ -72,8 +72,10 @@
 
   <!-- Auth Modal -->
   <div class="modal-overlay" id="auth-modal" style="display:none">
-    <div class="modal">
+    <div class="modal" style="position:relative">
+      <button class="auth-close" id="auth-close" onclick="hideAuthUI()" style="display:none">&times;</button>
       <h2 class="modal-title">Fence<span class="accent">Calc</span></h2>
+      <p class="auth-gate-msg" id="auth-gate-msg" style="display:none"></p>
       <p class="modal-sub">14-day free trial. No card required.</p>
 
       <div id="auth-login" class="auth-form">
@@ -128,6 +130,7 @@
       <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none">Save</button>
       <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none">My Estimates</button>
       <button class="btn btn-sm" id="btn-logout" onclick="handleLogout()" style="display:none">Log Out</button>
+      <button class="btn btn-sm" id="btn-signin" onclick="showAuthUI(); showLogin(); document.getElementById('auth-close').style.display='block';" style="display:none">Sign In</button>
     </div>
   </nav>
 
@@ -421,7 +424,12 @@
 
     // === Auth UI ===
     function showAuthUI() { document.getElementById('auth-modal').style.display = 'flex'; }
-    function hideAuthUI() { document.getElementById('auth-modal').style.display = 'none'; }
+    function hideAuthUI() {
+      document.getElementById('auth-modal').style.display = 'none';
+      document.getElementById('auth-gate-msg').style.display = 'none';
+      document.getElementById('auth-close').style.display = 'none';
+      authError('');
+    }
     function showLogin() {
       document.getElementById('auth-login').style.display = 'block';
       document.getElementById('auth-signup').style.display = 'none';
@@ -480,13 +488,33 @@
       document.getElementById('btn-estimates').style.display = 'none';
       document.getElementById('btn-logout').style.display = 'none';
       document.getElementById('trial-banner').style.display = 'none';
-      showAuthUI();
+      document.getElementById('btn-signin').style.display = '';
+      showGuestUI();
+    }
+
+    function showGuestUI() {
+      document.getElementById('btn-signin').style.display = '';
+      document.getElementById('btn-save').style.display = 'none';
+      document.getElementById('btn-estimates').style.display = 'none';
+      document.getElementById('btn-logout').style.display = 'none';
+    }
+
+    // Gate check — show signup prompt for premium features
+    function requireAuth(featureName) {
+      if (Auth.isLoggedIn()) return true;
+      document.getElementById('auth-modal').style.display = 'flex';
+      document.getElementById('auth-close').style.display = 'block';
+      document.getElementById('auth-gate-msg').textContent = featureName ? 'Sign up to ' + featureName : '';
+      document.getElementById('auth-gate-msg').style.display = featureName ? 'block' : 'none';
+      showSignup();
+      return false;
     }
 
     async function onLoggedIn() {
       document.getElementById('btn-save').style.display = '';
       document.getElementById('btn-estimates').style.display = '';
       document.getElementById('btn-logout').style.display = '';
+      document.getElementById('btn-signin').style.display = 'none';
 
       // Hide everything first
       document.getElementById('trial-banner').style.display = 'none';
@@ -525,6 +553,7 @@
 
     // === Save/Load Estimates ===
     async function saveEstimate() {
+      if (!requireAuth('save estimates')) return;
       const feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
       if (feet === 0) return showToast('Draw a fence first');
 
@@ -557,6 +586,7 @@
     }
 
     function showEstimatesList() {
+      if (!requireAuth('view saved estimates')) return;
       document.getElementById('drawer-overlay').style.display = 'block';
       document.getElementById('estimates-drawer').style.display = 'flex';
       loadEstimatesList();
@@ -639,18 +669,29 @@
     }
 
     // === Init Auth ===
-    if (FC_CONFIG.userPoolId && Auth.isLoggedIn()) {
-      // Check if returning from Stripe checkout
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('billing') === 'success') {
-        window.history.replaceState({}, '', window.location.pathname);
-        showToast('Subscription activated!');
+    try {
+      if (FC_CONFIG.userPoolId && Auth.isLoggedIn()) {
+        // Check if returning from Stripe checkout
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('billing') === 'success') {
+          window.history.replaceState({}, '', window.location.pathname);
+          showToast('Subscription activated!');
+        }
+        onLoggedIn().catch(function() {
+          // If onLoggedIn fails (API down, token expired), fall back to guest
+          Auth.logout();
+          showGuestUI();
+        });
+      } else {
+        // Guest mode — show sign in button, let them use the app
+        showGuestUI();
+        showOnboarding();
       }
-      onLoggedIn();
-    } else if (FC_CONFIG.userPoolId) {
-      showAuthUI();
+    } catch (e) {
+      // Any init error — fall back to guest mode
+      showGuestUI();
+      showOnboarding();
     }
-    // If config is empty, app runs without auth (dev/demo mode)
   </script>
 
 </body>
