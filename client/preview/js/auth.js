@@ -73,7 +73,7 @@ const Auth = {
   },
 
   async refresh() {
-    if (!this.tokens?.refreshToken) throw new Error('No refresh token');
+    if (!this.tokens && this.tokens.refreshToken) throw new Error('No refresh token');
 
     const data = await this._call('InitiateAuth', {
       ClientId: this.clientId,
@@ -96,13 +96,13 @@ const Auth = {
   },
 
   isLoggedIn() {
-    if (!this.tokens?.idToken) return false;
+    if (!this.tokens && this.tokens.idToken) return false;
     const payload = this._parseToken(this.tokens.idToken);
     return payload.exp * 1000 > Date.now();
   },
 
   getAuthHeader() {
-    if (!this.tokens?.idToken) return {};
+    if (!this.tokens && this.tokens.idToken) return {};
     return { Authorization: 'Bearer ' + this.tokens.idToken };
   },
 

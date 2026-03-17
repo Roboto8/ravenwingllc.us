@@ -123,8 +123,8 @@ function addFencePoint(latlng) {
     draggable: true,
     icon: L.divIcon({
       className: 'fence-vertex',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
+      iconSize: [22, 22],
+      iconAnchor: [11, 11]
     })
   }).addTo(map);
 
@@ -241,8 +241,8 @@ function rebuildAllMarkers() {
       draggable: true,
       icon: L.divIcon({
         className: 'fence-vertex',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
       })
     }).addTo(map);
 
@@ -963,10 +963,10 @@ function searchAddress() {
         map.setView([lat, lon], 19);
         document.getElementById('cust-address').value = query;
       } else {
-        alert('Address not found. Try being more specific.');
+        showToast('Address not found. Try being more specific.');
       }
     })
-    .catch(() => alert('Search failed. Check your connection.'));
+    .catch(function() { showToast('Search failed. Check your connection.'); });
 }
 
 document.getElementById('address-input').addEventListener('keydown', function(e) {
@@ -1142,27 +1142,162 @@ function showToast(msg) {
   }, 2000);
 }
 
+// === Map Capture (draws fence diagram to canvas — no CORS issues) ===
+function captureMap() {
+  return new Promise(function(resolve) {
+    try {
+      var canvas = document.createElement('canvas');
+      var w = 600;
+      var h = 300;
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = '#e8e0d6';
+      ctx.fillRect(0, 0, w, h);
+
+      if (fencePoints.length < 2) {
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        return;
+      }
+
+      // Calculate bounds of fence points
+      var lats = fencePoints.map(function(p) { return p.lat; });
+      var lngs = fencePoints.map(function(p) { return p.lng; });
+      var minLat = Math.min.apply(null, lats);
+      var maxLat = Math.max.apply(null, lats);
+      var minLng = Math.min.apply(null, lngs);
+      var maxLng = Math.max.apply(null, lngs);
+
+      // Add padding
+      var padLat = (maxLat - minLat) * 0.2 || 0.0002;
+      var padLng = (maxLng - minLng) * 0.2 || 0.0002;
+      minLat -= padLat; maxLat += padLat;
+      minLng -= padLng; maxLng += padLng;
+
+      function toX(lng) { return ((lng - minLng) / (maxLng - minLng)) * w; }
+      function toY(lat) { return h - ((lat - minLat) / (maxLat - minLat)) * h; }
+
+      // Draw grid lines
+      ctx.strokeStyle = '#d4cdc4';
+      ctx.lineWidth = 0.5;
+      for (var gx = 0; gx < w; gx += 60) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+      }
+      for (var gy = 0; gy < h; gy += 60) {
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+      }
+
+      // Draw fence line
+      var pts = fencePoints;
+      if (curveMode && pts.length >= 3) {
+        var spline = getSplinePoints(pts, fenceClosed);
+        ctx.beginPath();
+        ctx.moveTo(toX(spline[0].lng), toY(spline[0].lat));
+        for (var i = 1; i < spline.length; i++) {
+          ctx.lineTo(toX(spline[i].lng), toY(spline[i].lat));
+        }
+        if (fenceClosed) ctx.closePath();
+        ctx.strokeStyle = '#c0622e';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(toX(pts[0].lng), toY(pts[0].lat));
+        for (var i = 1; i < pts.length; i++) {
+          ctx.lineTo(toX(pts[i].lng), toY(pts[i].lat));
+        }
+        if (fenceClosed) ctx.closePath();
+        ctx.strokeStyle = '#c0622e';
+        ctx.lineWidth = 3;
+        if (!fenceClosed) ctx.setLineDash([8, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Draw vertices
+      pts.forEach(function(p) {
+        var x = toX(p.lng);
+        var y = toY(p.lat);
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#c0622e';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+
+      // Draw segment labels
+      var allPts = fenceClosed ? pts.concat([pts[0]]) : pts;
+      for (var i = 1; i < allPts.length; i++) {
+        var p1 = allPts[i - 1];
+        var p2 = allPts[i];
+        var mx = (toX(p1.lng) + toX(p2.lng)) / 2;
+        var my = (toY(p1.lat) + toY(p2.lat)) / 2;
+        var meters = p1.distanceTo(p2);
+        var feet = Math.round(meters * 3.28084);
+
+        var text = feet + ' ft';
+        ctx.font = 'bold 11px sans-serif';
+        var tw = ctx.measureText(text).width;
+
+        ctx.fillStyle = 'rgba(44, 36, 23, 0.85)';
+        ctx.fillRect(mx - tw / 2 - 5, my - 8, tw + 10, 16);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, mx, my);
+      }
+
+      // Draw gate markers
+      gates.forEach(function(g) {
+        var x = toX(g.latlng.lng);
+        var y = toY(g.latlng.lat);
+        ctx.font = 'bold 10px sans-serif';
+        var tw = ctx.measureText('GATE').width;
+        ctx.fillStyle = '#c0622e';
+        ctx.fillRect(x - tw / 2 - 5, y - 10, tw + 10, 18);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('GATE', x, y - 1);
+      });
+
+      // Title
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = '#2c2417';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('Fence Layout — ' + updateFootage() + ' linear ft', 12, 10);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
 // === PDF Generation ===
 async function generatePDF() {
+  try {
   showToast('Generating PDF...');
 
   // Capture map screenshot
-  let mapImage = null;
+  var mapImage = null;
   try {
-    const mapEl = document.getElementById('map');
-    const canvas = await html2canvas(mapEl, {
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#f5f0eb',
-      scale: 2
-    });
-    mapImage = canvas.toDataURL('image/jpeg', 0.85);
+    mapImage = await captureMap();
   } catch (e) {
     // Continue without map image
   }
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  if (!window.jspdf) {
+    showToast('PDF library not loaded. Try refreshing.');
+    return;
+  }
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const w = doc.internal.pageSize.getWidth();
   const margin = 50;
   let y = 50;
@@ -1401,9 +1536,13 @@ async function generatePDF() {
   doc.text('Generated by FenceCalc', margin, y + 12);
 
   // Save
-  const filename = 'FenceCalc-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';
+  var filename = 'FenceCalc-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';
   doc.save(filename);
   showToast('PDF downloaded');
+  } catch (e) {
+    showToast('PDF error: ' + e.message);
+    console.error('PDF generation failed:', e);
+  }
 }
 
 // === Reset ===

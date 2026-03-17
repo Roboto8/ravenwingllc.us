@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service — FenceCalc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f0eb;
+      --surface: #fff;
+      --surface-2: #ede8e2;
+      --border: #d4cdc4;
+      --text: #2c2417;
+      --text-mid: #4a4030;
+      --text-muted: #6b6052;
+      --accent: #c0622e;
+      --accent-hover: #a8521f;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius: 6px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    .site-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand .calc { color: var(--accent); }
+
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { font-size: 0.9rem; font-weight: 500; color: var(--text-mid); text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* Content */
+    .legal-content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .legal-content h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .legal-date {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    .legal-content h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .legal-content p {
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+
+    .legal-content ul {
+      margin: 0 0 16px 20px;
+      font-size: 0.95rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+    }
+
+    .legal-content li { margin-bottom: 6px; }
+
+    /* Footer */
+    .site-footer {
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-brand {
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .footer-brand .calc { color: var(--accent); }
+
+    .footer-copy {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links { display: flex; align-items: center; gap: 24px; }
+    .footer-links a { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .footer-inner { flex-direction: column; text-align: center; gap: 12px; }
+      .legal-content h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="landing.html" class="brand">Fence<span class="calc">Calc</span></a>
+      <div class="nav-links">
+        <a href="landing.html">Home</a>
+        <a href="index.html">App</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="legal-content">
+    <h1>Terms of Service</h1>
+    <p class="legal-date">Effective date: March 16, 2026</p>
+
+    <p>These Terms of Service ("Terms") govern your access to and use of FenceCalc, a product of RavenWing LLC ("we," "us," or "our"). By creating an account or using the service, you agree to these Terms.</p>
+
+    <h2>1. Service Description</h2>
+    <p>FenceCalc is a web-based software tool that allows users to draw fence lines on satellite imagery, generate material estimates, and produce PDF documents and shareable estimate links. The service is intended for use by fencing professionals and contractors.</p>
+
+    <h2>2. Account Registration</h2>
+    <p>To use FenceCalc, you must create an account with a valid email address. You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. You must notify us immediately of any unauthorized use.</p>
+
+    <h2>3. Free Trial and Subscription</h2>
+    <p>New accounts receive a 14-day free trial with full access to all features. After the trial period, continued access requires an active paid subscription. Subscriptions are billed monthly at the rate displayed at the time of purchase.</p>
+    <p>You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period. We do not provide prorated refunds for partial months.</p>
+
+    <h2>4. Payment</h2>
+    <p>Payments are processed securely through Stripe. By providing payment information, you authorize us to charge the applicable subscription fee to your payment method on a recurring monthly basis. You are responsible for keeping your payment information current.</p>
+
+    <h2>5. Acceptable Use</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Use the service for any unlawful purpose or in violation of any applicable law</li>
+      <li>Attempt to reverse engineer, decompile, or disassemble any part of the service</li>
+      <li>Interfere with or disrupt the service or servers connected to the service</li>
+      <li>Share your account credentials with third parties</li>
+      <li>Scrape, crawl, or use automated tools to access the service beyond its intended functionality</li>
+      <li>Resell access to the service without our written permission</li>
+    </ul>
+
+    <h2>6. Accuracy of Estimates</h2>
+    <p>FenceCalc provides estimates based on the data you input and standard material calculations. Estimates are intended as approximations and should not be treated as exact measurements or guarantees. Satellite imagery may not reflect current property conditions. You are responsible for verifying all measurements and material quantities before purchasing materials or entering into contracts with customers.</p>
+
+    <h2>7. Intellectual Property</h2>
+    <p>The FenceCalc service, including its design, code, features, and documentation, is the property of RavenWing LLC and is protected by applicable intellectual property laws. Your subscription grants you a limited, non-exclusive, non-transferable license to use the service for its intended purpose.</p>
+    <p>You retain ownership of all data and content you create within the service, including estimates and customer information.</p>
+
+    <h2>8. Data and Privacy</h2>
+    <p>Your use of the service is also governed by our <a href="privacy.html">Privacy Policy</a>, which describes how we collect, use, and protect your information.</p>
+
+    <h2>9. Service Availability</h2>
+    <p>We strive to keep FenceCalc available and reliable, but we do not guarantee uninterrupted access. The service may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We are not liable for any loss or damage resulting from service downtime.</p>
+
+    <h2>10. Limitation of Liability</h2>
+    <p>To the maximum extent permitted by law, RavenWing LLC shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the service. Our total liability for any claim arising from these Terms shall not exceed the amount you paid us in the 12 months preceding the claim.</p>
+
+    <h2>11. Termination</h2>
+    <p>We may suspend or terminate your access to the service at any time if you violate these Terms or for any other reason at our discretion. Upon termination, your right to use the service ceases immediately. We may delete your account data after a reasonable retention period following termination.</p>
+
+    <h2>12. Changes to Terms</h2>
+    <p>We may update these Terms from time to time. If we make material changes, we will notify you by email or through the service. Your continued use of the service after changes take effect constitutes acceptance of the revised Terms.</p>
+
+    <h2>13. Governing Law</h2>
+    <p>These Terms are governed by the laws of the State of Texas, without regard to conflict of law principles. Any disputes arising from these Terms shall be resolved in the courts located in Texas.</p>
+
+    <h2>14. Contact</h2>
+    <p>If you have questions about these Terms, contact us at <a href="mailto:support@fencecalc.com">support@fencecalc.com</a>.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">Fence<span class="calc">Calc</span></div>
+        <div class="footer-copy">&copy; 2026 RavenWing LLC. All rights reserved.</div>
+      </div>
+      <div class="footer-links">
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="mailto:support@fencecalc.com">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

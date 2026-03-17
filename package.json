@@ -4,6 +4,9 @@
   "description": "FenceCalc - Satellite-powered fence estimates",
   "private": true,
   "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
     "deploy:dev": "serverless client deploy --stage dev",
     "deploy:prod": "serverless client deploy --stage prod",
     "deploy:backend": "serverless deploy --stage dev",
@@ -17,6 +20,7 @@
     "stripe": "^17.0.0"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
     "serverless-finch": "^4.0.4"
   }
 }
