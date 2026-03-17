@@ -664,9 +664,13 @@ function applySegmentLength(segIndex, value) {
   showToast(t('toast_segment_set', {n: newFeet}));
 }
 
+var angleLabels = [];
+
 function redrawSegmentLabels() {
   segmentLabels.forEach(l => map.removeLayer(l));
   segmentLabels = [];
+  angleLabels.forEach(l => map.removeLayer(l));
+  angleLabels = [];
 
   for (var i = 1; i < fencePoints.length; i++) {
     segmentLabels.push(createSegmentLabel(fencePoints[i - 1], fencePoints[i], i - 1));
@@ -675,6 +679,54 @@ function redrawSegmentLabels() {
   if (fenceClosed && fencePoints.length > 2) {
     segmentLabels.push(createSegmentLabel(fencePoints[fencePoints.length - 1], fencePoints[0], fencePoints.length - 1));
   }
+
+  // Corner angle labels
+  if (fencePoints.length >= 3) {
+    for (var i = 1; i < fencePoints.length - (fenceClosed ? 0 : 1); i++) {
+      var prev = fencePoints[(i - 1 + fencePoints.length) % fencePoints.length];
+      var curr = fencePoints[i % fencePoints.length];
+      var next = fencePoints[(i + 1) % fencePoints.length];
+      if (fenceClosed || (i > 0 && i < fencePoints.length - 1)) {
+        var angle = getCornerAngle(prev, curr, next);
+        angleLabels.push(createAngleLabel(curr, angle));
+      }
+    }
+    // First point angle if closed
+    if (fenceClosed) {
+      var angle = getCornerAngle(fencePoints[fencePoints.length - 1], fencePoints[0], fencePoints[1]);
+      angleLabels.push(createAngleLabel(fencePoints[0], angle));
+    }
+  }
+}
+
+function getCornerAngle(p1, p2, p3) {
+  // Bearing from p2 to p1
+  var dLng1 = (p1.lng - p2.lng) * Math.PI / 180;
+  var dLat1 = (p1.lat - p2.lat) * Math.PI / 180;
+  var bearing1 = Math.atan2(dLng1, dLat1) * 180 / Math.PI;
+
+  // Bearing from p2 to p3
+  var dLng2 = (p3.lng - p2.lng) * Math.PI / 180;
+  var dLat2 = (p3.lat - p2.lat) * Math.PI / 180;
+  var bearing2 = Math.atan2(dLng2, dLat2) * 180 / Math.PI;
+
+  var angle = Math.abs(bearing2 - bearing1);
+  if (angle > 180) angle = 360 - angle;
+
+  return Math.round(angle);
+}
+
+function createAngleLabel(point, angle) {
+  var label = L.marker(point, {
+    icon: L.divIcon({
+      className: 'angle-label',
+      html: '<div class="angle-tag">' + angle + '&deg;</div>',
+      iconSize: [36, 18],
+      iconAnchor: [18, -6]
+    }),
+    interactive: false
+  }).addTo(map);
+  return label;
 }
 
 // === Fence Drawing ===
@@ -724,7 +776,7 @@ function addFencePoint(latlng) {
 }
 
 // === Section Join Detection ===
-var SNAP_DISTANCE_METERS = 2; // ~6.5 feet
+var SNAP_DISTANCE_METERS = 8; // ~26 feet — generous snap radius for easy joining
 
 function checkSectionJoin(newPoint) {
   if (sections.length < 2) return;
@@ -740,6 +792,10 @@ function checkSectionJoin(newPoint) {
 
     var otherStart = other.points[0];
     var otherEnd = other.points[other.points.length - 1];
+
+    // Ensure they're Leaflet LatLng objects for distanceTo
+    if (!otherStart.distanceTo) otherStart = L.latLng(otherStart.lat, otherStart.lng);
+    if (!otherEnd.distanceTo) otherEnd = L.latLng(otherEnd.lat, otherEnd.lng);
 
     var distToStart = newPoint.distanceTo(otherStart);
     var distToEnd = newPoint.distanceTo(otherEnd);
@@ -1246,6 +1302,9 @@ function clearAll() {
 
   midpointMarkers.forEach(function(m) { map.removeLayer(m); });
   midpointMarkers = [];
+
+  angleLabels.forEach(function(l) { map.removeLayer(l); });
+  angleLabels = [];
 
   // Clear undo stack
   undoStack = [];
@@ -2610,6 +2669,137 @@ function togglePanel() {
   panel.classList.toggle('collapsed');
   // Let the map resize after the panel animates
   setTimeout(() => map.invalidateSize(), 350);
+}
+
+// === Demo Data (for screenshots) ===
+// Run loadDemo() from browser console, or loadDemo(2) for chain link, loadDemo(3) for multi-section
+function loadDemo(scenario) {
+  resetEstimate();
+  scenario = scenario || 1;
+
+  if (scenario === 1) {
+    // Nice suburban wood privacy fence — backyard in Mechanicsville VA
+    document.getElementById('cust-name').value = 'Johnson Family';
+    document.getElementById('cust-phone').value = '(804) 555-0142';
+    document.getElementById('cust-address').value = '8412 Oakwood Dr, Mechanicsville, VA 23116';
+
+    map.setView([37.6235, -77.3465], 19);
+
+    setTimeout(function() {
+      // Select wood 6ft
+      var woodBtn = document.querySelector('.fence-type-btn');
+      if (woodBtn) { selectFence(woodBtn, 'wood'); }
+
+      // Draw a backyard fence
+      var points = [
+        L.latLng(37.62365, -77.34680),
+        L.latLng(37.62365, -77.34620),
+        L.latLng(37.62335, -77.34620),
+        L.latLng(37.62335, -77.34680)
+      ];
+      points.forEach(function(p) { addFencePoint(p); });
+      closeFence();
+
+      // Add a gate
+      setTool('gate');
+      addGate(L.latLng(37.62365, -77.34650));
+      setTool('draw');
+
+      // Check addons
+      document.getElementById('addon-stain').checked = true;
+
+      recalculate();
+      showToast('Demo loaded: Wood privacy fence — Johnson backyard');
+    }, 1000);
+  }
+
+  else if (scenario === 2) {
+    // Commercial chain link fence
+    document.getElementById('cust-name').value = 'Metro Storage Solutions';
+    document.getElementById('cust-phone').value = '(804) 555-0388';
+    document.getElementById('cust-address').value = '2200 Mechanicsville Tpke, Richmond, VA 23223';
+
+    map.setView([37.5485, -77.4095], 18);
+
+    setTimeout(function() {
+      // Select chain link 6ft
+      var btns = document.querySelectorAll('.fence-type-btn');
+      btns.forEach(function(b) {
+        if (b.textContent.indexOf('Chain') >= 0) selectFence(b, 'chain-link');
+      });
+      // Select 8ft
+      document.querySelectorAll('.height-btn').forEach(function(b) {
+        if (b.textContent.trim() === '8 ft') selectHeight(b, 8);
+      });
+
+      var points = [
+        L.latLng(37.5488, -77.4100),
+        L.latLng(37.5488, -77.4085),
+        L.latLng(37.5482, -77.4085),
+        L.latLng(37.5482, -77.4100)
+      ];
+      points.forEach(function(p) { addFencePoint(p); });
+      closeFence();
+
+      // Two gates
+      setTool('gate');
+      addGate(L.latLng(37.5488, -77.4092));
+      addGate(L.latLng(37.5482, -77.4092));
+      setTool('draw');
+
+      recalculate();
+      showToast('Demo loaded: Commercial chain link — Metro Storage');
+    }, 1000);
+  }
+
+  else if (scenario === 3) {
+    // Multi-section: wood privacy + aluminum decorative front
+    document.getElementById('cust-name').value = 'Williams Residence';
+    document.getElementById('cust-phone').value = '(804) 555-0276';
+    document.getElementById('cust-address').value = '1510 River Rd, Mechanicsville, VA 23111';
+
+    map.setView([37.6180, -77.3550], 19);
+
+    setTimeout(function() {
+      // Section 1: Wood backyard
+      var woodBtn = document.querySelector('.fence-type-btn');
+      if (woodBtn) selectFence(woodBtn, 'wood');
+
+      var backyard = [
+        L.latLng(37.6182, -77.3554),
+        L.latLng(37.6182, -77.3546),
+        L.latLng(37.6178, -77.3546)
+      ];
+      backyard.forEach(function(p) { addFencePoint(p); });
+
+      // Gate in the backyard
+      setTool('gate');
+      addGate(L.latLng(37.6182, -77.3550));
+      setTool('draw');
+
+      // Section 2: Aluminum front
+      addNewSection();
+      var alumBtns = document.querySelectorAll('.fence-type-btn');
+      alumBtns.forEach(function(b) {
+        if (b.textContent.indexOf('Aluminum') >= 0) selectFence(b, 'aluminum');
+      });
+      // Select 4ft
+      document.querySelectorAll('.height-btn').forEach(function(b) {
+        if (b.textContent.trim() === '4 ft') selectHeight(b, 4);
+      });
+
+      var front = [
+        L.latLng(37.6183, -77.3554),
+        L.latLng(37.6183, -77.3546)
+      ];
+      front.forEach(function(p) { addFencePoint(p); });
+
+      document.getElementById('addon-permit').checked = true;
+
+      recalculate();
+      showToast('Demo loaded: Multi-section — Wood backyard + Aluminum front');
+    }, 1000);
+  }
 }
 
 // === Screenshot Prevention ===

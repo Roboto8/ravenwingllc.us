@@ -777,6 +777,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 /* Segment Labels */
 .segment-label { background: none !important; border: none !important; z-index: 200 !important; }
+.angle-label { pointer-events: none; }
+.angle-tag {
+  background: rgba(192, 98, 46, 0.9);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
 .seg-label {
   background: rgba(44, 36, 23, 0.85);
   color: #fff;
