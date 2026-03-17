@@ -31,9 +31,11 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   ">
+    <img src="annie.svg" alt="Annie" style="width: 140px; height: 140px;">
     <div style="font-size: 1.8rem; font-weight: 800; color: #2c2417; letter-spacing: -0.03em;">
       Fence<span style="color: #c0622e;">Trace</span>
     </div>
+    <div style="font-size: 0.8rem; color: #6b6052;">Satellite fence estimates</div>
     <div style="
       width: 28px; height: 28px;
       border: 3px solid #d4cdc4; border-top-color: #c0622e;
@@ -134,7 +136,7 @@
       <button class="btn btn-sm btn-outline" onclick="resetEstimate()" title="New estimate (R)">New</button>
       <button class="btn btn-sm btn-outline" id="btn-save" onclick="saveEstimate()" style="display:none" title="Save estimate (S)">Save</button>
       <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none" title="My Estimates (M)">My Estimates</button>
-      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none" title="Account settings">Account</button>
+      <button class="btn btn-sm btn-outline" id="btn-account" onclick="showAccountPanel()" style="display:none" title="Account, team, pricing, shortcuts">Account</button>
       <button class="btn btn-sm" id="btn-logout" onclick="handleLogout()" style="display:none">Log Out</button>
       <button class="btn btn-sm" id="btn-signin" onclick="showAuthUI(); showLogin(); document.getElementById('auth-close').style.display='block';" style="display:none">Sign In</button>
     </div>
@@ -234,37 +236,37 @@
         <div class="panel-section" style="padding-bottom:8px">
           <h3 class="section-title" style="display:flex;align-items:center;justify-content:space-between">
             Region
-            <select id="main-region-select" onchange="saveRegion(this.value)" style="padding:4px 8px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.78rem;max-width:200px"></select>
+            <select id="main-region-select" onchange="saveRegion(this.value)" title="Set your region to adjust material prices" style="padding:4px 8px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.78rem;max-width:200px"></select>
           </h3>
         </div>
 
         <div class="panel-section">
           <h3 class="section-title">Material</h3>
           <div class="fence-types">
-            <button class="fence-type-btn active" onclick="selectFence(this, 'wood')" data-price="25">
+            <button class="fence-type-btn active" onclick="selectFence(this, 'wood')" data-type="wood" data-price="25">
               <span class="fence-icon">W</span>
               <span>Wood</span>
-              <span class="fence-price">$25/ft</span>
+              <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'wood')">$25/ft</span>
             </button>
-            <button class="fence-type-btn" onclick="selectFence(this, 'vinyl')" data-price="35">
+            <button class="fence-type-btn" onclick="selectFence(this, 'vinyl')" data-type="vinyl" data-price="35">
               <span class="fence-icon">V</span>
               <span>Vinyl</span>
-              <span class="fence-price">$35/ft</span>
+              <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'vinyl')">$35/ft</span>
             </button>
-            <button class="fence-type-btn" onclick="selectFence(this, 'chain-link')" data-price="15">
+            <button class="fence-type-btn" onclick="selectFence(this, 'chain-link')" data-type="chain-link" data-price="15">
               <span class="fence-icon">C</span>
               <span>Chain Link</span>
-              <span class="fence-price">$15/ft</span>
+              <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'chain-link')">$15/ft</span>
             </button>
-            <button class="fence-type-btn" onclick="selectFence(this, 'aluminum')" data-price="40">
+            <button class="fence-type-btn" onclick="selectFence(this, 'aluminum')" data-type="aluminum" data-price="40">
               <span class="fence-icon">A</span>
               <span>Aluminum</span>
-              <span class="fence-price">$40/ft</span>
+              <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'aluminum')">$40/ft</span>
             </button>
-            <button class="fence-type-btn" onclick="selectFence(this, 'iron')" data-price="55">
+            <button class="fence-type-btn" onclick="selectFence(this, 'iron')" data-type="iron" data-price="55">
               <span class="fence-icon">I</span>
               <span>Iron</span>
-              <span class="fence-price">$55/ft</span>
+              <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'iron')">$55/ft</span>
             </button>
           </div>
         </div>

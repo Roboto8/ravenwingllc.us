@@ -77,6 +77,30 @@ describe('company handler', () => {
       expect(body.PK).toBeUndefined();
       expect(body.SK).toBeUndefined();
     });
+
+    test('returns region and pricebook', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        ...companyProfile,
+        region: 'southeast',
+        pricebook: { 'perFoot.wood': 30 }
+      });
+
+      const result = await company.get({});
+      const body = JSON.parse(result.body);
+      expect(body.region).toBe('southeast');
+      expect(body.pricebook).toEqual({ 'perFoot.wood': 30 });
+    });
+
+    test('defaults region to national and pricebook to empty', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyProfile);
+
+      const result = await company.get({});
+      const body = JSON.parse(result.body);
+      expect(body.region).toBe('national');
+      expect(body.pricebook).toEqual({});
+    });
   });
 
   describe('update', () => {
@@ -141,6 +165,35 @@ describe('company handler', () => {
       expect(updateCall.name).toBe('Good');
       expect(updateCall.email).toBeUndefined();
       expect(updateCall.subscriptionStatus).toBeUndefined();
+    });
+
+    test('allows updating region', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.update.mockResolvedValue({ ...companyProfile, region: 'california' });
+
+      const result = await company.update({
+        body: JSON.stringify({ region: 'california' })
+      });
+      expect(result.statusCode).toBe(200);
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-1', 'PROFILE',
+        expect.objectContaining({ region: 'california' })
+      );
+    });
+
+    test('allows updating pricebook', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const pb = { 'perFoot.wood': 30, 'wood.6.postCost': 18 };
+      db.update.mockResolvedValue({ ...companyProfile, pricebook: pb });
+
+      const result = await company.update({
+        body: JSON.stringify({ pricebook: pb })
+      });
+      expect(result.statusCode).toBe(200);
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-1', 'PROFILE',
+        expect.objectContaining({ pricebook: pb })
+      );
     });
 
     test('only updates provided fields', async () => {

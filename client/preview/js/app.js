@@ -206,18 +206,30 @@ let selectedFence = { type: 'wood', price: 25 };
 function updateFencePricesForRegion() {
   var mult = (typeof REGIONS !== 'undefined' && typeof companyRegion !== 'undefined' && REGIONS[companyRegion])
     ? REGIONS[companyRegion].multiplier : 1;
+
+  // Load any custom per-foot prices from pricebook
+  var pb = (typeof companyPricebook !== 'undefined') ? companyPricebook : {};
+  Object.keys(pb).forEach(function(k) {
+    if (k.startsWith('perFoot.')) {
+      var type = k.replace('perFoot.', '');
+      baseFencePrices[type] = pb[k];
+    }
+  });
+
   document.querySelectorAll('.fence-type-btn').forEach(function(btn) {
-    var type = btn.getAttribute('onclick').match(/'([^']+)'/);
+    var type = btn.dataset.type;
     if (!type) return;
-    type = type[1];
     var base = baseFencePrices[type] || 25;
-    var adjusted = Math.round(base * mult);
+    // Only apply regional multiplier if there's no custom per-foot price
+    var hasCustom = pb['perFoot.' + type] !== undefined;
+    var adjusted = hasCustom ? base : Math.round(base * mult);
     btn.dataset.price = adjusted;
     var priceEl = btn.querySelector('.fence-price');
     if (priceEl) priceEl.textContent = '$' + adjusted + '/ft';
   });
   // Update selectedFence price too
-  var adjPrice = Math.round((baseFencePrices[selectedFence.type] || 25) * mult);
+  var hasCustomSelected = pb['perFoot.' + selectedFence.type] !== undefined;
+  var adjPrice = hasCustomSelected ? baseFencePrices[selectedFence.type] : Math.round((baseFencePrices[selectedFence.type] || 25) * mult);
   selectedFence.price = adjPrice;
 }
 let selectedHeight = 6;
@@ -1266,6 +1278,56 @@ function selectFence(btn, type) {
   recalculate();
   markUnsaved();
   hintFenceType();
+}
+
+function editFencePrice(e, type) {
+  e.stopPropagation();
+  var priceEl = e.target;
+  var btn = priceEl.closest('.fence-type-btn');
+  var current = parseInt(btn.dataset.price);
+
+  var input = document.createElement('input');
+  input.type = 'number';
+  input.min = '1';
+  input.step = '1';
+  input.value = current;
+  input.style.cssText = 'width:48px;padding:2px 4px;font-size:0.75rem;font-weight:700;text-align:center;border:1.5px solid var(--accent);border-radius:3px;background:var(--bg);color:var(--text);outline:none;';
+
+  priceEl.textContent = '';
+  priceEl.appendChild(document.createTextNode('$'));
+  priceEl.appendChild(input);
+  priceEl.appendChild(document.createTextNode('/ft'));
+  input.focus();
+  input.select();
+
+  function save() {
+    var val = parseInt(input.value) || current;
+    btn.dataset.price = val;
+    priceEl.textContent = '$' + val + '/ft';
+    baseFencePrices[type] = val;
+
+    // Save to pricebook
+    if (typeof companyPricebook !== 'undefined') {
+      companyPricebook['perFoot.' + type] = val;
+      localStorage.setItem('fc_pricebook', JSON.stringify(companyPricebook));
+      if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+        API.updateCompany({ pricebook: companyPricebook }).catch(function() {});
+      }
+    }
+
+    // Update selected fence if this is the active type
+    if (selectedFence.type === type) {
+      selectedFence.price = val;
+    }
+    recalculate();
+    markUnsaved();
+  }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter') { input.blur(); }
+    if (ev.key === 'Escape') { input.value = current; input.blur(); }
+  });
 }
 
 function selectHeight(btn, height) {

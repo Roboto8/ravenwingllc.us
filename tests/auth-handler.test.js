@@ -144,4 +144,50 @@ describe('auth handler - postConfirmation', () => {
     expect(companyPK).toBe(userPK);
     expect(companyPK).toBe(userGSI1SK);
   });
+
+  test('joins existing company when inviteToken is valid', async () => {
+    const { PutCommand, UpdateCommand, QueryCommand, DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+    const send = DynamoDBDocumentClient.from().send;
+
+    // Mock GSI query to return a pending invite
+    send.mockResolvedValueOnce({ Items: [{
+      PK: 'COMPANY#existing-comp',
+      SK: 'INVITE#valid-token',
+      GSI1PK: 'INVITE#valid-token',
+      GSI1SK: 'COMPANY#existing-comp',
+      email: 'invited@test.com',
+      status: 'pending'
+    }]});
+    // Mock the put (user creation) and update (mark invite used)
+    send.mockResolvedValue({});
+
+    const event = makeEvent({ 'custom:inviteToken': 'valid-token' });
+    const result = await postConfirmation(event);
+
+    expect(result).toBe(event);
+    // Should have called: queryGSI, put (user), update (invite) = 3 calls
+    expect(send).toHaveBeenCalledTimes(3);
+    // User should be created as 'member' not 'owner'
+    const putCall = PutCommand.mock.calls[0][0];
+    expect(putCall.Item.role).toBe('member');
+    expect(putCall.Item.PK).toBe('COMPANY#existing-comp');
+  });
+
+  test('creates new company when inviteToken is invalid', async () => {
+    const { PutCommand, QueryCommand, DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+    const send = DynamoDBDocumentClient.from().send;
+
+    // Mock GSI query returns empty (invalid token)
+    send.mockResolvedValueOnce({ Items: [] });
+    // Mock puts for company + user
+    send.mockResolvedValue({});
+
+    const event = makeEvent({ 'custom:inviteToken': 'bad-token' });
+    await postConfirmation(event);
+
+    // Should create company + user = 2 puts after the failed GSI query
+    expect(PutCommand).toHaveBeenCalledTimes(2);
+    const firstPut = PutCommand.mock.calls[0][0];
+    expect(firstPut.Item.SK).toBe('PROFILE'); // company record
+  });
 });

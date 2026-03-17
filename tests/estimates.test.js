@@ -306,6 +306,24 @@ describe('estimates handler', () => {
       expect(updateArgs.status).toBe('sent');
     });
 
+    test('allows updating droneOverlay', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+      const overlay = { bounds: [[37.5, -77.4], [37.6, -77.3]] };
+      db.update.mockResolvedValue({ ...mockEstimate, droneOverlay: overlay });
+
+      const result = await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ droneOverlay: overlay })
+      });
+
+      expect(result.statusCode).toBe(200);
+      expect(db.update).toHaveBeenCalledWith(
+        mockEstimate.PK, mockEstimate.SK,
+        expect.objectContaining({ droneOverlay: overlay })
+      );
+    });
+
     test('allows updating fence data', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.query.mockResolvedValue({ items: [mockEstimate] });
