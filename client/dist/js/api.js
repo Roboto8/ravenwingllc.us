@@ -88,7 +88,7 @@ const API = {
 
   // Billing
   getStatus() { return this._fetch('/api/billing/status'); },
-  createCheckout(returnUrl) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
+  createCheckout(returnUrl, tier) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl, tier: tier || 'pro' }) }); },
   createPortal(returnUrl) { return this._fetch('/api/billing/portal', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
   exportData() { return this._fetch('/api/billing/export'); },
 

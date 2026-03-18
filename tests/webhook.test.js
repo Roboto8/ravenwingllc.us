@@ -19,9 +19,15 @@ jest.mock('@aws-sdk/lib-dynamodb', () => {
 
 // Mock stripe
 const mockConstructEvent = jest.fn();
+const mockSubscriptionsRetrieve = jest.fn().mockResolvedValue({
+  items: { data: [{ price: { id: 'price_pro_test' } }] }
+});
 const mockStripe = {
   webhooks: {
     constructEvent: mockConstructEvent
+  },
+  subscriptions: {
+    retrieve: mockSubscriptionsRetrieve
   }
 };
 jest.mock('stripe', () => jest.fn().mockReturnValue(mockStripe));
@@ -110,7 +116,7 @@ describe('webhook handler', () => {
       expect(result.statusCode).toBe(200);
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
-        { subscriptionStatus: 'active', subscriptionId: 'sub_abc' }
+        expect.objectContaining({ subscriptionStatus: 'active', subscriptionId: 'sub_abc' })
       );
     });
 

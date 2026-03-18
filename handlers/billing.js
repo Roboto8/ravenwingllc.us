@@ -40,12 +40,23 @@ module.exports.checkout = async (event) => {
   const body = JSON.parse(event.body || '{}');
   const returnUrl = sanitizeReturnUrl(body.returnUrl);
 
+  // Determine price based on tier
+  const tierPrices = {
+    solo: process.env.STRIPE_PRICE_SOLO,
+    pro: process.env.STRIPE_PRICE_PRO,
+    team: process.env.STRIPE_PRICE_TEAM
+  };
+  const tier = body.tier || 'pro';
+  const priceId = tierPrices[tier] || process.env.STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_ID;
+
+  if (!priceId) return res.bad('No price configured for tier: ' + tier);
+
   // Create or reuse Stripe customer
   let customerId = company.stripeCustomerId;
   if (!customerId) {
     const customer = await s.customers.create({
       email: company.email,
-      metadata: { companyId }
+      metadata: { companyId, tier }
     });
     customerId = customer.id;
     await db.update('COMPANY#' + companyId, 'PROFILE', { stripeCustomerId: customerId });
@@ -54,7 +65,7 @@ module.exports.checkout = async (event) => {
   const session = await s.checkout.sessions.create({
     customer: customerId,
     mode: 'subscription',
-    line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
     success_url: returnUrl + '?billing=success',
     cancel_url: returnUrl + '?billing=cancel',
     // Show clear pricing — no surprises
@@ -101,12 +112,18 @@ module.exports.status = async (event) => {
   // Get next billing date from Stripe if subscribed
   let nextBillingDate = null;
   let planAmount = null;
+  let tier = company.tier || 'pro';
   if (company.subscriptionId && company.subscriptionStatus === 'active') {
     try {
       const s = getStripe();
       const sub = await s.subscriptions.retrieve(company.subscriptionId);
       nextBillingDate = new Date(sub.current_period_end * 1000).toISOString();
       planAmount = sub.items.data[0].price.unit_amount / 100;
+      // Detect tier from price
+      const priceId = sub.items.data[0].price.id;
+      if (priceId === process.env.STRIPE_PRICE_SOLO) tier = 'solo';
+      else if (priceId === process.env.STRIPE_PRICE_TEAM) tier = 'team';
+      else tier = 'pro';
     } catch (e) {
       // Stripe call failed, continue without billing info
     }
@@ -120,6 +137,7 @@ module.exports.status = async (event) => {
     active: company.subscriptionStatus === 'active' || trialActive,
     nextBillingDate,
     planAmount,
+    tier,
     canCancel: company.subscriptionStatus === 'active'
   });
 };

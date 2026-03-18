@@ -22,7 +22,7 @@ package:
 
 provider:
   name: aws
-  runtime: nodejs16.x
+  runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
   region: us-east-1
   timeout: 15
@@ -43,6 +43,9 @@ provider:
     STRIPE_SECRET_KEY: ${ssm:fencecalc.${sls:stage}.stripe-secret-key, ''}
     STRIPE_WEBHOOK_SECRET: ${ssm:fencecalc.${sls:stage}.stripe-webhook-secret, ''}
     STRIPE_PRICE_ID: ${ssm:fencecalc.${sls:stage}.stripe-price-id, ''}
+    STRIPE_PRICE_SOLO: ${ssm:fencecalc.${sls:stage}.stripe-price-solo, ''}
+    STRIPE_PRICE_PRO: ${ssm:fencecalc.${sls:stage}.stripe-price-pro, ''}
+    STRIPE_PRICE_TEAM: ${ssm:fencecalc.${sls:stage}.stripe-price-team, ''}
 
   httpApi:
     cors:

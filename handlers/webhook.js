@@ -29,10 +29,20 @@ module.exports.handler = async (event) => {
       const customerId = data.customer;
       const subscriptionId = data.subscription;
       const companyId = await findCompanyByStripeId(customerId);
-      if (companyId) {
+      if (companyId && subscriptionId) {
+        // Detect tier from the subscription's price
+        let tier = 'pro';
+        try {
+          const sub = await s.subscriptions.retrieve(subscriptionId);
+          const priceId = sub.items.data[0].price.id;
+          if (priceId === process.env.STRIPE_PRICE_SOLO) tier = 'solo';
+          else if (priceId === process.env.STRIPE_PRICE_TEAM) tier = 'team';
+          else tier = 'pro';
+        } catch (e) {}
         await db.update('COMPANY#' + companyId, 'PROFILE', {
           subscriptionStatus: 'active',
-          subscriptionId
+          subscriptionId,
+          tier
         });
       }
       break;

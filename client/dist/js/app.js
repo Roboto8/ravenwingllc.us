@@ -577,6 +577,11 @@ function deleteSegment(segIndex) {
   }
 
   if (removeIdx < 0 || removeIdx >= fencePoints.length) return;
+
+  // Save deleted point for undo
+  var deletedPoint = fencePoints[removeIdx];
+  undoStack.push({ type: 'deletePoint', sectionIdx: activeSectionIdx, pointIdx: removeIdx, latlng: { lat: deletedPoint.lat, lng: deletedPoint.lng } });
+
   if (fencePoints.length <= 2) {
     // Would leave 0 or 1 points — just clear
     fencePoints = [];
@@ -785,6 +790,19 @@ function addFencePoint(latlng) {
   });
 
   fenceMarkers.push(marker);
+
+  // Auto-close: if clicking near the first point with 3+ points, close the fence
+  if (fencePoints.length > 3) {
+    var firstPx = map.latLngToContainerPoint(fencePoints[0]);
+    var clickedPx = map.latLngToContainerPoint(latlng);
+    if (firstPx.distanceTo(clickedPx) < 20) {
+      // Remove the last point (the close-click) and close
+      fencePoints.pop();
+      map.removeLayer(fenceMarkers.pop());
+      closeFence();
+      return;
+    }
+  }
 
   // Push to undo stack
   undoStack.push({ type: 'point', sectionIdx: activeSectionIdx });
@@ -1310,6 +1328,32 @@ function undoLast() {
       markUnsaved();
       updateEmptyMapState();
     }
+
+  } else if (last.type === 'deletePoint') {
+    // Undo deleted fence point — re-insert it
+    if (last.sectionIdx !== activeSectionIdx) {
+      switchSection(last.sectionIdx);
+    }
+    var latlng = L.latLng(last.latlng.lat, last.latlng.lng);
+    fencePoints.splice(last.pointIdx, 0, latlng);
+    var newMarker = L.marker(latlng, {
+      draggable: true,
+      icon: L.divIcon({ className: 'fence-vertex', iconSize: [22, 22], iconAnchor: [11, 11] })
+    }).addTo(map);
+    fenceMarkers.splice(last.pointIdx, 0, newMarker);
+    rebindMarkerDrags();
+    redrawFenceLine();
+    redrawSegmentLabels();
+    updateCloseButton();
+    updateMidpointHandles();
+    recalculate();
+    markUnsaved();
+    showToast('Point restored');
+
+  } else if (last.type === 'deleteMulch') {
+    // Undo deleted mulch area — recreate it
+    finalizeMulchArea(last.points);
+    showToast('Mulch area restored');
   }
 }
 
@@ -1331,6 +1375,9 @@ function rebindMarkerDrags() {
 }
 
 function clearAll() {
+  if (fencePoints.length > 0 || mulchAreas.length > 0 || gates.length > 0) {
+    if (!confirm('Clear everything? This cannot be undone.')) return;
+  }
   // Clear ALL sections from map
   sections.forEach(function(s) {
     s.markers.forEach(function(m) { map.removeLayer(m); });
@@ -2553,6 +2600,9 @@ function removeMulchArea(idx) {
   var area = mulchAreas[idx];
   if (!area) return;
 
+  // Save for undo
+  undoStack.push({ type: 'deleteMulch', points: area.points.slice(), areaSqFt: area.areaSqFt, perimeterFt: area.perimeterFt });
+
   area.markers.forEach(function(m) { map.removeLayer(m); });
   if (area.polygon) map.removeLayer(area.polygon);
   if (area.areaLabel) map.removeLayer(area.areaLabel);
@@ -2956,14 +3006,25 @@ function captureMap() {
       ctx.fillStyle = '#e8e0d6';
       ctx.fillRect(0, 0, w, h);
 
-      if (fencePoints.length < 2) {
+      // Gather all points from all sections + mulch areas for bounds
+      saveActiveSection();
+      var allMapPoints = [];
+      sections.forEach(function(s) {
+        s.points.forEach(function(p) { allMapPoints.push(p); });
+      });
+      mulchAreas.forEach(function(a) {
+        a.points.forEach(function(p) { allMapPoints.push({ lat: p.lat, lng: p.lng }); });
+      });
+      gates.forEach(function(g) { allMapPoints.push(g.latlng); });
+
+      if (allMapPoints.length < 2) {
         resolve(canvas.toDataURL('image/jpeg', 0.9));
         return;
       }
 
-      // Calculate bounds of fence points
-      var lats = fencePoints.map(function(p) { return p.lat; });
-      var lngs = fencePoints.map(function(p) { return p.lng; });
+      // Calculate bounds of all points
+      var lats = allMapPoints.map(function(p) { return p.lat; });
+      var lngs = allMapPoints.map(function(p) { return p.lng; });
       var minLat = Math.min.apply(null, lats);
       var maxLat = Math.max.apply(null, lats);
       var minLng = Math.min.apply(null, lngs);
@@ -2988,67 +3049,98 @@ function captureMap() {
         ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
       }
 
-      // Draw fence line
-      var pts = fencePoints;
-      if (curveMode && pts.length >= 3) {
-        var spline = getSplinePoints(pts, fenceClosed);
+      // Draw mulch areas
+      mulchAreas.forEach(function(area) {
         ctx.beginPath();
-        ctx.moveTo(toX(spline[0].lng), toY(spline[0].lat));
-        for (var i = 1; i < spline.length; i++) {
-          ctx.lineTo(toX(spline[i].lng), toY(spline[i].lat));
+        ctx.moveTo(toX(area.points[0].lng), toY(area.points[0].lat));
+        for (var i = 1; i < area.points.length; i++) {
+          ctx.lineTo(toX(area.points[i].lng), toY(area.points[i].lat));
         }
-        if (fenceClosed) ctx.closePath();
-        ctx.strokeStyle = '#c0622e';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(toX(pts[0].lng), toY(pts[0].lat));
-        for (var i = 1; i < pts.length; i++) {
-          ctx.lineTo(toX(pts[i].lng), toY(pts[i].lat));
-        }
-        if (fenceClosed) ctx.closePath();
-        ctx.strokeStyle = '#c0622e';
-        ctx.lineWidth = 3;
-        if (!fenceClosed) ctx.setLineDash([8, 8]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // Draw vertices
-      pts.forEach(function(p) {
-        var x = toX(p.lng);
-        var y = toY(p.lat);
-        ctx.beginPath();
-        ctx.arc(x, y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = '#c0622e';
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(45, 138, 78, 0.25)';
         ctx.fill();
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = '#2d8a4e';
         ctx.lineWidth = 2;
         ctx.stroke();
-      });
 
-      // Draw segment labels
-      var allPts = fenceClosed ? pts.concat([pts[0]]) : pts;
-      for (var i = 1; i < allPts.length; i++) {
-        var p1 = allPts[i - 1];
-        var p2 = allPts[i];
-        var mx = (toX(p1.lng) + toX(p2.lng)) / 2;
-        var my = (toY(p1.lat) + toY(p2.lat)) / 2;
-        var meters = p1.distanceTo(p2);
-        var feet = Math.round(meters * 3.28084);
-
-        var text = feet + ' ft';
-        ctx.font = 'bold 11px sans-serif';
-        var tw = ctx.measureText(text).width;
-
-        ctx.fillStyle = 'rgba(44, 36, 23, 0.85)';
-        ctx.fillRect(mx - tw / 2 - 5, my - 8, tw + 10, 16);
+        // Area label
+        var cx = area.points.reduce(function(s, p) { return s + toX(p.lng); }, 0) / area.points.length;
+        var cy = area.points.reduce(function(s, p) { return s + toY(p.lat); }, 0) / area.points.length;
+        ctx.font = 'bold 10px sans-serif';
+        var aText = area.areaSqFt.toLocaleString() + ' sq ft';
+        var atw = ctx.measureText(aText).width;
+        ctx.fillStyle = 'rgba(45, 138, 78, 0.85)';
+        ctx.fillRect(cx - atw / 2 - 5, cy - 8, atw + 10, 16);
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text, mx, my);
-      }
+        ctx.fillText(aText, cx, cy);
+      });
+
+      // Draw fence lines for ALL sections
+      sections.forEach(function(sec) {
+        var pts = sec.points;
+        if (pts.length < 2) return;
+
+        if (sec.curveMode && pts.length >= 3) {
+          var spline = getSplinePoints(pts, sec.closed);
+          ctx.beginPath();
+          ctx.moveTo(toX(spline[0].lng), toY(spline[0].lat));
+          for (var i = 1; i < spline.length; i++) {
+            ctx.lineTo(toX(spline[i].lng), toY(spline[i].lat));
+          }
+          if (sec.closed) ctx.closePath();
+          ctx.strokeStyle = '#c0622e';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(toX(pts[0].lng), toY(pts[0].lat));
+          for (var i = 1; i < pts.length; i++) {
+            ctx.lineTo(toX(pts[i].lng), toY(pts[i].lat));
+          }
+          if (sec.closed) ctx.closePath();
+          ctx.strokeStyle = '#c0622e';
+          ctx.lineWidth = 3;
+          if (!sec.closed) ctx.setLineDash([8, 8]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Draw vertices
+        pts.forEach(function(p) {
+          ctx.beginPath();
+          ctx.arc(toX(p.lng), toY(p.lat), 5, 0, Math.PI * 2);
+          ctx.fillStyle = '#c0622e';
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+
+        // Draw segment labels
+        var segPts = sec.closed ? pts.concat([pts[0]]) : pts;
+        for (var i = 1; i < segPts.length; i++) {
+          var p1 = segPts[i - 1];
+          var p2 = segPts[i];
+          var mx = (toX(p1.lng) + toX(p2.lng)) / 2;
+          var my = (toY(p1.lat) + toY(p2.lat)) / 2;
+          var dLat = (p2.lat - p1.lat) * Math.PI / 180;
+          var dLng = (p2.lng - p1.lng) * Math.PI / 180;
+          var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(p1.lat*Math.PI/180)*Math.cos(p2.lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+          var segFeet = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 3.28084);
+
+          var text = segFeet + ' ft';
+          ctx.font = 'bold 11px sans-serif';
+          var tw = ctx.measureText(text).width;
+          ctx.fillStyle = 'rgba(44, 36, 23, 0.85)';
+          ctx.fillRect(mx - tw / 2 - 5, my - 8, tw + 10, 16);
+          ctx.fillStyle = '#fff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(text, mx, my);
+        }
+      });
 
       // Draw gate markers
       gates.forEach(function(g) {
@@ -3103,250 +3195,280 @@ async function generatePDF() {
   var jsPDF = window.jspdf.jsPDF;
   var doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const w = doc.internal.pageSize.getWidth();
-  const margin = 50;
-  let y = 50;
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 48;
+  const col2 = w - margin;
+  let y = 0;
 
   const custName = document.getElementById('cust-name').value || 'Customer';
   const custPhone = document.getElementById('cust-phone').value;
   const custAddr = document.getElementById('cust-address').value;
   const feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
   const total = document.getElementById('sum-total').textContent;
-  const fType = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1);
+  const fType = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1).replace('-', ' ');
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const estNum = 'FC-' + Date.now().toString(36).toUpperCase().slice(-6);
 
-  // Header
-  doc.setFontSize(22);
+  function checkPage(need) { if (y + need > pageH - 60) { addFooter(); doc.addPage(); y = 48; } }
+  function addFooter() {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(160, 150, 138);
+    doc.text('Generated by FenceTrace  •  fencetrace.com', margin, pageH - 28);
+    doc.text('Estimate #' + estNum, col2, pageH - 28, { align: 'right' });
+  }
+  function sectionTitle(text) {
+    checkPage(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(192, 98, 46);
+    doc.text(text.toUpperCase(), margin, y);
+    y += 4;
+    doc.setDrawColor(192, 98, 46);
+    doc.setLineWidth(1.5);
+    doc.line(margin, y, margin + 40, y);
+    y += 14;
+  }
+  function labelValue(label, val) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 90, 76);
+    doc.text(label, margin, y);
+    doc.setTextColor(44, 36, 23);
+    doc.text(val, col2, y, { align: 'right' });
+    y += 14;
+  }
+
+  // ── Header bar ──
+  doc.setFillColor(44, 36, 23);
+  doc.rect(0, 0, w, 72, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(192, 98, 46);
-  doc.text('FenceTrace', margin, y);
-  doc.setFontSize(9);
+  doc.setFontSize(20);
+  doc.setTextColor(255, 255, 255);
+  doc.text('FenceTrace', margin, 32);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(140, 127, 110);
-  doc.text('Satellite-powered fence estimates', margin, y + 16);
-
   doc.setFontSize(9);
-  doc.setTextColor(140, 127, 110);
-  doc.text('Estimate #' + estNum, w - margin, y, { align: 'right' });
-  doc.text(today, w - margin, y + 14, { align: 'right' });
+  doc.setTextColor(192, 98, 46);
+  doc.text('Fence & Landscape Estimating', margin, 48);
+  doc.setTextColor(200, 200, 200);
+  doc.setFontSize(9);
+  doc.text('Estimate #' + estNum, col2, 30, { align: 'right' });
+  doc.text(today, col2, 44, { align: 'right' });
+  y = 92;
 
-  y += 44;
-  doc.setDrawColor(212, 205, 196);
-  doc.line(margin, y, w - margin, y);
-  y += 24;
-
-  // Customer info
-  doc.setFontSize(11);
+  // ── Customer ──
+  sectionTitle('Prepared For');
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
   doc.setTextColor(44, 36, 23);
-  doc.text('Prepared for', margin, y);
+  doc.text(custName, margin, y);
   y += 16;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text(custName, margin, y);
-  if (custPhone) { y += 14; doc.text(custPhone, margin, y); }
-  if (custAddr) { y += 14; doc.text(custAddr, margin, y); }
+  doc.setFontSize(9);
+  doc.setTextColor(100, 90, 76);
+  if (custPhone) { doc.text(custPhone, margin, y); y += 13; }
+  if (custAddr) { doc.text(custAddr, margin, y); y += 13; }
+  y += 10;
 
-  y += 24;
-
-  // Map image
+  // ── Map ──
   if (mapImage) {
+    checkPage(200);
     const imgW = w - margin * 2;
-    const imgH = imgW * 0.5;
-    doc.addImage(mapImage, 'JPEG', margin, y, imgW, imgH);
-    // Border around map
+    const imgH = imgW * 0.45;
     doc.setDrawColor(212, 205, 196);
-    doc.setLineWidth(1);
+    doc.setLineWidth(0.5);
+    doc.addImage(mapImage, 'JPEG', margin, y, imgW, imgH);
     doc.rect(margin, y, imgW, imgH);
-    y += imgH + 20;
+    y += imgH + 16;
   }
 
-  // Project summary
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('Project Summary', margin, y);
-  y += 18;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(92, 80, 63);
+  // ── Project Details ──
+  sectionTitle('Project Details');
+  saveActiveSection();
 
-  const summaryLines = [
-    ['Fence Type', fType + (curveMode ? ' (curved)' : '')],
-    ['Height', selectedHeight + ' ft'],
-    ['Total Linear Footage', feet.toLocaleString() + ' ft'],
-    ['Terrain', terrainMultiplier === 1 ? 'Flat' : terrainMultiplier === 1.15 ? 'Slope (+15%)' : 'Rocky (+30%)']
-  ];
+  if (sections.length <= 1) {
+    labelValue('Fence type', fType + (curveMode ? ' (curved)' : ''));
+    labelValue('Height', selectedHeight + ' ft');
+  } else {
+    sections.forEach(function(s, i) {
+      var t = (s.fenceType || 'wood').charAt(0).toUpperCase() + (s.fenceType || 'wood').slice(1).replace('-', ' ');
+      labelValue('Section ' + (i + 1), t + ', ' + (s.fenceHeight || 6) + ' ft');
+    });
+  }
+  labelValue('Total linear footage', feet.toLocaleString() + ' ft');
+  if (terrainMultiplier > 1) {
+    labelValue('Terrain', terrainMultiplier === 1.15 ? 'Slope (+15%)' : 'Rocky (+30%)');
+  }
   if (gates.length > 0) {
-    summaryLines.push(['Gates', gates.length + ' (' + gates.map(g => g.type).join(', ') + ')']);
+    labelValue('Gates', gates.length + ' (' + gates.map(function(g) { return g.type; }).join(', ') + ')');
+  }
+  if (mulchAreas.length > 0) {
+    var totalSqFt = mulchAreas.reduce(function(s, a) { return s + a.areaSqFt; }, 0);
+    var matName = MULCH[selectedMulchMaterial] ? MULCH[selectedMulchMaterial].name : selectedMulchMaterial;
+    labelValue('Mulch', mulchAreas.length + ' area' + (mulchAreas.length > 1 ? 's' : '') + ' — ' + totalSqFt.toLocaleString() + ' sq ft, ' + matName + ' ' + selectedMulchDepth + '″');
+  }
+  y += 8;
+
+  // ── Material Breakdown ──
+  var bom = calculateCombinedBOM();
+  var mulchRes = calculateMulchTotal();
+  if (mulchRes.details.length > 0) {
+    if (!bom) bom = { items: [], materialTotal: 0 };
+    mulchRes.details.forEach(function(d) {
+      var mn = MULCH[selectedMulchMaterial] ? MULCH[selectedMulchMaterial].name : selectedMulchMaterial;
+      bom.items.push({ name: 'Mulch Area ' + (d.areaIdx + 1) + ': ' + mn + ' ' + selectedMulchDepth + '″', isHeader: true, qty: 0, unit: '', unitCost: 0, total: 0 });
+      d.bom.items.forEach(function(item) { bom.items.push(item); });
+      bom.materialTotal += d.bom.materialTotal;
+    });
   }
 
-  summaryLines.forEach(([label, val]) => {
-    doc.text(label, margin, y);
-    doc.text(val, w - margin, y, { align: 'right' });
-    y += 16;
-  });
-
-  y += 12;
-  doc.line(margin, y, w - margin, y);
-  y += 24;
-
-  // BOM
-  const bom = calculateBOM(feet, selectedFence.type, selectedHeight);
   if (bom && bom.items.length > 0) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(44, 36, 23);
-    doc.text('Material Breakdown', margin, y);
-    y += 20;
+    sectionTitle('Material Breakdown');
 
-    // Header row
+    // Table header
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(140, 130, 118);
+    var qtyX = w - margin - 130;
+    var ucX = w - margin - 65;
+    doc.text('ITEM', margin, y);
+    doc.text('QTY', qtyX, y, { align: 'right' });
+    doc.text('UNIT', ucX, y, { align: 'right' });
+    doc.text('TOTAL', col2, y, { align: 'right' });
+    y += 5;
+    doc.setDrawColor(212, 205, 196);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, col2, y);
+    y += 10;
+
     doc.setFontSize(9);
-    doc.setTextColor(140, 127, 110);
-    doc.text('Item', margin, y);
-    doc.text('Qty', w - margin - 120, y, { align: 'right' });
-    doc.text('Unit Cost', w - margin - 50, y, { align: 'right' });
-    doc.text('Total', w - margin, y, { align: 'right' });
-    y += 6;
-    doc.setDrawColor(230, 225, 218);
-    doc.line(margin, y, w - margin, y);
-    y += 14;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(92, 80, 63);
-    bom.items.forEach(item => {
-      if (y > 700) {
-        doc.addPage();
-        y = 50;
+    var stripe = false;
+    bom.items.forEach(function(item) {
+      checkPage(18);
+      if (item.isHeader) {
+        y += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(192, 98, 46);
+        doc.text(item.name, margin, y);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(70, 62, 50);
+        y += 14;
+        stripe = false;
+        return;
       }
+      // Alternating row bg
+      if (stripe) {
+        doc.setFillColor(248, 245, 240);
+        doc.rect(margin - 4, y - 9, col2 - margin + 8, 14, 'F');
+      }
+      stripe = !stripe;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(70, 62, 50);
       doc.text(item.name, margin, y);
-      doc.text(item.qty.toString(), w - margin - 120, y, { align: 'right' });
-      doc.text('$' + item.unitCost.toFixed(2), w - margin - 50, y, { align: 'right' });
-      doc.text('$' + item.total.toLocaleString(), w - margin, y, { align: 'right' });
-      y += 15;
+      doc.text(item.qty.toString(), qtyX, y, { align: 'right' });
+      doc.text('$' + item.unitCost.toFixed(2), ucX, y, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text('$' + item.total.toLocaleString(), col2, y, { align: 'right' });
+      y += 14;
     });
 
     y += 4;
-    doc.setDrawColor(212, 205, 196);
-    doc.line(margin, y, w - margin, y);
-    y += 16;
+    doc.setDrawColor(192, 98, 46);
+    doc.setLineWidth(1);
+    doc.line(margin, y, col2, y);
+    y += 14;
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(192, 98, 46);
-    doc.text('Materials Total', margin, y);
-    doc.text('$' + bom.materialTotal.toLocaleString(), w - margin, y, { align: 'right' });
-    y += 24;
-  }
-
-  // Custom items
-  if (customItems.length > 0 && customItems.some(i => i.name && i.unitCost > 0)) {
-    if (y > 660) { doc.addPage(); y = 50; }
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(44, 36, 23);
-    doc.text('Additional Items', margin, y);
-    y += 18;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(92, 80, 63);
-
-    customItems.filter(i => i.name && i.unitCost > 0).forEach(i => {
-      doc.text(i.name, margin, y);
-      doc.text(i.qty + ' x $' + i.unitCost.toFixed(2), w - margin - 60, y, { align: 'right' });
-      doc.text('$' + Math.round(i.qty * i.unitCost).toLocaleString(), w - margin, y, { align: 'right' });
-      y += 15;
-    });
-    y += 10;
-  }
-
-  // Estimate summary
-  if (y > 620) { doc.addPage(); y = 50; }
-  y += 8;
-  doc.setDrawColor(212, 205, 196);
-  doc.line(margin, y, w - margin, y);
-  y += 20;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(44, 36, 23);
-  doc.text('Estimate Summary', margin, y);
-  y += 20;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(92, 80, 63);
-
-  const fenceCostText = document.getElementById('sum-fence').textContent;
-  doc.text(fType + ' fence, ' + selectedHeight + 'ft', margin, y);
-  doc.text(fenceCostText, w - margin, y, { align: 'right' });
-  y += 16;
-
-  if (gates.length > 0) {
-    doc.text('Gates (' + gates.length + ')', margin, y);
-    doc.text(document.getElementById('sum-gates').textContent, w - margin, y, { align: 'right' });
-    y += 16;
-  }
-
-  if (document.getElementById('addon-removal').checked) {
-    doc.text('Old fence removal', margin, y);
-    doc.text(document.getElementById('sum-removal').textContent, w - margin, y, { align: 'right' });
-    y += 16;
-  }
-
-  if (document.getElementById('addon-permit').checked) {
-    doc.text('Permit fee', margin, y);
-    doc.text('$150', w - margin, y, { align: 'right' });
-    y += 16;
-  }
-
-  if (document.getElementById('addon-stain').checked) {
-    doc.text('Stain / seal', margin, y);
-    doc.text(document.getElementById('sum-stain').textContent, w - margin, y, { align: 'right' });
-    y += 16;
-  }
-
-  if (terrainMultiplier > 1) {
-    doc.text('Terrain adjustment', margin, y);
-    doc.text(document.getElementById('sum-terrain').textContent, w - margin, y, { align: 'right' });
-    y += 16;
-  }
-
-  const customTotal = customItems.reduce((sum, i) => sum + (i.qty * i.unitCost), 0);
-  if (customTotal > 0) {
-    doc.text('Custom items', margin, y);
-    doc.text('$' + Math.round(customTotal).toLocaleString(), w - margin, y, { align: 'right' });
-    y += 16;
-  }
-
-  // Total
-  y += 4;
-  doc.setDrawColor(192, 98, 46);
-  doc.setLineWidth(2);
-  doc.line(margin, y, w - margin, y);
-  y += 20;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(61, 139, 55);
-  doc.text('Total Estimate', margin, y);
-  doc.text(total, w - margin, y, { align: 'right' });
-
-  y += 40;
-
-  // Photos note
-  if (typeof activeEstimatePhotos !== 'undefined' && activeEstimatePhotos.length > 0) {
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text(activeEstimatePhotos.length + ' photo' + (activeEstimatePhotos.length === 1 ? '' : 's') + ' attached to this estimate (see online version)', margin, y);
+    doc.text('Materials Total', margin, y);
+    doc.text('$' + bom.materialTotal.toLocaleString(), col2, y, { align: 'right' });
     y += 20;
   }
 
-  // Footer
+  // ── Custom Items ──
+  if (customItems.length > 0 && customItems.some(function(i) { return i.name && i.unitCost > 0; })) {
+    sectionTitle('Additional Items');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(70, 62, 50);
+    customItems.filter(function(i) { return i.name && i.unitCost > 0; }).forEach(function(i) {
+      checkPage(16);
+      doc.text(i.name, margin, y);
+      doc.text(i.qty + ' × $' + i.unitCost.toFixed(2), ucX, y, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text('$' + Math.round(i.qty * i.unitCost).toLocaleString(), col2, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      y += 14;
+    });
+    y += 8;
+  }
+
+  // ── Estimate Total ──
+  checkPage(120);
+  y += 4;
+  doc.setFillColor(248, 245, 240);
+  doc.roundedRect(margin, y, col2 - margin, 0, 6, 6, 'F'); // measure first
+
+  var totalBoxY = y;
+  y += 16;
+  sectionTitle('Estimate Total');
+
+  const fenceCostText = document.getElementById('sum-fence').textContent;
+  if (feet > 0) labelValue(fType + ' fence, ' + selectedHeight + 'ft', fenceCostText);
+  if (gates.length > 0) labelValue('Gates (' + gates.length + ')', document.getElementById('sum-gates').textContent);
+  if (document.getElementById('addon-removal').checked) labelValue('Old fence removal', document.getElementById('sum-removal').textContent);
+  if (document.getElementById('addon-permit').checked) labelValue('Permit fee', '$150');
+  if (document.getElementById('addon-stain').checked) labelValue('Stain / seal', document.getElementById('sum-stain').textContent);
+  if (terrainMultiplier > 1) labelValue('Terrain adjustment', document.getElementById('sum-terrain').textContent);
+  if (mulchRes.total > 0) labelValue('Mulch materials', '$' + Math.round(mulchRes.total).toLocaleString());
+  const customTotal = customItems.reduce(function(sum, i) { return sum + (i.qty * i.unitCost); }, 0);
+  if (customTotal > 0) labelValue('Custom items', '$' + Math.round(customTotal).toLocaleString());
+
+  // Draw the background box now that we know the height
+  doc.setFillColor(248, 245, 240);
+  doc.roundedRect(margin - 8, totalBoxY, col2 - margin + 16, y - totalBoxY + 28, 4, 4, 'F');
+
+  // Re-draw the content on top (bg covered it)
+  y = totalBoxY + 16;
+  sectionTitle('Estimate Total');
+  if (feet > 0) labelValue(fType + ' fence, ' + selectedHeight + 'ft', fenceCostText);
+  if (gates.length > 0) labelValue('Gates (' + gates.length + ')', document.getElementById('sum-gates').textContent);
+  if (document.getElementById('addon-removal').checked) labelValue('Old fence removal', document.getElementById('sum-removal').textContent);
+  if (document.getElementById('addon-permit').checked) labelValue('Permit fee', '$150');
+  if (document.getElementById('addon-stain').checked) labelValue('Stain / seal', document.getElementById('sum-stain').textContent);
+  if (terrainMultiplier > 1) labelValue('Terrain adjustment', document.getElementById('sum-terrain').textContent);
+  if (mulchRes.total > 0) labelValue('Mulch materials', '$' + Math.round(mulchRes.total).toLocaleString());
+  if (customTotal > 0) labelValue('Custom items', '$' + Math.round(customTotal).toLocaleString());
+
+  y += 6;
+  doc.setDrawColor(44, 36, 23);
+  doc.setLineWidth(1.5);
+  doc.line(margin, y, col2, y);
+  y += 18;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(44, 36, 23);
+  doc.text('TOTAL', margin, y);
+  doc.setTextColor(45, 138, 78);
+  doc.text(total, col2, y, { align: 'right' });
+  y += 30;
+
+  // ── Notes ──
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(140, 127, 110);
+  doc.setTextColor(140, 130, 118);
   doc.text('This estimate is valid for 30 days. Actual costs may vary based on site conditions.', margin, y);
-  doc.text('Generated by FenceTrace', margin, y + 12);
+  y += 12;
+
+  if (typeof activeEstimatePhotos !== 'undefined' && activeEstimatePhotos.length > 0) {
+    doc.text(activeEstimatePhotos.length + ' photo' + (activeEstimatePhotos.length === 1 ? '' : 's') + ' attached (see online version)', margin, y);
+    y += 12;
+  }
+
+  // ── Footer ──
+  addFooter();
 
   // Save
   var filename = 'FenceTrace-' + custName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + estNum + '.pdf';

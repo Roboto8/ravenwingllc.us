@@ -97,7 +97,7 @@ describe('billing handler', () => {
       expect(mockStripe.customers.create).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'new@test.com',
-          metadata: { companyId: 'comp-1' }
+          metadata: expect.objectContaining({ companyId: 'comp-1' })
         })
       );
       expect(db.update).toHaveBeenCalledWith(
