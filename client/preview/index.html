@@ -547,11 +547,43 @@
           </div>
         </div>
 
+        <div class="panel-section" data-section="markup">
+          <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span>Contractor Markup</h3>
+          <div class="section-body collapsed">
+            <p class="empty-state" style="font-size:0.75rem;margin-bottom:8px">These costs are visible only to you — hidden from customer shares and PDFs.</p>
+            <div class="form-group" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+              <span style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap">Labor $/ft</span>
+              <input type="number" id="markup-labor" min="0" step="0.50" value="0" onchange="recalculate()" style="width:70px;padding:4px 6px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px">
+              <span style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap">Markup %</span>
+              <input type="number" id="markup-percent" min="0" max="200" step="5" value="0" onchange="recalculate()" style="width:60px;padding:4px 6px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px">
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:4px 0;color:var(--text-mid)" id="markup-labor-row" class="summary-row">
+              <span>Labor</span>
+              <span id="sum-labor">$0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:4px 0;color:var(--text-mid)" id="markup-markup-row" class="summary-row">
+              <span>Markup</span>
+              <span id="sum-markup">$0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:700;padding:6px 0;border-top:1px solid var(--border);color:var(--text)">
+              <span>Customer Price</span>
+              <span id="sum-customer-price">$0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:2px 0;color:var(--accent)">
+              <span>Your Profit</span>
+              <span id="sum-profit">$0</span>
+            </div>
+          </div>
+        </div>
+
         <div class="panel-actions">
           <button class="btn btn-full" onclick="shareEstimate()" title="Share estimate link (E)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg><span data-i18n="btn_share">Share Estimate</span>
           </button>
-          <button class="btn btn-full btn-outline" style="margin-top:6px" onclick="generatePDF()" title="Download PDF estimate (P)" data-i18n="btn_pdf">Save as PDF</button>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="btn btn-full btn-outline" onclick="generatePDF('contractor')" title="Full PDF with costs">Contractor PDF</button>
+            <button class="btn btn-full btn-outline" onclick="generatePDF('customer')" title="Clean PDF for customer">Customer PDF</button>
+          </div>
         </div>
 
         <div class="panel-footer">

@@ -597,6 +597,16 @@ function createSegmentLabel(p1, p2, segIndex) {
   var midLat = (p1.lat + p2.lat) / 2;
   var midLng = (p1.lng + p2.lng) / 2;
 
+  // Offset perpendicular to segment so label doesn't cover the line
+  var dLat = p2.lat - p1.lat;
+  var dLng = p2.lng - p1.lng;
+  var len = Math.sqrt(dLat * dLat + dLng * dLng);
+  if (len > 0) {
+    var offset = 0.00003; // ~3 meters
+    midLat += (-dLng / len) * offset;
+    midLng += (dLat / len) * offset;
+  }
+
   var label = L.marker([midLat, midLng], {
     icon: L.divIcon({
       className: 'segment-label',
@@ -604,8 +614,8 @@ function createSegmentLabel(p1, p2, segIndex) {
         '<span onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</span>' +
         '<button class="seg-delete" onclick="event.stopPropagation(); deleteSegment(' + segIndex + ')" title="Remove segment">&times;</button>' +
       '</div>',
-      iconSize: [80, 20],
-      iconAnchor: [30, 10]
+      iconSize: [60, 16],
+      iconAnchor: [30, 8]
     }),
     interactive: true
   }).addTo(map);
@@ -2521,13 +2531,15 @@ function finalizeMulchArea(points) {
     color: '#c0622e', weight: 1, dashArray: '4,4', opacity: 0.6
   }).addTo(map);
 
-  // Area label in center with bag count
-  var areaLabel = L.marker(rotCenter, {
+  // Area label — positioned at top edge so it doesn't cover the area
+  var maxLat = Math.max.apply(null, points.map(function(p) { return p.lat; }));
+  var labelPos = { lat: maxLat + 0.00003, lng: rotCenter.lng };
+  var areaLabel = L.marker(labelPos, {
     icon: L.divIcon({
       className: 'mulch-area-label',
       html: getMulchLabelHtml(areaSqFt, points),
-      iconSize: [120, 48],
-      iconAnchor: [60, 24]
+      iconSize: [120, 36],
+      iconAnchor: [60, 36]
     }),
     interactive: false
   }).addTo(map);
@@ -2590,11 +2602,12 @@ function updateMulchAreaVisuals(area) {
   area.polygon.setLatLngs(area.points.map(function(p) { return [p.lat, p.lng]; }));
   area.markers.forEach(function(m, i) { m.setLatLng([area.points[i].lat, area.points[i].lng]); });
   var center = getMulchCenter(area.points);
-  area.areaLabel.setLatLng(center);
+  var maxLat = Math.max.apply(null, area.points.map(function(p) { return p.lat; }));
+  area.areaLabel.setLatLng({ lat: maxLat + 0.00003, lng: center.lng });
   area.areaLabel.setIcon(L.divIcon({
     className: 'mulch-area-label',
     html: getMulchLabelHtml(newArea, area.points),
-    iconSize: [120, 48], iconAnchor: [60, 24]
+    iconSize: [120, 36], iconAnchor: [60, 36]
   }));
   var rotPos = getRotationHandlePos(area.points, center);
   area.rotMarker.setLatLng(rotPos);
@@ -2750,10 +2763,13 @@ function renderMulchAreas() {
 
   // Update map labels too
   mulchAreas.forEach(function(area) {
+    var maxLat = Math.max.apply(null, area.points.map(function(p) { return p.lat; }));
+    var center = getMulchCenter(area.points);
+    area.areaLabel.setLatLng({ lat: maxLat + 0.00003, lng: center.lng });
     area.areaLabel.setIcon(L.divIcon({
       className: 'mulch-area-label',
       html: getMulchLabelHtml(area.areaSqFt, area.points),
-      iconSize: [120, 48], iconAnchor: [60, 24]
+      iconSize: [120, 36], iconAnchor: [60, 36]
     }));
   });
 }
@@ -2838,6 +2854,44 @@ function recalculate() {
   document.getElementById('sum-custom').textContent = '$' + Math.round(customTotal).toLocaleString();
 
   document.getElementById('sum-total').textContent = '$' + Math.round(total).toLocaleString();
+
+  // Contractor markup
+  var laborPerFt = parseFloat(document.getElementById('markup-labor').value) || 0;
+  var markupPct = parseFloat(document.getElementById('markup-percent').value) || 0;
+  var laborCost = Math.round(feet * laborPerFt);
+  var markupAmt = Math.round(total * markupPct / 100);
+  var customerPrice = total + laborCost + markupAmt;
+  var profit = laborCost + markupAmt;
+
+  document.getElementById('markup-labor-row').style.display = laborCost > 0 ? 'flex' : 'none';
+  document.getElementById('sum-labor').textContent = '$' + laborCost.toLocaleString();
+  document.getElementById('markup-markup-row').style.display = markupAmt > 0 ? 'flex' : 'none';
+  document.getElementById('sum-markup').textContent = '$' + markupAmt.toLocaleString();
+  document.getElementById('sum-customer-price').textContent = '$' + Math.round(customerPrice).toLocaleString();
+  document.getElementById('sum-profit').textContent = '$' + profit.toLocaleString();
+
+  // Auto-save to localStorage
+  try {
+    localStorage.setItem('fc_autosave', JSON.stringify({
+      fencePoints: fencePoints.map(function(p) { return { lat: p.lat, lng: p.lng }; }),
+      fenceClosed: fenceClosed,
+      fenceType: selectedFence.type,
+      fenceHeight: selectedHeight,
+      gates: gates.map(function(g) { return { lat: g.latlng.lat, lng: g.latlng.lng, type: g.type, price: g.price }; }),
+      mulchAreas: mulchAreas.map(function(a) { return { points: a.points, areaSqFt: a.areaSqFt, perimeterFt: a.perimeterFt }; }),
+      mulchMaterial: selectedMulchMaterial,
+      mulchDepth: selectedMulchDepth,
+      mulchDelivery: selectedMulchDelivery,
+      customer: {
+        name: document.getElementById('cust-name').value,
+        phone: document.getElementById('cust-phone').value,
+        address: document.getElementById('cust-address').value
+      },
+      laborPerFt: laborPerFt,
+      markupPct: markupPct,
+      savedAt: Date.now()
+    }));
+  } catch (e) {}
 
   // BOM — aggregate across all sections + mulch
   saveActiveSection();
@@ -3272,8 +3326,9 @@ function captureMap() {
 }
 
 // === PDF Generation ===
-async function generatePDF() {
+async function generatePDF(mode) {
   if (typeof requireSubscription === 'function' && !requireSubscription('download PDF estimates')) return;
+  var isCustomerMode = mode === 'customer';
   try {
   showToast(t('toast_generating_pdf'));
 
@@ -3547,9 +3602,48 @@ async function generatePDF() {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(44, 36, 23);
-  doc.text('TOTAL', margin, y);
-  doc.setTextColor(45, 138, 78);
-  doc.text(total, col2, y, { align: 'right' });
+  // Add labor/markup for contractor or show customer price
+  var laborPerFt = parseFloat(document.getElementById('markup-labor').value) || 0;
+  var markupPct = parseFloat(document.getElementById('markup-percent').value) || 0;
+  var laborCost = Math.round(feet * laborPerFt);
+  var markupAmt = Math.round(parseFloat(total.replace(/[^0-9.-]/g, '')) * markupPct / 100);
+  var customerPrice = parseFloat(total.replace(/[^0-9.-]/g, '')) + laborCost + markupAmt;
+
+  if (isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
+    // Customer sees the final price only
+    doc.text('TOTAL', margin, y);
+    doc.setTextColor(45, 138, 78);
+    doc.text('$' + Math.round(customerPrice).toLocaleString(), col2, y, { align: 'right' });
+  } else if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
+    // Contractor sees the breakdown
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 90, 76);
+    if (laborCost > 0) { labelValue('Labor (' + laborPerFt + '/ft)', '$' + laborCost.toLocaleString()); }
+    if (markupAmt > 0) { labelValue('Markup (' + markupPct + '%)', '$' + markupAmt.toLocaleString()); }
+    y += 4;
+    doc.setDrawColor(44, 36, 23);
+    doc.setLineWidth(1.5);
+    doc.line(margin, y, col2, y);
+    y += 18;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(100, 90, 76);
+    doc.text('Materials + Labor', margin, y);
+    doc.text('$' + Math.round(customerPrice).toLocaleString(), col2, y, { align: 'right' });
+    y += 18;
+    doc.setFontSize(10);
+    doc.setTextColor(45, 138, 78);
+    doc.text('Your Profit: $' + (laborCost + markupAmt).toLocaleString(), margin, y);
+    y += 16;
+    doc.text('CUSTOMER PRICE', margin, y);
+    doc.setFontSize(16);
+    doc.text('$' + Math.round(customerPrice).toLocaleString(), col2, y, { align: 'right' });
+  } else {
+    doc.text('TOTAL', margin, y);
+    doc.setTextColor(45, 138, 78);
+    doc.text(total, col2, y, { align: 'right' });
+  }
   y += 30;
 
   // ── Notes ──
@@ -4241,6 +4335,54 @@ if (fencePoints.length === 0) {
   nextEstimateNumber();
 }
 updateEstimateCounterDisplay();
+
+// Auto-restore unsaved work
+if (fencePoints.length === 0) {
+  try {
+    var autosave = JSON.parse(localStorage.getItem('fc_autosave'));
+    if (autosave && autosave.fencePoints && autosave.fencePoints.length > 0) {
+      // Restore fence
+      var prices = { wood: 25, vinyl: 35, 'chain-link': 15, aluminum: 40, iron: 55 };
+      selectedFence = { type: autosave.fenceType || 'wood', price: prices[autosave.fenceType] || 25 };
+      selectedHeight = autosave.fenceHeight || 6;
+      map.setView([autosave.fencePoints[0].lat, autosave.fencePoints[0].lng], 19);
+      autosave.fencePoints.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+      if (autosave.fenceClosed) closeFence();
+      // Restore gates
+      if (autosave.gates) {
+        setTool('gate');
+        autosave.gates.forEach(function(g) { addGate(L.latLng(g.lat, g.lng)); var gate = gates[gates.length-1]; gate.type = g.type; gate.price = g.price; });
+        renderGates();
+        setTool('draw');
+      }
+      // Restore mulch
+      if (autosave.mulchAreas && autosave.mulchAreas.length > 0) {
+        if (autosave.mulchMaterial) selectedMulchMaterial = autosave.mulchMaterial;
+        if (autosave.mulchDepth) selectedMulchDepth = autosave.mulchDepth;
+        if (autosave.mulchDelivery) selectedMulchDelivery = autosave.mulchDelivery;
+        autosave.mulchAreas.forEach(function(a) { finalizeMulchArea(a.points); });
+      }
+      // Restore customer info
+      if (autosave.customer) {
+        if (autosave.customer.name) document.getElementById('cust-name').value = autosave.customer.name;
+        if (autosave.customer.phone) document.getElementById('cust-phone').value = autosave.customer.phone;
+        if (autosave.customer.address) document.getElementById('cust-address').value = autosave.customer.address;
+      }
+      // Restore markup
+      if (autosave.laborPerFt) document.getElementById('markup-labor').value = autosave.laborPerFt;
+      if (autosave.markupPct) document.getElementById('markup-percent').value = autosave.markupPct;
+      recalculate();
+      showToast('Previous work restored');
+    }
+  } catch (e) {}
+}
+
+// Clear autosave when estimate is saved or reset
+var _origResetEstimate = typeof resetEstimate === 'function' ? resetEstimate : null;
+function resetEstimateAndClearAutosave() {
+  localStorage.removeItem('fc_autosave');
+  if (_origResetEstimate) _origResetEstimate();
+}
 
 // First visit: load demo estimate so visitors see the product immediately
 if (fencePoints.length === 0 && !localStorage.getItem('fc_visited')) {
