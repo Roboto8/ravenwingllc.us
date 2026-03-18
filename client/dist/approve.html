@@ -320,6 +320,7 @@
 </div>
 
 <script src="js/api.js"></script>
+<script src="js/config.js"></script>
 <script>
 (function() {
   function escapeHtml(s) {
@@ -334,9 +335,7 @@
     return;
   }
 
-  // Determine API base URL from current location or config
-  const apiUrl = 'https://wkst09rgl3.execute-api.us-east-1.amazonaws.com';
-  API.configure(apiUrl);
+  API.configure(FC_CONFIG.apiUrl);
 
   let estimateData = null;
 

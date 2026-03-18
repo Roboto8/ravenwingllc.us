@@ -2,12 +2,7 @@ const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
 const { checkPermission } = require('./roles');
-
-let stripe;
-function getStripe() {
-  if (!stripe) stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  return stripe;
-}
+const getStripe = require('./lib/stripe');
 
 // In-memory rate limit: companyId -> last checkout timestamp
 const _checkoutTimestamps = {};
@@ -35,7 +30,7 @@ function sanitizeReturnUrl(url) {
   }
 }
 
-module.exports.checkout = async (event) => {
+module.exports.checkout = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'billing.manage')) return res.forbidden('No permission to manage billing');
@@ -79,7 +74,11 @@ module.exports.checkout = async (event) => {
       metadata: { companyId, tier }
     });
     customerId = customer.id;
-    await db.update('COMPANY#' + companyId, 'PROFILE', { stripeCustomerId: customerId });
+    await db.update('COMPANY#' + companyId, 'PROFILE', {
+      stripeCustomerId: customerId,
+      GSI1PK: 'STRIPE#' + customerId,
+      GSI1SK: 'PROFILE'
+    });
   }
 
   const clientRefId = companyId + '_' + Date.now();
@@ -101,9 +100,9 @@ module.exports.checkout = async (event) => {
   });
 
   return res.ok({ url: session.url });
-};
+});
 
-module.exports.portal = async (event) => {
+module.exports.portal = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'billing.manage')) return res.forbidden('No permission to manage billing');
@@ -122,9 +121,9 @@ module.exports.portal = async (event) => {
   });
 
   return res.ok({ url: session.url });
-};
+});
 
-module.exports.status = async (event) => {
+module.exports.status = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -170,10 +169,10 @@ module.exports.status = async (event) => {
     tier,
     canCancel: company.subscriptionStatus === 'active' || isPastDue
   });
-};
+});
 
 // Data export — let users download all their estimates
-module.exports.exportData = async (event) => {
+module.exports.exportData = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'export.data')) return res.forbidden('No permission to export data');
@@ -204,7 +203,7 @@ module.exports.exportData = async (event) => {
     exportDate: new Date().toISOString(),
     totalEstimates: allEstimates.length
   });
-};
+});
 
 // Exposed for testing
 module.exports._checkoutTimestamps = _checkoutTimestamps;

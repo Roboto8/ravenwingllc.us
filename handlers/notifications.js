@@ -2,7 +2,7 @@ const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
 
-module.exports.list = async (event) => {
+module.exports.list = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -15,9 +15,9 @@ module.exports.list = async (event) => {
     notifications,
     unreadCount
   });
-};
+});
 
-module.exports.markRead = async (event) => {
+module.exports.markRead = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -48,7 +48,7 @@ module.exports.markRead = async (event) => {
   }
 
   return res.bad('Provide {ids: [...]} or {all: true}');
-};
+});
 
 function stripKeys(item) {
   const { PK, SK, GSI1PK, GSI1SK, ...rest } = item;

@@ -62,6 +62,9 @@ provider:
     EMAIL_BUCKET: fencetrace-email-us-east-1
 
   httpApi:
+    throttle:
+      burstLimit: 50
+      rateLimit: 100
     cors:
       allowedOrigins:
         - 'https://fencetrace.com'
@@ -110,6 +113,7 @@ provider:
         - Effect: Allow
           Action:
             - ses:SendRawEmail
+            - ses:SendEmail
           Resource:
             - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/fencetrace.com'
             - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*.fencetrace.com'
@@ -394,6 +398,12 @@ functions:
   emailForwarder:
     handler: handlers/email-forwarder.handler
     timeout: 30
+
+  trialReminder:
+    handler: handlers/trial-reminder.handler
+    timeout: 30
+    events:
+      - schedule: rate(1 day)
 
   stripeWebhook:
     handler: handlers/webhook.handler

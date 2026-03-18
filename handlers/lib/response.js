@@ -26,5 +26,15 @@ module.exports = {
   },
   error(msg) {
     return { statusCode: 500, body: JSON.stringify({ error: msg || 'Internal error' }) };
+  },
+  wrap(handler) {
+    return async (event) => {
+      try {
+        return await handler(event);
+      } catch (err) {
+        console.error('Handler error:', err.message);
+        return { statusCode: 500, body: JSON.stringify({ error: 'Internal error' }) };
+      }
+    };
   }
 };

@@ -3990,18 +3990,37 @@ async function generatePDF(mode) {
   doc.setFillColor.apply(doc, cDark);
   doc.rect(0, 0, w, 80, 'F');
 
+  // Left: company logo (if available)
+  var logoOffset = 0;
+  if (co.logo) {
+    try {
+      // Determine image format from data URL
+      var logoFormat = 'PNG';
+      if (co.logo.indexOf('image/jpeg') >= 0) logoFormat = 'JPEG';
+      // Draw logo at left side of header, vertically centered
+      var logoMaxH = 40;
+      var logoMaxW = 120;
+      // Add image and let jsPDF handle sizing; we specify max dimensions
+      doc.addImage(co.logo, logoFormat, margin, 20, logoMaxW, logoMaxH, undefined, 'FAST');
+      logoOffset = logoMaxW + 10;
+    } catch (e) {
+      // If logo fails to render, just skip it
+      logoOffset = 0;
+    }
+  }
+
   // Left: company name
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor.apply(doc, cWhite);
-  doc.text(companyName, margin, 34);
+  doc.text(companyName, margin + logoOffset, 34);
 
   // Left below: company phone + address
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor.apply(doc, cMuted);
   var companyLine = [companyPhone, companyAddr].filter(Boolean).join('  \u2022  ');
-  if (companyLine) doc.text(companyLine, margin, 50);
+  if (companyLine) doc.text(companyLine, margin + logoOffset, 50);
 
   // Right: ESTIMATE label
   doc.setFont('helvetica', 'bold');

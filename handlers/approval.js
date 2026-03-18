@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const { checkPermission } = require('./roles');
 
 // POST /api/estimates/{id}/share — generate share token, set approvalStatus to 'sent'
-module.exports.share = async (event) => {
+module.exports.share = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.edit')) return res.forbidden('No permission');
@@ -40,10 +40,10 @@ module.exports.share = async (event) => {
   const link = origin + '/approve.html?token=' + shareToken;
 
   return res.ok({ shareToken, link });
-};
+});
 
 // GET /api/public/estimate/{token} — NO AUTH, public read-only view
-module.exports.getPublic = async (event) => {
+module.exports.getPublic = res.wrap(async (event) => {
   const token = event.pathParameters.token;
   if (!token) return res.bad('Missing token');
 
@@ -83,10 +83,10 @@ module.exports.getPublic = async (event) => {
     companyName,
     createdAt: est.createdAt || ''
   });
-};
+});
 
 // POST /api/public/estimate/{token}/respond — NO AUTH, customer responds
-module.exports.respond = async (event) => {
+module.exports.respond = res.wrap(async (event) => {
   const token = event.pathParameters.token;
   if (!token) return res.bad('Missing token');
 
@@ -120,4 +120,4 @@ module.exports.respond = async (event) => {
   });
 
   return res.ok({ approvalStatus: action, message: 'Response recorded' });
-};
+});

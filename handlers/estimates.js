@@ -4,7 +4,7 @@ const res = require('./lib/response');
 const crypto = require('crypto');
 const { checkPermission } = require('./roles');
 
-module.exports.list = async (event) => {
+module.exports.list = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
@@ -18,9 +18,9 @@ module.exports.list = async (event) => {
     estimates: items.filter(i => i.status !== 'deleted').map(stripKeys),
     cursor: nextKey
   });
-};
+});
 
-module.exports.create = async (event) => {
+module.exports.create = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.create')) return res.forbidden('No permission');
@@ -55,6 +55,7 @@ module.exports.create = async (event) => {
     totalFeet: body.totalFeet || 0,
     totalCost: body.totalCost || 0,
     materialsCost: body.materialsCost || 0,
+    sections: body.sections || [],
     mulchAreas: body.mulchAreas || [],
     mulchMaterial: body.mulchMaterial || 'hardwood',
     mulchDepth: body.mulchDepth || 3,
@@ -70,9 +71,9 @@ module.exports.create = async (event) => {
 
   await db.put(item);
   return res.created(stripKeys(item));
-};
+});
 
-module.exports.get = async (event) => {
+module.exports.get = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
@@ -83,9 +84,9 @@ module.exports.get = async (event) => {
 
   if (!est) return res.notFound();
   return res.ok(stripKeys(est));
-};
+});
 
-module.exports.update = async (event) => {
+module.exports.update = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.edit')) return res.forbidden('No permission');
@@ -102,7 +103,7 @@ module.exports.update = async (event) => {
   const allowed = [
     'customerName', 'customerPhone', 'customerAddress', 'customerEmail',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
-    'fencePoints', 'fenceClosed', 'gates', 'addons', 'bom',
+    'fencePoints', 'fenceClosed', 'sections', 'gates', 'addons', 'bom',
     'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
     'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos',
     'approvalStatus', 'shareToken', 'approvalHistory'
@@ -116,9 +117,9 @@ module.exports.update = async (event) => {
 
   const updated = await db.update(est.PK, est.SK, updates);
   return res.ok(stripKeys(updated));
-};
+});
 
-module.exports.remove = async (event) => {
+module.exports.remove = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
@@ -134,10 +135,10 @@ module.exports.remove = async (event) => {
     deletedAt: new Date().toISOString()
   });
   return res.ok({ deleted: true });
-};
+});
 
 // Permanently delete (called by cleanup or manual purge)
-module.exports.purge = async (event) => {
+module.exports.purge = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
@@ -149,10 +150,10 @@ module.exports.purge = async (event) => {
 
   await db.remove(est.PK, est.SK);
   return res.ok({ purged: true });
-};
+});
 
 // Restore from trash
-module.exports.restore = async (event) => {
+module.exports.restore = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
@@ -167,10 +168,10 @@ module.exports.restore = async (event) => {
     deletedAt: ''
   });
   return res.ok(stripKeys(est));
-};
+});
 
 // List deleted estimates (trash)
-module.exports.trash = async (event) => {
+module.exports.trash = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
@@ -181,7 +182,7 @@ module.exports.trash = async (event) => {
   return res.ok({
     estimates: deleted.map(stripKeys)
   });
-};
+});
 
 function stripKeys(item) {
   const { PK, SK, GSI1PK, GSI1SK, ...rest } = item;
@@ -208,6 +209,9 @@ function validateInput(body) {
   }
   if (body.bom && Array.isArray(body.bom) && body.bom.length > MAX_BOM) {
     return 'Too many BOM items (max ' + MAX_BOM + ')';
+  }
+  if (body.sections && Array.isArray(body.sections) && body.sections.length > 50) {
+    return 'Too many sections (max 50)';
   }
   if (body.mulchAreas && Array.isArray(body.mulchAreas) && body.mulchAreas.length > 100) {
     return 'Too many mulch areas (max 100)';

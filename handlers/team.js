@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const { checkPermission } = require('./roles');
 
 // List team members
-module.exports.list = async (event) => {
+module.exports.list = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -27,10 +27,10 @@ module.exports.list = async (event) => {
         invitedAt: i.createdAt
       }))
   });
-};
+});
 
 // Invite a new member
-module.exports.invite = async (event) => {
+module.exports.invite = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'team.invite')) return res.forbidden('No permission to invite members');
@@ -60,10 +60,10 @@ module.exports.invite = async (event) => {
   });
 
   return res.created({ token, email });
-};
+});
 
 // Revoke an invite
-module.exports.revoke = async (event) => {
+module.exports.revoke = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'team.invite')) return res.forbidden('No permission to manage invites');
@@ -72,10 +72,10 @@ module.exports.revoke = async (event) => {
   await db.remove('COMPANY#' + companyId, 'INVITE#' + token);
 
   return res.ok({ revoked: true });
-};
+});
 
 // Remove a team member
-module.exports.remove = async (event) => {
+module.exports.remove = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'team.remove')) return res.forbidden('No permission to remove members');
@@ -93,10 +93,10 @@ module.exports.remove = async (event) => {
 
   await db.remove(member.PK, member.SK);
   return res.ok({ removed: true });
-};
+});
 
 // Validate an invite token (public — no auth required)
-module.exports.validate = async (event) => {
+module.exports.validate = res.wrap(async (event) => {
   const token = event.pathParameters.token;
 
   const items = await db.queryGSI('INVITE#' + token);
@@ -113,4 +113,4 @@ module.exports.validate = async (event) => {
     companyName: company ? company.name : 'Unknown',
     email: invite.email
   });
-};
+});

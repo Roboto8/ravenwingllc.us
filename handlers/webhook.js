@@ -1,10 +1,5 @@
 const db = require('./lib/dynamo');
-
-let stripe;
-function getStripe() {
-  if (!stripe) stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  return stripe;
-}
+const getStripe = require('./lib/stripe');
 
 module.exports.handler = async (event) => {
   const s = getStripe();
@@ -170,23 +165,9 @@ module.exports.handler = async (event) => {
 };
 
 async function findCompanyByStripeId(stripeCustomerId) {
-  // Scan is not ideal but with few companies it's fine for MVP
-  const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-  const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
-  const client = new DynamoDBClient({});
-  const ddb = DynamoDBDocumentClient.from(client);
-
-  const { Items } = await ddb.send(new ScanCommand({
-    TableName: process.env.DYNAMODB_TABLE,
-    FilterExpression: 'SK = :sk AND stripeCustomerId = :sid',
-    ExpressionAttributeValues: {
-      ':sk': 'PROFILE',
-      ':sid': stripeCustomerId
-    }
-  }));
-
-  if (Items && Items.length > 0) {
-    return Items[0].PK.replace('COMPANY#', '');
+  const items = await db.queryGSI('STRIPE#' + stripeCustomerId);
+  if (items.length > 0) {
+    return items[0].PK.replace('COMPANY#', '');
   }
   return null;
 }

@@ -655,6 +655,18 @@
             <span id="account-amount">—</span>
           </div>
         </div>
+        <div style="margin-top:16px">
+          <span class="account-label">Company Logo</span>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <img id="logo-preview" src="" alt="" style="max-width:200px;max-height:60px;display:none;border-radius:4px;border:1.5px solid var(--border)">
+            <label class="btn btn-sm btn-outline" style="cursor:pointer;margin:0">
+              Upload Logo
+              <input type="file" id="logo-input" accept="image/png,image/jpeg" style="display:none" onchange="handleLogoUpload(this.files)">
+            </label>
+            <button class="btn btn-sm btn-outline" id="logo-remove-btn" onclick="removeLogo()" style="display:none">Remove</button>
+          </div>
+          <p style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">PNG or JPEG, resized to max 200x60px. Appears on PDF estimates.</p>
+        </div>
         <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none">Manage Subscription</button>
           <button class="btn btn-full btn-outline" id="account-cancel-btn" onclick="handleManageBilling()" style="display:none">Cancel Subscription</button>
@@ -831,15 +843,8 @@
   <script src="js/api.js?v=20260318"></script>
   <script src="js/regions.js?v=20260318"></script>
   <script src="js/app.js?v=20260318"></script>
+  <script src="js/config.js?v=20260318"></script>
   <script>
-    // === CONFIG — Update these after first deploy ===
-    const FC_CONFIG = {
-      userPoolId: 'us-east-1_iia5EKofI',
-      clientId: '4d2u5tft5g3i5h5jg0tde3dp5e',
-      apiUrl: 'https://88g2oyyl0l.execute-api.us-east-1.amazonaws.com',
-      assetsBucket: 'fencecalc-assets-dev'
-    };
-
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
     API.configure(FC_CONFIG.apiUrl);
 
@@ -1060,6 +1065,7 @@
           var langSel = document.getElementById('lang-select');
           if (langSel) langSel.value = company.language;
         }
+        initLogoPreview();
       } catch (e) { /* skip */ }
 
       // Init region dropdown on main panel and update per-foot prices
@@ -1527,6 +1533,76 @@
       } catch (e) { showToast('Export failed: ' + e.message); }
     }
 
+    function handleLogoUpload(files) {
+      if (!files || files.length === 0) return;
+      var file = files[0];
+      if (!file.type.match(/^image\/(png|jpeg)$/)) {
+        showToast('Please upload a PNG or JPEG image');
+        return;
+      }
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          // Resize to max 200x60
+          var maxW = 200, maxH = 60;
+          var w = img.width, h = img.height;
+          if (w > maxW || h > maxH) {
+            var ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          var dataURL = canvas.toDataURL(file.type, 0.9);
+
+          // Save to company profile
+          API.updateCompany({ logo: dataURL }).then(function() {
+            window._ftCompany = window._ftCompany || {};
+            window._ftCompany.logo = dataURL;
+            var preview = document.getElementById('logo-preview');
+            preview.src = dataURL;
+            preview.style.display = 'block';
+            document.getElementById('logo-remove-btn').style.display = '';
+            showToast('Logo saved');
+          }).catch(function(err) {
+            showToast('Could not save logo: ' + err.message);
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      document.getElementById('logo-input').value = '';
+    }
+
+    function removeLogo() {
+      API.updateCompany({ logo: '' }).then(function() {
+        if (window._ftCompany) window._ftCompany.logo = null;
+        document.getElementById('logo-preview').style.display = 'none';
+        document.getElementById('logo-preview').src = '';
+        document.getElementById('logo-remove-btn').style.display = 'none';
+        showToast('Logo removed');
+      }).catch(function(err) {
+        showToast('Could not remove logo: ' + err.message);
+      });
+    }
+
+    function initLogoPreview() {
+      var co = window._ftCompany;
+      if (co && co.logo) {
+        var preview = document.getElementById('logo-preview');
+        if (preview) {
+          preview.src = co.logo;
+          preview.style.display = 'block';
+          document.getElementById('logo-remove-btn').style.display = '';
+        }
+      }
+    }
+
     var selectedTier = 'pro';
 
     function selectPlan(tier) {
@@ -1562,6 +1638,21 @@
 
       const bom = calculateBOM(feet, selectedFence.type, selectedHeight);
 
+      // Save active section state before building payload
+      saveActiveSection();
+
+      // Build sections array with serializable data for all sections
+      var saveSections = sections.map(function(s) {
+        return {
+          points: s.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }),
+          closed: s.closed,
+          curveMode: s.curveMode,
+          fenceType: s.fenceType,
+          fencePrice: s.fencePrice,
+          fenceHeight: s.fenceHeight
+        };
+      });
+
       try {
         var result = await API.createEstimate({
           customerName: document.getElementById('cust-name').value,
@@ -1573,6 +1664,7 @@
           terrainMultiplier,
           fencePoints: fencePoints.map(p => ({ lat: p.lat, lng: p.lng })),
           fenceClosed,
+          sections: saveSections,
           gates: gates.map(g => ({ lat: g.latlng.lat, lng: g.latlng.lng, type: g.type, price: g.price })),
           addons: {
             removal: document.getElementById('addon-removal').checked,
@@ -1770,7 +1862,42 @@
           document.getElementById('addon-stain').checked = !!est.addons.stain;
         }
 
-        if (est.fencePoints && est.fencePoints.length > 0) {
+        // Load multi-section data if available, otherwise fall back to single section
+        if (est.sections && est.sections.length > 0) {
+          // Pan to first point of first section
+          var firstPts = est.sections[0].points;
+          if (firstPts && firstPts.length > 0) {
+            map.setView([firstPts[0].lat, firstPts[0].lng], 19);
+          }
+          // Load first section into the existing default section
+          est.sections[0].points.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+          if (est.sections[0].closed) closeFence();
+          if (est.sections[0].curveMode) { curveMode = true; var cb = document.getElementById('curve-btn'); if (cb) cb.classList.add('active'); }
+          if (est.sections[0].fenceType) {
+            selectedFence = { type: est.sections[0].fenceType, price: est.sections[0].fencePrice || 25 };
+            document.querySelectorAll('.fence-type-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.fence-type-btn').forEach(function(b) {
+              if (b.textContent.toLowerCase().indexOf(est.sections[0].fenceType.replace('-', ' ')) >= 0) b.classList.add('active');
+            });
+          }
+          if (est.sections[0].fenceHeight) selectedHeight = est.sections[0].fenceHeight;
+          // Load additional sections
+          for (var si = 1; si < est.sections.length; si++) {
+            var sec = est.sections[si];
+            addNewSection();
+            if (sec.fenceType) {
+              selectedFence = { type: sec.fenceType, price: sec.fencePrice || 25 };
+              document.querySelectorAll('.fence-type-btn').forEach(function(b) { b.classList.remove('active'); });
+              document.querySelectorAll('.fence-type-btn').forEach(function(b) {
+                if (b.textContent.toLowerCase().indexOf(sec.fenceType.replace('-', ' ')) >= 0) b.classList.add('active');
+              });
+            }
+            if (sec.fenceHeight) selectedHeight = sec.fenceHeight;
+            sec.points.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+            if (sec.closed) closeFence();
+            if (sec.curveMode) { curveMode = true; var cb2 = document.getElementById('curve-btn'); if (cb2) cb2.classList.add('active'); }
+          }
+        } else if (est.fencePoints && est.fencePoints.length > 0) {
           map.setView([est.fencePoints[0].lat, est.fencePoints[0].lng], 19);
           est.fencePoints.forEach(pt => addFencePoint(L.latLng(pt.lat, pt.lng)));
           if (est.fenceClosed) closeFence();

@@ -3,7 +3,7 @@ const auth = require('./lib/auth');
 const res = require('./lib/response');
 const { checkPermission } = require('./roles');
 
-module.exports.get = async (event) => {
+module.exports.get = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden('No company found');
 
@@ -19,22 +19,23 @@ module.exports.get = async (event) => {
     tagline: company.tagline,
     address: company.address,
     logoKey: company.logoKey,
+    logo: company.logo || null,
     subscriptionStatus: company.subscriptionStatus,
     trialEndsAt: company.trialEndsAt,
     region: company.region || 'national',
     pricebook: company.pricebook || {},
     language: company.language || 'en'
   });
-};
+});
 
-module.exports.update = async (event) => {
+module.exports.update = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden('No company found');
   if (!await checkPermission(event, companyId, 'company.edit')) return res.forbidden('No permission to edit company');
 
   const body = res.parseBody(event);
   if (!body) return res.bad('Invalid JSON');
-  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'region', 'pricebook', 'language'];
+  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'logo', 'region', 'pricebook', 'language'];
   const updates = {};
 
   for (const key of allowed) {
@@ -55,4 +56,4 @@ module.exports.update = async (event) => {
     address: updated.address,
     logoKey: updated.logoKey
   });
-};
+});
