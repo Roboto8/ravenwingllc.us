@@ -1,3 +1,5 @@
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 // === State ===
 let map;
 let currentTool = 'draw';
@@ -2161,11 +2163,11 @@ function renderBOM(bom) {
 
   container.innerHTML = bom.items.map(function(i) {
     if (i.isHeader) {
-      return '<div class="bom-section-header">' + i.name + '</div>';
+      return '<div class="bom-section-header">' + escapeHtml(i.name) + '</div>';
     }
     var eName = i.name.replace(/'/g, "\\'");
     return '<div class="bom-row">' +
-      '<div class="bom-name">' + i.name + '</div>' +
+      '<div class="bom-name">' + escapeHtml(i.name) + '</div>' +
       '<div class="bom-fields">' +
         '<label class="bom-field"><span class="bom-field-label">Qty</span>' +
           '<input type="number" class="bom-qty" value="' + i.qty + '" min="0" ' +
@@ -2205,7 +2207,7 @@ function resetBomOverrides() {
 
 // === Custom Line Items ===
 function addCustomItem() {
-  customItems.push({ id: Date.now(), name: '', qty: 1, unitCost: 0 });
+  customItems.push({ id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + Math.random(), name: '', qty: 1, unitCost: 0 });
   renderCustomItems();
 }
 
@@ -2231,7 +2233,7 @@ function renderCustomItems() {
   }
   container.innerHTML = customItems.map(i => `
     <div class="custom-item">
-      <input type="text" placeholder="Item name" value="${i.name}" onchange="updateCustomItem(${i.id},'name',this.value)" class="ci-name">
+      <input type="text" placeholder="Item name" value="${escapeHtml(i.name)}" onchange="updateCustomItem(${i.id},'name',this.value)" class="ci-name">
       <input type="number" placeholder="Qty" value="${i.qty}" onchange="updateCustomItem(${i.id},'qty',this.value)" class="ci-qty">
       <span class="ci-dollar">$<input type="number" placeholder="0" value="${i.unitCost}" onchange="updateCustomItem(${i.id},'unitCost',this.value)" class="ci-cost"></span>
       <button class="gate-remove" onclick="removeCustomItem(${i.id})">&times;</button>
@@ -2326,11 +2328,12 @@ function selectMulchMaterial(type, btn) {
   selectedMulchMaterial = type;
   document.querySelectorAll('.mulch-material-options .height-btn').forEach(function(b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  // Update bag price field with this material's default
   var mat = MULCH[type];
   if (mat) {
-    var priceField = document.getElementById('mulch-bag-price');
-    if (priceField) priceField.value = mat.bagCost.toFixed(2);
+    var bagField = document.getElementById('mulch-bag-price');
+    if (bagField) bagField.value = (customPricing['mulch.' + type + '.bagCost'] || mat.bagCost).toFixed(2);
+    var bulkField = document.getElementById('mulch-bulk-price');
+    if (bulkField) bulkField.value = (customPricing['mulch.' + type + '.bulkCuYdCost'] || mat.bulkCuYdCost).toFixed(2);
   }
   recalculate();
 }
@@ -2338,9 +2341,15 @@ function selectMulchMaterial(type, btn) {
 function updateMulchBagPrice(value) {
   var price = parseFloat(value);
   if (isNaN(price) || price < 0) return;
-  // Override the material's bag cost via custom pricing
   customPricing['mulch.' + selectedMulchMaterial + '.bagCost'] = price;
-  customPricing['mulch.' + selectedMulchMaterial + '.bulkCuYdCost'] = Math.round(price * 27 / (MULCH[selectedMulchMaterial]?.bagCuFt || 2) * 0.7); // bulk is ~30% cheaper
+  saveCustomPricing();
+  recalculate();
+}
+
+function updateMulchBulkPrice(value) {
+  var price = parseFloat(value);
+  if (isNaN(price) || price < 0) return;
+  customPricing['mulch.' + selectedMulchMaterial + '.bulkCuYdCost'] = price;
   saveCustomPricing();
   recalculate();
 }
@@ -2356,6 +2365,10 @@ function selectMulchDelivery(mode, btn) {
   selectedMulchDelivery = mode;
   document.querySelectorAll('#mulch-delivery-options .height-btn').forEach(function(b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+  var bagLabel = document.getElementById('mulch-bag-price-label');
+  var bulkLabel = document.getElementById('mulch-bulk-price-label');
+  if (bagLabel) bagLabel.style.display = mode === 'bags' ? 'flex' : 'none';
+  if (bulkLabel) bulkLabel.style.display = mode === 'bulk' ? 'flex' : 'none';
   recalculate();
 }
 
@@ -2963,7 +2976,8 @@ function renderMulchAreas() {
     var cubicFeet = (area.areaSqFt * selectedMulchDepth) / 12;
     var bags = mat ? Math.ceil(cubicFeet / mat.bagCuFt) : 0;
     var cuYd = Math.round(cubicFeet / 27 * 10) / 10;
-    var cost = selectedMulchDelivery === 'bags' ? bags * bagPrice : cuYd * (mat ? mat.bulkCuYdCost : 0);
+    var bulkPrice = mat ? (customPricing['mulch.' + selectedMulchMaterial + '.bulkCuYdCost'] || mat.bulkCuYdCost) : 0;
+    var cost = selectedMulchDelivery === 'bags' ? bags * bagPrice : cuYd * bulkPrice;
     totalSqFt += area.areaSqFt;
     totalBags += bags;
     totalCuYd += cuYd;
@@ -3163,6 +3177,14 @@ function recalculate() {
 }
 
 // === Address Search ===
+function toggleSearch() {
+  var bar = document.getElementById('search-bar');
+  bar.classList.toggle('collapsed');
+  if (!bar.classList.contains('collapsed')) {
+    document.getElementById('address-input').focus();
+  }
+}
+
 function searchAddress() {
   const query = document.getElementById('address-input').value.trim();
   if (!query) return;
@@ -3291,6 +3313,19 @@ async function shareEstimate() {
 
 function loadFromURL() {
   const params = new URLSearchParams(window.location.search);
+
+  // Handle unsubscribe links
+  var unsub = params.get('unsubscribe');
+  if (unsub) {
+    window.history.replaceState({}, '', window.location.pathname);
+    showToast('You have been unsubscribed from emails.');
+    // If logged in, update the company profile
+    if (typeof Auth !== 'undefined' && Auth.isLoggedIn() && typeof API !== 'undefined') {
+      API.updateCompany({ emailOptOut: true }).catch(function() {});
+    }
+    return;
+  }
+
   const encoded = params.get('e');
   if (!encoded) return;
 
@@ -3367,7 +3402,7 @@ function loadFromURL() {
     // Custom items
     if (data.ci && data.ci.length > 0) {
       data.ci.forEach(ci => {
-        customItems.push({ id: Date.now() + Math.random(), name: ci.nm, qty: ci.q, unitCost: ci.uc });
+        customItems.push({ id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + Math.random(), name: ci.nm, qty: ci.q, unitCost: ci.uc });
       });
       renderCustomItems();
     }
@@ -5034,10 +5069,13 @@ initMap();
 initDoubleClick();
 initSections();
 
-// Set initial mulch bag price
+// Set initial mulch price fields
 var initMat = MULCH[selectedMulchMaterial];
 if (initMat && document.getElementById('mulch-bag-price')) {
-  document.getElementById('mulch-bag-price').value = initMat.bagCost.toFixed(2);
+  document.getElementById('mulch-bag-price').value = (customPricing['mulch.' + selectedMulchMaterial + '.bagCost'] || initMat.bagCost).toFixed(2);
+}
+if (initMat && document.getElementById('mulch-bulk-price')) {
+  document.getElementById('mulch-bulk-price').value = (customPricing['mulch.' + selectedMulchMaterial + '.bulkCuYdCost'] || initMat.bulkCuYdCost).toFixed(2);
 }
 
 recalculate();

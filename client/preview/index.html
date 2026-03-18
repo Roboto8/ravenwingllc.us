@@ -208,8 +208,10 @@
   <div class="app-layout">
 
     <div class="map-panel">
-      <div class="search-bar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <div class="search-bar collapsed" id="search-bar">
+        <button class="search-toggle" onclick="toggleSearch()" title="Search address">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
         <input type="text" id="address-input" placeholder="Search address..." autocomplete="off" data-i18n="search_placeholder" data-i18n-attr="placeholder">
         <button class="search-btn" onclick="searchAddress()" data-i18n="search_go">Go</button>
       </div>
@@ -449,9 +451,13 @@
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-              <label style="font-size:12px;color:#999;display:flex;align-items:center;gap:4px">
+              <label id="mulch-bag-price-label" style="font-size:12px;color:#999;display:flex;align-items:center;gap:4px">
                 <span>$/bag</span>
                 <input type="number" id="mulch-bag-price" min="0" step="0.25" style="width:60px;padding:4px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;text-align:right" onchange="updateMulchBagPrice(this.value)">
+              </label>
+              <label id="mulch-bulk-price-label" style="font-size:12px;color:#999;display:none;align-items:center;gap:4px">
+                <span>$/cu yd</span>
+                <input type="number" id="mulch-bulk-price" min="0" step="1" style="width:70px;padding:4px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;text-align:right" onchange="updateMulchBulkPrice(this.value)">
               </label>
               <label style="font-size:12px;color:#999;display:flex;align-items:center;gap:4px">
                 <input type="checkbox" id="mulch-fabric" onchange="recalculate()"> Fabric
