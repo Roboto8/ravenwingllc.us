@@ -445,12 +445,18 @@
     await sendResponse('changes_requested');
   };
 
+  var _submitting = false;
   async function sendResponse(action) {
+    if (_submitting) return; // Prevent double-submit
+    _submitting = true;
+
     var msg = document.getElementById('response-message').value.trim();
     var approveBtn = document.getElementById('btn-approve');
     var changesBtn = document.getElementById('btn-changes');
     approveBtn.disabled = true;
     changesBtn.disabled = true;
+    approveBtn.style.opacity = '0.6';
+    changesBtn.style.opacity = '0.6';
 
     try {
       await API.respondEstimate(token, action, msg);
@@ -466,8 +472,11 @@
 
       showConfirmation(action);
     } catch (e) {
+      _submitting = false;
       approveBtn.disabled = false;
       changesBtn.disabled = false;
+      approveBtn.style.opacity = '';
+      changesBtn.style.opacity = '';
       alert('Failed to submit response. Please try again.');
     }
   }

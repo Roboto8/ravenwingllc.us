@@ -865,6 +865,26 @@
     // === Hide loading screen ===
     document.getElementById('loading-screen').style.display = 'none';
 
+    // === Offline detection ===
+    function updateOnlineStatus() {
+      var banner = document.getElementById('offline-banner');
+      if (!navigator.onLine) {
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'offline-banner';
+          banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#b93a2a;color:#fff;text-align:center;padding:8px 16px;font-size:0.85rem;font-weight:600;z-index:99998;font-family:var(--font)';
+          banner.textContent = 'You are offline — changes will not be saved until connection is restored';
+          document.body.appendChild(banner);
+        }
+      } else if (banner) {
+        banner.remove();
+        showToast('Back online');
+      }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
     // === Onboarding ===
     let onboardStep = 1;
 
