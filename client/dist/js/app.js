@@ -269,7 +269,6 @@ function toggleMetric() {
   localStorage.setItem('fc_metric', useMetric);
   var btn = document.getElementById('unit-toggle');
   if (btn) btn.textContent = useMetric ? 'm' : 'ft';
-  // Update map scale bar
   if (map) {
     document.querySelectorAll('.leaflet-control-scale-line').forEach(function(el) { el.remove(); });
     L.control.scale({ imperial: !useMetric, metric: useMetric, position: 'bottomleft', maxWidth: 150 }).addTo(map);
@@ -278,26 +277,20 @@ function toggleMetric() {
   recalculate();
 }
 
-// Convert feet to display unit
 function fmtLen(feet) {
   if (useMetric) return Math.round(feet * 0.3048) + ' m';
   return feet + ' ft';
 }
-function fmtLenVal(feet) {
-  return useMetric ? Math.round(feet * 0.3048) : feet;
-}
+function fmtLenVal(feet) { return useMetric ? Math.round(feet * 0.3048) : feet; }
 function fmtLenUnit() { return useMetric ? 'm' : 'ft'; }
-// Convert sq ft to display unit
 function fmtArea(sqft) {
   if (useMetric) return (sqft * 0.092903).toFixed(0) + ' m²';
   return sqft.toLocaleString() + ' sq ft';
 }
-// Convert height (fence heights stay in ft internally)
 function fmtHeight(ft) {
   if (useMetric) return Math.round(ft * 0.3048 * 10) / 10 + ' m';
   return ft + ' ft';
 }
-// Cu yd to m³
 function fmtCuYd(cuyd) {
   if (useMetric) return (cuyd * 0.764555).toFixed(1) + ' m³';
   return cuyd + ' cu yd';
@@ -3168,16 +3161,27 @@ function recalculate() {
 
   // Auto-save to localStorage
   try {
+    saveActiveSection();
     localStorage.setItem('fc_autosave', JSON.stringify({
-      fencePoints: fencePoints.map(function(p) { return { lat: p.lat, lng: p.lng }; }),
-      fenceClosed: fenceClosed,
-      fenceType: selectedFence.type,
-      fenceHeight: selectedHeight,
+      sections: sections.map(function(s) {
+        return {
+          points: s.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }),
+          closed: s.closed, curveMode: s.curveMode,
+          fenceType: s.fenceType, fencePrice: s.fencePrice, fenceHeight: s.fenceHeight
+        };
+      }),
+      activeSectionIdx: activeSectionIdx,
       gates: gates.map(function(g) { return { lat: g.latlng.lat, lng: g.latlng.lng, type: g.type, price: g.price }; }),
       mulchAreas: mulchAreas.map(function(a) { return { points: a.points, areaSqFt: a.areaSqFt, perimeterFt: a.perimeterFt }; }),
       mulchMaterial: selectedMulchMaterial,
       mulchDepth: selectedMulchDepth,
       mulchDelivery: selectedMulchDelivery,
+      terrainMultiplier: terrainMultiplier,
+      addons: {
+        removal: document.getElementById('addon-removal').checked,
+        permit: document.getElementById('addon-permit').checked,
+        stain: document.getElementById('addon-stain').checked
+      },
       customer: {
         name: document.getElementById('cust-name').value,
         phone: document.getElementById('cust-phone').value,
@@ -3185,6 +3189,8 @@ function recalculate() {
       },
       laborPerFt: laborPerFt,
       markupPct: markupPct,
+      mapView: [map.getCenter().lat, map.getCenter().lng],
+      mapZoom: map.getZoom(),
       savedAt: Date.now()
     }));
   } catch (e) {}
@@ -3230,18 +3236,24 @@ function toggleSearch() {
   }
 }
 
-function searchAddress() {
-  const query = document.getElementById('address-input').value.trim();
-  if (!query) return;
+var _searchTimer = null;
+var _searchDropdown = null;
 
-  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1')
-    .then(r => r.json())
-    .then(data => {
+function searchAddress(selectedDisplay) {
+  var input = document.getElementById('address-input');
+  var query = selectedDisplay || input.value.trim();
+  if (!query) return;
+  hideSearchDropdown();
+
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1&countrycodes=us')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
       if (data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
+        var lat = parseFloat(data[0].lat);
+        var lon = parseFloat(data[0].lon);
         map.setView([lat, lon], 19);
-        document.getElementById('cust-address').value = query;
+        document.getElementById('cust-address').value = data[0].display_name;
+        input.value = '';
         document.getElementById('search-bar').classList.add('collapsed');
       } else {
         showToast(t('toast_addr_not_found'));
@@ -3250,8 +3262,67 @@ function searchAddress() {
     .catch(function() { showToast(t('toast_search_failed')); });
 }
 
+function showSearchSuggestions(query) {
+  if (query.length < 3) { hideSearchDropdown(); return; }
+
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(function() {
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&countrycodes=us&addressdetails=1')
+      .then(function(r) { return r.json(); })
+      .then(function(results) {
+        if (results.length === 0) { hideSearchDropdown(); return; }
+
+        if (!_searchDropdown) {
+          _searchDropdown = document.createElement('div');
+          _searchDropdown.id = 'search-dropdown';
+          _searchDropdown.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border,#d4cdc4);border-top:none;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-height:200px;overflow-y:auto';
+          document.getElementById('search-bar').appendChild(_searchDropdown);
+        }
+
+        _searchDropdown.innerHTML = results.map(function(r, i) {
+          var parts = r.display_name.split(',');
+          var main = parts[0];
+          var sub = parts.slice(1, 3).join(',').trim();
+          return '<div class="search-suggestion" data-idx="' + i + '" style="padding:8px 12px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid var(--border,#eee);transition:background 0.1s"' +
+            ' onmouseover="this.style.background=\'var(--surface-2,#ede8e2)\'"' +
+            ' onmouseout="this.style.background=\'none\'"' +
+            ' onclick="selectSuggestion(' + r.lat + ',' + r.lon + ',\'' + escapeHtml(r.display_name).replace(/'/g, "\\'") + '\')">' +
+            '<div style="font-weight:600;color:var(--text,#2c2417)">' + escapeHtml(main) + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--text-muted,#6b6052)">' + escapeHtml(sub) + '</div>' +
+          '</div>';
+        }).join('');
+      })
+      .catch(function() {});
+  }, 300);
+}
+
+function selectSuggestion(lat, lng, displayName) {
+  map.setView([lat, lng], 19);
+  document.getElementById('cust-address').value = displayName;
+  document.getElementById('address-input').value = '';
+  document.getElementById('search-bar').classList.add('collapsed');
+  hideSearchDropdown();
+}
+
+function hideSearchDropdown() {
+  if (_searchDropdown) {
+    _searchDropdown.remove();
+    _searchDropdown = null;
+  }
+}
+
+document.getElementById('address-input').addEventListener('input', function() {
+  showSearchSuggestions(this.value.trim());
+});
+
 document.getElementById('address-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') searchAddress();
+  if (e.key === 'Enter') { searchAddress(); e.preventDefault(); }
+  if (e.key === 'Escape') { hideSearchDropdown(); document.getElementById('search-bar').classList.add('collapsed'); }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#search-bar')) hideSearchDropdown();
 });
 
 // === Share / Approval Workflow ===
@@ -4904,6 +4975,14 @@ function hintAfterEstimate() {
 // === Unsaved Changes Indicator ===
 var hasUnsavedChanges = false;
 
+// Warn before leaving with unsaved work
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges && (fencePoints.length > 0 || mulchAreas.length > 0)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 function markUnsaved() {
   if (hasUnsavedChanges) return;
   hasUnsavedChanges = true;
@@ -5173,21 +5252,60 @@ updateEstimateCounterDisplay();
 if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL) {
   try {
     var autosave = JSON.parse(localStorage.getItem('fc_autosave'));
-    if (autosave && autosave.fencePoints && autosave.fencePoints.length > 0) {
-      // Restore fence
+    if (!autosave) throw 'no autosave';
+
+    var hasContent = (autosave.sections && autosave.sections.some(function(s) { return s.points && s.points.length > 0; }))
+      || (autosave.fencePoints && autosave.fencePoints.length > 0)
+      || (autosave.mulchAreas && autosave.mulchAreas.length > 0);
+
+    if (hasContent) {
       var prices = { wood: 25, vinyl: 35, 'chain-link': 15, aluminum: 40, iron: 55 };
-      selectedFence = { type: autosave.fenceType || 'wood', price: prices[autosave.fenceType] || 25 };
-      selectedHeight = autosave.fenceHeight || 6;
-      map.setView([autosave.fencePoints[0].lat, autosave.fencePoints[0].lng], 19);
-      autosave.fencePoints.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
-      if (autosave.fenceClosed) closeFence();
+
+      // Restore sections (new format) or single fence (old format)
+      if (autosave.sections && autosave.sections.length > 0) {
+        // Load first section into default
+        var s0 = autosave.sections[0];
+        if (s0.fenceType) selectedFence = { type: s0.fenceType, price: prices[s0.fenceType] || 25 };
+        if (s0.fenceHeight) selectedHeight = s0.fenceHeight;
+        if (s0.points) s0.points.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+        if (s0.closed) closeFence();
+        if (s0.curveMode) { curveMode = true; var cb = document.getElementById('curve-btn'); if (cb) cb.classList.add('active'); }
+
+        // Additional sections
+        for (var si = 1; si < autosave.sections.length; si++) {
+          var sec = autosave.sections[si];
+          addNewSection();
+          if (sec.fenceType) { selectedFence = { type: sec.fenceType, price: prices[sec.fenceType] || 25 }; sections[activeSectionIdx].fenceType = sec.fenceType; }
+          if (sec.fenceHeight) { selectedHeight = sec.fenceHeight; sections[activeSectionIdx].fenceHeight = sec.fenceHeight; }
+          if (sec.points) sec.points.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+          if (sec.closed) closeFence();
+        }
+      } else if (autosave.fencePoints && autosave.fencePoints.length > 0) {
+        // Old format fallback
+        if (autosave.fenceType) selectedFence = { type: autosave.fenceType, price: prices[autosave.fenceType] || 25 };
+        if (autosave.fenceHeight) selectedHeight = autosave.fenceHeight;
+        autosave.fencePoints.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+        if (autosave.fenceClosed) closeFence();
+      }
+
+      // Restore terrain
+      if (autosave.terrainMultiplier) terrainMultiplier = autosave.terrainMultiplier;
+
+      // Restore addons
+      if (autosave.addons) {
+        document.getElementById('addon-removal').checked = !!autosave.addons.removal;
+        document.getElementById('addon-permit').checked = !!autosave.addons.permit;
+        document.getElementById('addon-stain').checked = !!autosave.addons.stain;
+      }
+
       // Restore gates
-      if (autosave.gates) {
+      if (autosave.gates && autosave.gates.length > 0) {
         setTool('gate');
         autosave.gates.forEach(function(g) { addGate(L.latLng(g.lat, g.lng)); var gate = gates[gates.length-1]; gate.type = g.type; gate.price = g.price; });
         renderGates();
         setTool('draw');
       }
+
       // Restore mulch
       if (autosave.mulchAreas && autosave.mulchAreas.length > 0) {
         if (autosave.mulchMaterial) selectedMulchMaterial = autosave.mulchMaterial;
@@ -5195,15 +5313,23 @@ if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL) {
         if (autosave.mulchDelivery) selectedMulchDelivery = autosave.mulchDelivery;
         autosave.mulchAreas.forEach(function(a) { finalizeMulchArea(a.points); });
       }
+
       // Restore customer info
       if (autosave.customer) {
         if (autosave.customer.name) document.getElementById('cust-name').value = autosave.customer.name;
         if (autosave.customer.phone) document.getElementById('cust-phone').value = autosave.customer.phone;
         if (autosave.customer.address) document.getElementById('cust-address').value = autosave.customer.address;
       }
+
       // Restore markup
       if (autosave.laborPerFt) document.getElementById('markup-labor').value = autosave.laborPerFt;
       if (autosave.markupPct) document.getElementById('markup-percent').value = autosave.markupPct;
+
+      // Restore exact map view
+      if (autosave.mapView && autosave.mapZoom) {
+        map.setView(autosave.mapView, autosave.mapZoom, { animate: false });
+      }
+
       recalculate();
       showToast('Previous work restored');
     }

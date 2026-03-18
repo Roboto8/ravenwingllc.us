@@ -22,6 +22,28 @@
   --min-touch: 44px;
 }
 
+/* Dark mode — auto-detects OS preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1612;
+    --surface: #252018;
+    --surface-2: #332c22;
+    --border: #4a4030;
+    --text: #e8e2d8;
+    --text-mid: #c4baa8;
+    --text-muted: #9a8e7e;
+    --accent: #d4783e;
+    --accent-hover: #e08a4f;
+    --accent-light: rgba(212, 120, 62, 0.12);
+    --green: #3d9b35;
+    --green-light: rgba(61, 155, 53, 0.12);
+    --orange: #e49a1e;
+    --red: #d44a3a;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+  }
+}
+
 html, body { height: 100%; overflow: hidden; margin: 0; -webkit-user-select: none; user-select: none; }
 html { height: 100dvh; }
 
@@ -183,7 +205,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   position: absolute;
   top: 14px;
   left: 14px;
-  z-index: 800;
+  z-index: 9000;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -645,6 +667,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .bom-field-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 .bom-qty, .bom-price {
   width: 64px;
+  max-width: 25vw;
   padding: 4px 6px;
   min-height: 32px;
   background: var(--bg);
@@ -784,6 +807,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   box-shadow: 0 1px 4px rgba(0,0,0,0.35);
   cursor: grab;
   z-index: 500 !important;
+  touch-action: none;
+  position: relative;
 }
 .fence-vertex:active { cursor: grabbing; }
 
@@ -798,10 +823,27 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   z-index: 450 !important;
   opacity: 0.7;
   transition: opacity 0.15s, transform 0.15s;
+  touch-action: none;
+  position: relative;
 }
 .midpoint-handle:hover {
   opacity: 1;
   transform: scale(1.3);
+}
+
+/* Touch devices: invisible expanded tap targets (visuals unchanged) */
+@media (pointer: coarse) {
+  .fence-vertex::before,
+  .midpoint-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--min-touch);
+    height: var(--min-touch);
+    border-radius: 50%;
+  }
 }
 
 /* Segment Labels */

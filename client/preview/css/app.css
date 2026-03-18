@@ -205,7 +205,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   position: absolute;
   top: 14px;
   left: 14px;
-  z-index: 800;
+  z-index: 9000;
   display: flex;
   align-items: center;
   gap: 8px;
