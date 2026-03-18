@@ -1522,6 +1522,35 @@ body.twa-mode .modal-overlay {
 }
 
 /* === Contextual Hints === */
+/* Quick Start Tips */
+#quickstart-tips { position: fixed; inset: 0; z-index: 12000; display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+#quickstart-tips.visible { opacity: 1; pointer-events: auto; }
+.qs-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+.qs-card {
+  position: relative; z-index: 1; background: var(--surface); border-radius: 16px 16px 0 0;
+  padding: 20px 20px 24px; max-width: 380px; width: 100%;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s;
+}
+#quickstart-tips.visible .qs-card { transform: translateY(0); }
+.qs-header { font-family: var(--font); font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 12px; text-align: center; }
+.qs-tips { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.qs-tip { font-family: var(--font); font-size: 0.85rem; color: var(--text-mid); display: flex; align-items: center; gap: 8px; }
+.qs-icon { font-size: 1.1rem; width: 24px; text-align: center; color: var(--accent); }
+.qs-tip b { color: var(--text); }
+.qs-keys { font-family: var(--font); font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-bottom: 14px; line-height: 1.8; }
+.qs-keys span { display: inline-block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; font-weight: 600; font-size: 0.7rem; color: var(--text); }
+.qs-dismiss {
+  display: block; width: 100%; padding: 12px; border: none; border-radius: 8px;
+  background: var(--accent); color: #fff; font-family: var(--font); font-size: 0.95rem;
+  font-weight: 600; cursor: pointer; transition: background 0.15s;
+}
+.qs-dismiss:hover { background: var(--accent-dark, #a8521f); }
+
+@media (min-width: 768px) {
+  #quickstart-tips { align-items: center; }
+  .qs-card { border-radius: 12px; max-width: 360px; }
+}
+
 .fc-hint {
   position: fixed;
   z-index: 11000;

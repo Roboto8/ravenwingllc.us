@@ -2225,7 +2225,121 @@ function closeMulchArea() {
   finalizeMulchArea(pts);
 }
 
+// Check if a point is inside a polygon (ray casting)
+function pointInPolygon(pt, poly) {
+  var inside = false;
+  for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    var xi = poly[i].lng, yi = poly[i].lat;
+    var xj = poly[j].lng, yj = poly[j].lat;
+    if (((yi > pt.lat) !== (yj > pt.lat)) && (pt.lng < (xj - xi) * (pt.lat - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+// Check if two polygons overlap (any vertex inside the other, or edges intersect)
+function polygonsOverlap(polyA, polyB) {
+  for (var i = 0; i < polyA.length; i++) {
+    if (pointInPolygon(polyA[i], polyB)) return true;
+  }
+  for (var i = 0; i < polyB.length; i++) {
+    if (pointInPolygon(polyB[i], polyA)) return true;
+  }
+  return false;
+}
+
+// Convex hull of a set of points (Graham scan)
+function convexHull(points) {
+  if (points.length <= 3) return points;
+  var pts = points.slice().sort(function(a, b) { return a.lng - b.lng || a.lat - b.lat; });
+
+  var lower = [];
+  for (var i = 0; i < pts.length; i++) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], pts[i]) <= 0) lower.pop();
+    lower.push(pts[i]);
+  }
+  var upper = [];
+  for (var i = pts.length - 1; i >= 0; i--) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], pts[i]) <= 0) upper.pop();
+    upper.push(pts[i]);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+function cross(o, a, b) {
+  return (a.lng - o.lng) * (b.lat - o.lat) - (a.lat - o.lat) * (b.lng - o.lng);
+}
+
+// Find all existing areas that overlap with new points, merge them all
+function mergeOverlappingAreas(newPoints) {
+  var toMerge = [];
+  for (var i = mulchAreas.length - 1; i >= 0; i--) {
+    if (polygonsOverlap(newPoints, mulchAreas[i].points)) {
+      toMerge.push(i);
+    }
+  }
+  if (toMerge.length === 0) return newPoints;
+
+  // Collect all points from overlapping areas + new area
+  var allPts = newPoints.slice();
+  toMerge.forEach(function(idx) {
+    mulchAreas[idx].points.forEach(function(p) { allPts.push({ lat: p.lat, lng: p.lng }); });
+  });
+
+  // Remove overlapping areas from map (highest index first so splice doesn't shift)
+  toMerge.sort(function(a, b) { return b - a; });
+  toMerge.forEach(function(idx) {
+    var area = mulchAreas[idx];
+    area.markers.forEach(function(m) { map.removeLayer(m); });
+    if (area.polygon) map.removeLayer(area.polygon);
+    if (area.areaLabel) map.removeLayer(area.areaLabel);
+    if (area.rotMarker) map.removeLayer(area.rotMarker);
+    if (area.rotLine) map.removeLayer(area.rotLine);
+    mulchAreas.splice(idx, 1);
+  });
+
+  return convexHull(allPts);
+}
+
+function getMulchLabelHtml(areaSqFt, points) {
+  var mat = MULCH[selectedMulchMaterial];
+  if (!mat) return '<div class="mulch-label">' + areaSqFt.toLocaleString() + ' sq ft</div>';
+
+  var cubicFeet = (areaSqFt * selectedMulchDepth) / 12;
+  var line2 = '';
+  if (selectedMulchDelivery === 'bags') {
+    var bags = Math.ceil(cubicFeet / mat.bagCuFt);
+    line2 = bags + ' bags';
+  } else {
+    var cuYd = Math.ceil(cubicFeet / 27 * 10) / 10;
+    line2 = cuYd + ' cu yd';
+  }
+
+  // If 4 points (rectangle), show dimensions
+  var dims = '';
+  if (points && points.length === 4) {
+    var R = 6371000;
+    var dLat = (points[1].lat - points[0].lat) * Math.PI / 180;
+    var dLng = (points[1].lng - points[0].lng) * Math.PI / 180;
+    var a1 = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(points[0].lat*Math.PI/180)*Math.cos(points[1].lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    var side1 = Math.round(R * 2 * Math.atan2(Math.sqrt(a1), Math.sqrt(1-a1)) * 3.28084);
+    dLat = (points[2].lat - points[1].lat) * Math.PI / 180;
+    dLng = (points[2].lng - points[1].lng) * Math.PI / 180;
+    a1 = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(points[1].lat*Math.PI/180)*Math.cos(points[2].lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    var side2 = Math.round(R * 2 * Math.atan2(Math.sqrt(a1), Math.sqrt(1-a1)) * 3.28084);
+    dims = '<span style="font-size:10px;opacity:0.7">' + side1 + '×' + side2 + ' ft</span><br>';
+  }
+
+  return '<div class="mulch-label">' + dims + areaSqFt.toLocaleString() + ' sq ft<br><span style="font-size:10px;opacity:0.8">' + line2 + '</span></div>';
+}
+
 function finalizeMulchArea(points) {
+  // Merge with any overlapping existing areas
+  points = mergeOverlappingAreas(points);
+
   var areaSqFt = calculatePolygonArea(points);
   var perimeterFt = calculatePolygonPerimeter(points);
 
@@ -2265,13 +2379,13 @@ function finalizeMulchArea(points) {
     color: '#c0622e', weight: 1, dashArray: '4,4', opacity: 0.6
   }).addTo(map);
 
-  // Area label in center
+  // Area label in center with bag count
   var areaLabel = L.marker(rotCenter, {
     icon: L.divIcon({
       className: 'mulch-area-label',
-      html: '<div class="mulch-label">' + areaSqFt.toLocaleString() + ' sq ft</div>',
-      iconSize: [100, 24],
-      iconAnchor: [50, 12]
+      html: getMulchLabelHtml(areaSqFt, points),
+      iconSize: [120, 48],
+      iconAnchor: [60, 24]
     }),
     interactive: false
   }).addTo(map);
@@ -2337,8 +2451,8 @@ function updateMulchAreaVisuals(area) {
   area.areaLabel.setLatLng(center);
   area.areaLabel.setIcon(L.divIcon({
     className: 'mulch-area-label',
-    html: '<div class="mulch-label">' + newArea.toLocaleString() + ' sq ft</div>',
-    iconSize: [100, 24], iconAnchor: [50, 12]
+    html: getMulchLabelHtml(newArea, area.points),
+    iconSize: [120, 48], iconAnchor: [60, 24]
   }));
   var rotPos = getRotationHandlePos(area.points, center);
   area.rotMarker.setLatLng(rotPos);
@@ -2462,15 +2576,33 @@ function renderMulchAreas() {
     return;
   }
 
+  var mat = MULCH[selectedMulchMaterial];
   var html = '';
   mulchAreas.forEach(function(area, idx) {
-    var matName = MULCH[area.materialType] ? MULCH[area.materialType].name : area.materialType;
-    html += '<div class="gate-row" style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #333">' +
-      '<span style="font-size:12px">Area ' + (idx + 1) + ': ' + area.areaSqFt.toLocaleString() + ' sq ft</span>' +
-      '<button class="seg-delete" onclick="removeMulchArea(' + idx + ')" title="Remove area" style="background:none;border:none;color:#f66;cursor:pointer;font-size:16px">&times;</button>' +
+    var cubicFeet = (area.areaSqFt * selectedMulchDepth) / 12;
+    var qtyStr = '';
+    if (mat) {
+      if (selectedMulchDelivery === 'bags') {
+        qtyStr = ' · ' + Math.ceil(cubicFeet / mat.bagCuFt) + ' bags';
+      } else {
+        qtyStr = ' · ' + (Math.ceil(cubicFeet / 27 * 10) / 10) + ' cu yd';
+      }
+    }
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:12px">Area ' + (idx + 1) + ': ' + area.areaSqFt.toLocaleString() + ' sq ft' + qtyStr + '</span>' +
+      '<button onclick="removeMulchArea(' + idx + ')" title="Remove area" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">&times;</button>' +
     '</div>';
   });
   list.innerHTML = html;
+
+  // Update map labels too
+  mulchAreas.forEach(function(area) {
+    area.areaLabel.setIcon(L.divIcon({
+      className: 'mulch-area-label',
+      html: getMulchLabelHtml(area.areaSqFt, area.points),
+      iconSize: [120, 48], iconAnchor: [60, 24]
+    }));
+  });
 }
 
 function calculateMulchTotal() {
@@ -2554,10 +2686,30 @@ function recalculate() {
 
   document.getElementById('sum-total').textContent = '$' + Math.round(total).toLocaleString();
 
-  // BOM — aggregate across all sections
+  // BOM — aggregate across all sections + mulch
   saveActiveSection();
   var combinedBOM = calculateCombinedBOM();
+
+  // Append mulch BOM items
+  if (mulchAreas.length > 0 && mulchResult.details.length > 0) {
+    if (!combinedBOM) combinedBOM = { items: [], materialTotal: 0 };
+    mulchResult.details.forEach(function(d, i) {
+      var matName = MULCH[selectedMulchMaterial] ? MULCH[selectedMulchMaterial].name : selectedMulchMaterial;
+      combinedBOM.items.push({
+        name: 'Mulch Area ' + (d.areaIdx + 1) + ': ' + matName + ' ' + selectedMulchDepth + '″ — ' + mulchAreas[d.areaIdx].areaSqFt.toLocaleString() + ' sq ft',
+        qty: 0, unit: '', unitCost: 0, total: 0, isHeader: true
+      });
+      d.bom.items.forEach(function(item) {
+        combinedBOM.items.push(item);
+      });
+      combinedBOM.materialTotal += d.bom.materialTotal;
+    });
+  }
+
   renderBOM(combinedBOM);
+
+  // Update mulch area labels (bag counts change with depth/material)
+  if (mulchAreas.length > 0) renderMulchAreas();
 
   // Trigger contextual hints
   if (feet > 0) {
@@ -3507,9 +3659,46 @@ document.addEventListener('click', function(e) {
   }
 }, true);
 
+function showQuickStart() {
+  if (localStorage.getItem('fc_quickstart_seen')) return;
+
+  setTimeout(function() {
+    var el = document.createElement('div');
+    el.id = 'quickstart-tips';
+    el.innerHTML =
+      '<div class="qs-backdrop" onclick="dismissQuickStart()"></div>' +
+      '<div class="qs-card">' +
+        '<div class="qs-header">Quick Tips</div>' +
+        '<div class="qs-tips">' +
+          '<div class="qs-tip"><span class="qs-icon">&#9998;</span><b>Draw</b> — tap the map to place fence points</div>' +
+          '<div class="qs-tip"><span class="qs-icon">&#9638;</span><b>Gate</b> — tap to place gates on your fence</div>' +
+          '<div class="qs-tip"><span class="qs-icon">&#9676;</span><b>Mulch</b> — click &amp; drag to draw mulch beds</div>' +
+          '<div class="qs-tip"><span class="qs-icon">&#8635;</span><b>Undo</b> — remove the last point or area</div>' +
+          '<div class="qs-tip"><span class="qs-icon">&#10697;</span><b>Close</b> — connect the fence back to the start</div>' +
+        '</div>' +
+        '<div class="qs-keys">' +
+          '<span>D</span> Draw &nbsp; <span>G</span> Gate &nbsp; <span>A</span> Mulch &nbsp; <span>C</span> Curve &nbsp; <span>N</span> New section' +
+        '</div>' +
+        '<button class="qs-dismiss" onclick="dismissQuickStart()">Got it</button>' +
+      '</div>';
+    document.body.appendChild(el);
+    requestAnimationFrame(function() { el.classList.add('visible'); });
+  }, 2000);
+}
+
+function dismissQuickStart() {
+  localStorage.setItem('fc_quickstart_seen', '1');
+  var el = document.getElementById('quickstart-tips');
+  if (el) {
+    el.classList.remove('visible');
+    setTimeout(function() { el.remove(); }, 300);
+  }
+}
+
 function resetHints() {
   fcHintsSeen = {};
   localStorage.removeItem('fc_hints_seen');
+  localStorage.removeItem('fc_quickstart_seen');
   showToast(t('toast_tips_reset'));
 }
 
@@ -3824,4 +4013,5 @@ updateEstimateCounterDisplay();
 // Show first-visit hint after a delay (if no shared estimate loaded)
 if (fencePoints.length === 0) {
   hintFirstVisit();
+  showQuickStart();
 }
