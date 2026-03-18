@@ -959,9 +959,11 @@
         const status = await API.getStatus();
         _subscriptionActive = status.active;
         if (!status.active) {
-          document.getElementById('paywall-title').textContent = 'Trial Ended';
-          document.getElementById('paywall-sub').textContent = 'Your 14-day trial has ended. Subscribe to keep creating estimates.';
-          document.getElementById('paywall-modal').style.display = 'flex';
+          // Show banner instead of blocking modal — modal shows when they try a gated action
+          document.getElementById('trial-banner').style.display = 'flex';
+          document.getElementById('trial-text').textContent = 'Your trial has ended. Subscribe to keep creating estimates.';
+          document.getElementById('trial-action-btn').textContent = 'View Plans';
+          document.getElementById('trial-action-btn').onclick = showPricing;
         } else if (status.pastDue) {
           document.getElementById('trial-banner').style.display = 'flex';
           document.getElementById('trial-banner').style.background = '#b93a2a';
@@ -1498,7 +1500,7 @@
     async function saveEstimate() {
       if (!requireAuth('save estimates')) return;
       const feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
-      if (feet === 0) return showToast('Draw a fence first');
+      if (feet === 0 && mulchAreas.length === 0) return showToast('Draw a fence or mulch area first');
 
       const bom = calculateBOM(feet, selectedFence.type, selectedHeight);
 
@@ -1519,6 +1521,12 @@
             permit: document.getElementById('addon-permit').checked,
             stain: document.getElementById('addon-stain').checked
           },
+          mulchAreas: mulchAreas.map(function(a) {
+            return { points: a.points, areaSqFt: a.areaSqFt, perimeterFt: a.perimeterFt };
+          }),
+          mulchMaterial: selectedMulchMaterial,
+          mulchDepth: selectedMulchDepth,
+          mulchDelivery: selectedMulchDelivery,
           bom: bom ? bom.items : [],
           totalFeet: feet,
           totalCost: document.getElementById('sum-total').textContent,
@@ -1718,6 +1726,29 @@
             gate.price = g.price;
           });
           renderGates();
+        }
+
+        // Load mulch areas
+        if (est.mulchAreas && est.mulchAreas.length > 0) {
+          if (est.mulchMaterial) selectedMulchMaterial = est.mulchMaterial;
+          if (est.mulchDepth) selectedMulchDepth = est.mulchDepth;
+          if (est.mulchDelivery) selectedMulchDelivery = est.mulchDelivery;
+          // Update mulch panel buttons
+          document.querySelectorAll('.mulch-material-options .height-btn').forEach(function(b) {
+            b.classList.remove('active');
+            if (b.textContent.toLowerCase().replace(/\s+/g, '-') === selectedMulchMaterial) b.classList.add('active');
+          });
+          document.querySelectorAll('#mulch-depth-options .height-btn').forEach(function(b) {
+            b.classList.remove('active');
+            if (b.textContent.replace('"', '') === selectedMulchDepth.toString()) b.classList.add('active');
+          });
+          document.querySelectorAll('#mulch-delivery-options .height-btn').forEach(function(b) {
+            b.classList.remove('active');
+            if (b.textContent.toLowerCase() === selectedMulchDelivery) b.classList.add('active');
+          });
+          est.mulchAreas.forEach(function(a) {
+            finalizeMulchArea(a.points);
+          });
         }
 
         // Load photos

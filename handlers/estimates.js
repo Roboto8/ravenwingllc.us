@@ -49,6 +49,10 @@ module.exports.create = async (event) => {
     totalFeet: body.totalFeet || 0,
     totalCost: body.totalCost || 0,
     materialsCost: body.materialsCost || 0,
+    mulchAreas: body.mulchAreas || [],
+    mulchMaterial: body.mulchMaterial || 'hardwood',
+    mulchDepth: body.mulchDepth || 3,
+    mulchDelivery: body.mulchDelivery || 'bags',
     droneOverlay: body.droneOverlay || null,
     photos: body.photos || [],
     status: 'draft',
@@ -88,6 +92,7 @@ module.exports.update = async (event) => {
     'customerName', 'customerPhone', 'customerAddress', 'customerEmail',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
     'fencePoints', 'fenceClosed', 'gates', 'addons', 'bom',
+    'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
     'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos',
     'approvalStatus', 'shareToken', 'approvalHistory'
   ];
