@@ -3161,16 +3161,27 @@ function recalculate() {
 
   // Auto-save to localStorage
   try {
+    saveActiveSection();
     localStorage.setItem('fc_autosave', JSON.stringify({
-      fencePoints: fencePoints.map(function(p) { return { lat: p.lat, lng: p.lng }; }),
-      fenceClosed: fenceClosed,
-      fenceType: selectedFence.type,
-      fenceHeight: selectedHeight,
+      sections: sections.map(function(s) {
+        return {
+          points: s.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }),
+          closed: s.closed, curveMode: s.curveMode,
+          fenceType: s.fenceType, fencePrice: s.fencePrice, fenceHeight: s.fenceHeight
+        };
+      }),
+      activeSectionIdx: activeSectionIdx,
       gates: gates.map(function(g) { return { lat: g.latlng.lat, lng: g.latlng.lng, type: g.type, price: g.price }; }),
       mulchAreas: mulchAreas.map(function(a) { return { points: a.points, areaSqFt: a.areaSqFt, perimeterFt: a.perimeterFt }; }),
       mulchMaterial: selectedMulchMaterial,
       mulchDepth: selectedMulchDepth,
       mulchDelivery: selectedMulchDelivery,
+      terrainMultiplier: terrainMultiplier,
+      addons: {
+        removal: document.getElementById('addon-removal').checked,
+        permit: document.getElementById('addon-permit').checked,
+        stain: document.getElementById('addon-stain').checked
+      },
       customer: {
         name: document.getElementById('cust-name').value,
         phone: document.getElementById('cust-phone').value,
@@ -3178,6 +3189,8 @@ function recalculate() {
       },
       laborPerFt: laborPerFt,
       markupPct: markupPct,
+      mapView: [map.getCenter().lat, map.getCenter().lng],
+      mapZoom: map.getZoom(),
       savedAt: Date.now()
     }));
   } catch (e) {}
@@ -3223,18 +3236,24 @@ function toggleSearch() {
   }
 }
 
-function searchAddress() {
-  const query = document.getElementById('address-input').value.trim();
-  if (!query) return;
+var _searchTimer = null;
+var _searchDropdown = null;
 
-  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1')
-    .then(r => r.json())
-    .then(data => {
+function searchAddress(selectedDisplay) {
+  var input = document.getElementById('address-input');
+  var query = selectedDisplay || input.value.trim();
+  if (!query) return;
+  hideSearchDropdown();
+
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1&countrycodes=us')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
       if (data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
+        var lat = parseFloat(data[0].lat);
+        var lon = parseFloat(data[0].lon);
         map.setView([lat, lon], 19);
-        document.getElementById('cust-address').value = query;
+        document.getElementById('cust-address').value = data[0].display_name;
+        input.value = '';
         document.getElementById('search-bar').classList.add('collapsed');
       } else {
         showToast(t('toast_addr_not_found'));
@@ -3243,8 +3262,67 @@ function searchAddress() {
     .catch(function() { showToast(t('toast_search_failed')); });
 }
 
+function showSearchSuggestions(query) {
+  if (query.length < 3) { hideSearchDropdown(); return; }
+
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(function() {
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&countrycodes=us&addressdetails=1')
+      .then(function(r) { return r.json(); })
+      .then(function(results) {
+        if (results.length === 0) { hideSearchDropdown(); return; }
+
+        if (!_searchDropdown) {
+          _searchDropdown = document.createElement('div');
+          _searchDropdown.id = 'search-dropdown';
+          _searchDropdown.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border,#d4cdc4);border-top:none;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-height:200px;overflow-y:auto';
+          document.getElementById('search-bar').appendChild(_searchDropdown);
+        }
+
+        _searchDropdown.innerHTML = results.map(function(r, i) {
+          var parts = r.display_name.split(',');
+          var main = parts[0];
+          var sub = parts.slice(1, 3).join(',').trim();
+          return '<div class="search-suggestion" data-idx="' + i + '" style="padding:8px 12px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid var(--border,#eee);transition:background 0.1s"' +
+            ' onmouseover="this.style.background=\'var(--surface-2,#ede8e2)\'"' +
+            ' onmouseout="this.style.background=\'none\'"' +
+            ' onclick="selectSuggestion(' + r.lat + ',' + r.lon + ',\'' + escapeHtml(r.display_name).replace(/'/g, "\\'") + '\')">' +
+            '<div style="font-weight:600;color:var(--text,#2c2417)">' + escapeHtml(main) + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--text-muted,#6b6052)">' + escapeHtml(sub) + '</div>' +
+          '</div>';
+        }).join('');
+      })
+      .catch(function() {});
+  }, 300);
+}
+
+function selectSuggestion(lat, lng, displayName) {
+  map.setView([lat, lng], 19);
+  document.getElementById('cust-address').value = displayName;
+  document.getElementById('address-input').value = '';
+  document.getElementById('search-bar').classList.add('collapsed');
+  hideSearchDropdown();
+}
+
+function hideSearchDropdown() {
+  if (_searchDropdown) {
+    _searchDropdown.remove();
+    _searchDropdown = null;
+  }
+}
+
+document.getElementById('address-input').addEventListener('input', function() {
+  showSearchSuggestions(this.value.trim());
+});
+
 document.getElementById('address-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') searchAddress();
+  if (e.key === 'Enter') { searchAddress(); e.preventDefault(); }
+  if (e.key === 'Escape') { hideSearchDropdown(); document.getElementById('search-bar').classList.add('collapsed'); }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#search-bar')) hideSearchDropdown();
 });
 
 // === Share / Approval Workflow ===
@@ -3285,13 +3363,7 @@ function shareView() {
     return;
   }
 
-  if (navigator.share) {
-    navigator.share({ title: 'Fence Estimate', url: url }).catch(() => {
-      copyToClipboard(url);
-    });
-  } else {
-    copyToClipboard(url);
-  }
+  nativeShareOrDialog('Fence Estimate', url);
 }
 
 function copyToClipboard(text) {
@@ -3323,6 +3395,58 @@ function fallbackCopy(text) {
   document.body.removeChild(ta);
 }
 
+// Use native share on mobile, custom dialog on desktop
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    ('ontouchstart' in window && window.innerWidth < 900);
+}
+
+function nativeShareOrDialog(title, url) {
+  // Mobile: use native share sheet (Android/iOS)
+  if (navigator.share && isMobileDevice()) {
+    navigator.share({ title: title, url: url }).catch(function() {
+      copyToClipboard(url);
+    });
+    return;
+  }
+  // Desktop: show custom share dialog
+  showShareDialog(title, url);
+}
+
+function showShareDialog(title, url) {
+  var existing = document.getElementById('share-dialog-overlay');
+  if (existing) existing.remove();
+
+  var customerName = document.getElementById('cust-name').value || 'your fence estimate';
+
+  var overlay = document.createElement('div');
+  overlay.id = 'share-dialog-overlay';
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:440px">' +
+      '<h3 style="font-size:1.15rem;font-weight:700;margin-bottom:12px">Share Estimate</h3>' +
+      '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px">' + title + '</p>' +
+      '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+        '<input type="text" value="' + url.replace(/"/g, '&quot;') + '" readonly id="share-url-input" style="flex:1;padding:10px 12px;font-size:0.85rem;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;text-overflow:ellipsis">' +
+        '<button class="btn" onclick="document.getElementById(\'share-url-input\').select();copyToClipboard(\'' + url.replace(/'/g, "\\'") + '\');this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Copy\',2000)" style="white-space:nowrap;min-width:70px">Copy</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px">' +
+        '<a href="sms:?body=' + encodeURIComponent(title + '\n' + url) + '" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:var(--text);font-size:0.75rem;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);min-width:64px">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Text</a>' +
+        '<a href="mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent('Please review this estimate:\n\n' + url) + '" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:var(--text);font-size:0.75rem;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);min-width:64px">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>Email</a>' +
+        '<a href="https://wa.me/?text=' + encodeURIComponent(title + '\n' + url) + '" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:var(--text);font-size:0.75rem;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);min-width:64px">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.11.546 4.093 1.502 5.818L0 24l6.335-1.463C8.07 23.48 9.988 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.81 0-3.506-.479-4.97-1.313l-.357-.212-3.693.968.985-3.598-.232-.37C2.734 16.064 2.2 14.089 2.2 12c0-5.41 4.39-9.8 9.8-9.8 5.41 0 9.8 4.39 9.8 9.8 0 5.41-4.39 9.8-9.8 9.8z"/></svg>WhatsApp</a>' +
+      '</div>' +
+      '<button class="btn btn-full btn-outline" onclick="this.closest(\'.modal-overlay\').remove()" style="margin-top:4px">Close</button>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+}
+
 // Send estimate to customer for approval — requires saved estimate
 async function shareEstimate() {
   if (typeof requireSubscription === 'function' && !requireSubscription('share estimates')) return;
@@ -3337,13 +3461,7 @@ async function shareEstimate() {
     const result = await API.shareEstimate(activeEstimateId);
     const url = result.link;
 
-    if (navigator.share) {
-      navigator.share({ title: 'Fence Estimate — Review & Approve', url: url }).catch(() => {
-        copyToClipboard(url);
-      });
-    } else {
-      copyToClipboard(url);
-    }
+    nativeShareOrDialog('Fence Estimate — Review & Approve', url);
     showToast('Approval link sent!');
   } catch (e) {
     showToast('Could not generate approval link: ' + e.message);
@@ -4897,6 +5015,14 @@ function hintAfterEstimate() {
 // === Unsaved Changes Indicator ===
 var hasUnsavedChanges = false;
 
+// Warn before leaving with unsaved work
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges && (fencePoints.length > 0 || mulchAreas.length > 0)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 function markUnsaved() {
   if (hasUnsavedChanges) return;
   hasUnsavedChanges = true;
@@ -5166,21 +5292,60 @@ updateEstimateCounterDisplay();
 if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL) {
   try {
     var autosave = JSON.parse(localStorage.getItem('fc_autosave'));
-    if (autosave && autosave.fencePoints && autosave.fencePoints.length > 0) {
-      // Restore fence
+    if (!autosave) throw 'no autosave';
+
+    var hasContent = (autosave.sections && autosave.sections.some(function(s) { return s.points && s.points.length > 0; }))
+      || (autosave.fencePoints && autosave.fencePoints.length > 0)
+      || (autosave.mulchAreas && autosave.mulchAreas.length > 0);
+
+    if (hasContent) {
       var prices = { wood: 25, vinyl: 35, 'chain-link': 15, aluminum: 40, iron: 55 };
-      selectedFence = { type: autosave.fenceType || 'wood', price: prices[autosave.fenceType] || 25 };
-      selectedHeight = autosave.fenceHeight || 6;
-      map.setView([autosave.fencePoints[0].lat, autosave.fencePoints[0].lng], 19);
-      autosave.fencePoints.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
-      if (autosave.fenceClosed) closeFence();
+
+      // Restore sections (new format) or single fence (old format)
+      if (autosave.sections && autosave.sections.length > 0) {
+        // Load first section into default
+        var s0 = autosave.sections[0];
+        if (s0.fenceType) selectedFence = { type: s0.fenceType, price: prices[s0.fenceType] || 25 };
+        if (s0.fenceHeight) selectedHeight = s0.fenceHeight;
+        if (s0.points) s0.points.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+        if (s0.closed) closeFence();
+        if (s0.curveMode) { curveMode = true; var cb = document.getElementById('curve-btn'); if (cb) cb.classList.add('active'); }
+
+        // Additional sections
+        for (var si = 1; si < autosave.sections.length; si++) {
+          var sec = autosave.sections[si];
+          addNewSection();
+          if (sec.fenceType) { selectedFence = { type: sec.fenceType, price: prices[sec.fenceType] || 25 }; sections[activeSectionIdx].fenceType = sec.fenceType; }
+          if (sec.fenceHeight) { selectedHeight = sec.fenceHeight; sections[activeSectionIdx].fenceHeight = sec.fenceHeight; }
+          if (sec.points) sec.points.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+          if (sec.closed) closeFence();
+        }
+      } else if (autosave.fencePoints && autosave.fencePoints.length > 0) {
+        // Old format fallback
+        if (autosave.fenceType) selectedFence = { type: autosave.fenceType, price: prices[autosave.fenceType] || 25 };
+        if (autosave.fenceHeight) selectedHeight = autosave.fenceHeight;
+        autosave.fencePoints.forEach(function(pt) { addFencePoint(L.latLng(pt.lat, pt.lng)); });
+        if (autosave.fenceClosed) closeFence();
+      }
+
+      // Restore terrain
+      if (autosave.terrainMultiplier) terrainMultiplier = autosave.terrainMultiplier;
+
+      // Restore addons
+      if (autosave.addons) {
+        document.getElementById('addon-removal').checked = !!autosave.addons.removal;
+        document.getElementById('addon-permit').checked = !!autosave.addons.permit;
+        document.getElementById('addon-stain').checked = !!autosave.addons.stain;
+      }
+
       // Restore gates
-      if (autosave.gates) {
+      if (autosave.gates && autosave.gates.length > 0) {
         setTool('gate');
         autosave.gates.forEach(function(g) { addGate(L.latLng(g.lat, g.lng)); var gate = gates[gates.length-1]; gate.type = g.type; gate.price = g.price; });
         renderGates();
         setTool('draw');
       }
+
       // Restore mulch
       if (autosave.mulchAreas && autosave.mulchAreas.length > 0) {
         if (autosave.mulchMaterial) selectedMulchMaterial = autosave.mulchMaterial;
@@ -5188,15 +5353,23 @@ if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL) {
         if (autosave.mulchDelivery) selectedMulchDelivery = autosave.mulchDelivery;
         autosave.mulchAreas.forEach(function(a) { finalizeMulchArea(a.points); });
       }
+
       // Restore customer info
       if (autosave.customer) {
         if (autosave.customer.name) document.getElementById('cust-name').value = autosave.customer.name;
         if (autosave.customer.phone) document.getElementById('cust-phone').value = autosave.customer.phone;
         if (autosave.customer.address) document.getElementById('cust-address').value = autosave.customer.address;
       }
+
       // Restore markup
       if (autosave.laborPerFt) document.getElementById('markup-labor').value = autosave.laborPerFt;
       if (autosave.markupPct) document.getElementById('markup-percent').value = autosave.markupPct;
+
+      // Restore exact map view
+      if (autosave.mapView && autosave.mapZoom) {
+        map.setView(autosave.mapView, autosave.mapZoom, { animate: false });
+      }
+
       recalculate();
       showToast('Previous work restored');
     }
