@@ -623,6 +623,35 @@ function createSegmentLabel(p1, p2, segIndex) {
   return label;
 }
 
+function deleteFencePoint(ptIdx) {
+  if (ptIdx < 0 || ptIdx >= fencePoints.length) return;
+
+  // Save for undo
+  var deletedPoint = fencePoints[ptIdx];
+  undoStack.push({ type: 'deletePoint', sectionIdx: activeSectionIdx, pointIdx: ptIdx, latlng: { lat: deletedPoint.lat, lng: deletedPoint.lng } });
+  redoStack = [];
+
+  if (fencePoints.length <= 2) {
+    // Would leave 0 or 1 points — clear the section
+    fencePoints = [];
+    fenceMarkers.forEach(function(m) { map.removeLayer(m); });
+    fenceMarkers = [];
+  } else {
+    fencePoints.splice(ptIdx, 1);
+    var marker = fenceMarkers.splice(ptIdx, 1)[0];
+    if (marker) map.removeLayer(marker);
+  }
+
+  rebuildAllMarkers();
+  redrawFenceLine();
+  redrawSegmentLabels();
+  updateCloseButton();
+  updateMidpointHandles();
+  recalculate();
+  markUnsaved();
+  updateEmptyMapState();
+}
+
 function deleteSegment(segIndex) {
   // Remove the second point of this segment
   // For the closing segment (last index), remove the last point instead
@@ -836,16 +865,29 @@ function addFencePoint(latlng) {
     })
   }).addTo(map);
 
+  var wasDragged = false;
+  marker.on('dragstart', function() { wasDragged = true; });
   marker.on('drag', function(e) {
     fencePoints[idx] = e.target.getLatLng();
     redrawFenceLine();
     redrawSegmentLabels();
     recalculateDrag();
   });
-
   marker.on('dragend', function() {
     redrawSegmentLabels();
     recalculate();
+    setTimeout(function() { wasDragged = false; }, 100);
+  });
+
+  // Tap/click to show delete option
+  marker.on('click', function(e) {
+    if (wasDragged) return;
+    var ptIdx = fenceMarkers.indexOf(marker);
+    if (ptIdx < 0) return;
+    L.popup({ closeButton: true, className: 'fence-delete-popup', offset: [0, -15] })
+      .setLatLng(marker.getLatLng())
+      .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Point ' + (ptIdx + 1) + '</b><br><button onclick="deleteFencePoint(' + ptIdx + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b93a2a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete Point</button></div>')
+      .openOn(map);
   });
 
   fenceMarkers.push(marker);
@@ -863,8 +905,9 @@ function addFencePoint(latlng) {
     }
   }
 
-  // Push to undo stack
+  // Push to undo stack, clear redo (new action after undo)
   undoStack.push({ type: 'point', sectionIdx: activeSectionIdx });
+  redoStack = [];
 
   redrawFenceLine();
   redrawSegmentLabels();
@@ -1261,6 +1304,7 @@ function addGate(latlng) {
 
   // Push to undo stack
   undoStack.push({ type: 'gate', id: gateId });
+  redoStack = [];
 
   renderGates();
   recalculate();
@@ -1341,28 +1385,39 @@ function setTool(tool) {
 
 // === Undo Stack ===
 var undoStack = [];
+var redoStack = [];
+
+function redoLast() {
+  if (redoStack.length === 0) return;
+  var item = redoStack.pop();
+
+  if (item.type === 'point') {
+    addFencePoint(L.latLng(item.latlng.lat, item.latlng.lng));
+  } else if (item.type === 'gate') {
+    addGate(L.latLng(item.latlng.lat, item.latlng.lng));
+  } else if (item.type === 'mulchArea') {
+    finalizeMulchArea(item.points);
+    // finalizeMulchArea pushes to undoStack via the mulch action
+  } else if (item.type === 'closeFence') {
+    closeFence();
+  }
+}
 
 function undoLast() {
-  // Mulch undo: if drawing polygon points, remove last point; otherwise remove last placed area
-  if (currentTool === 'mulch') {
-    if (activeMulchPoints.length > 0) {
-      activeMulchPoints.pop();
-      var mp = activeMulchMarkers.pop();
-      if (mp) map.removeLayer(mp);
-      redrawActiveMulchPolygon();
-      if (activeMulchPoints.length < 3) hideMulchDoneBtn();
-      markUnsaved();
-      return;
-    }
-    if (mulchAreas.length > 0) {
-      removeMulchArea(mulchAreas.length - 1);
-      showToast('Mulch area removed');
-      return;
-    }
+  // If actively drawing mulch polygon points, undo those first (not on the stack)
+  if (currentTool === 'mulch' && activeMulchPoints.length > 0) {
+    activeMulchPoints.pop();
+    var mp = activeMulchMarkers.pop();
+    if (mp) map.removeLayer(mp);
+    redrawActiveMulchPolygon();
+    if (activeMulchPoints.length < 3) hideMulchDoneBtn();
+    markUnsaved();
+    return;
   }
 
-  // If fence is closed, open it first
+  // If fence is closed, open it and push close action to redo
   if (fenceClosed) {
+    redoStack.push({ type: 'closeFence' });
     openFence();
     return;
   }
@@ -1372,9 +1427,10 @@ function undoLast() {
   var last = undoStack.pop();
 
   if (last.type === 'gate') {
-    // Undo gate placement
     var gateId = last.id;
+    var gate = gates.find(function(g) { return g.id === gateId; });
     var gm = gateMarkers.find(function(g) { return g.id === gateId; });
+    if (gate) redoStack.push({ type: 'gate', latlng: { lat: gate.latlng.lat, lng: gate.latlng.lng } });
     if (gm) {
       map.removeLayer(gm.marker);
       gateMarkers = gateMarkers.filter(function(g) { return g.id !== gateId; });
@@ -1385,13 +1441,21 @@ function undoLast() {
     markUnsaved();
     showToast(t('toast_gate_removed'));
 
+  } else if (last.type === 'mulchArea') {
+    var area = mulchAreas[last.mulchIdx !== undefined ? last.mulchIdx : mulchAreas.length - 1];
+    if (area) {
+      redoStack.push({ type: 'mulchArea', points: area.points.slice() });
+      removeMulchArea(last.mulchIdx !== undefined ? last.mulchIdx : mulchAreas.length - 1);
+    }
+
   } else if (last.type === 'point') {
-    // Undo fence point — switch to the right section if needed
     if (last.sectionIdx !== activeSectionIdx) {
       switchSection(last.sectionIdx);
     }
 
     if (fencePoints.length > 0) {
+      var removedPt = fencePoints[fencePoints.length - 1];
+      redoStack.push({ type: 'point', latlng: { lat: removedPt.lat, lng: removedPt.lng }, sectionIdx: last.sectionIdx });
       fencePoints.pop();
       var marker = fenceMarkers.pop();
       if (marker) map.removeLayer(marker);
@@ -2063,12 +2127,12 @@ function renderBOM(bom) {
     return;
   }
 
-  // Apply qty overrides
+  // Apply qty and price overrides
   bom.items.forEach(function(i) {
-    if (bomQtyOverrides[i.name] !== undefined) {
-      i.qty = bomQtyOverrides[i.name];
-      i.total = Math.round(i.qty * i.unitCost * 100) / 100;
-    }
+    if (i.isHeader) return;
+    if (bomQtyOverrides[i.name] !== undefined) i.qty = bomQtyOverrides[i.name];
+    if (bomPriceOverrides[i.name] !== undefined) i.unitCost = bomPriceOverrides[i.name];
+    i.total = Math.round(i.qty * i.unitCost * 100) / 100;
   });
 
   // Recalc total
@@ -2079,13 +2143,20 @@ function renderBOM(bom) {
     if (i.isHeader) {
       return '<div class="bom-section-header">' + i.name + '</div>';
     }
-    var isOverridden = bomQtyOverrides[i.name] !== undefined;
+    var eName = i.name.replace(/'/g, "\\'");
     return '<div class="bom-row">' +
-      '<span class="bom-name">' + i.name + '</span>' +
-      '<input type="number" class="bom-qty" value="' + i.qty + '" min="0" ' +
-        'onchange="updateBomQty(\'' + i.name.replace(/'/g, "\\'") + '\', this.value)" ' +
-        'title="' + i.qty + ' ' + i.unit + (isOverridden ? ' (edited)' : '') + '">' +
-      '<span class="bom-cost">$' + i.total.toLocaleString() + '</span>' +
+      '<div class="bom-name">' + i.name + '</div>' +
+      '<div class="bom-fields">' +
+        '<label class="bom-field"><span class="bom-field-label">Qty</span>' +
+          '<input type="number" class="bom-qty" value="' + i.qty + '" min="0" ' +
+            'onchange="updateBomQty(\'' + eName + '\', this.value)">' +
+        '</label>' +
+        '<label class="bom-field"><span class="bom-field-label">Price</span>' +
+          '<input type="number" class="bom-price" value="' + i.unitCost.toFixed(2) + '" min="0" step="0.25" ' +
+            'onchange="updateBomPrice(\'' + eName + '\', this.value)">' +
+        '</label>' +
+        '<span class="bom-cost">$' + i.total.toLocaleString() + '</span>' +
+      '</div>' +
     '</div>';
   }).join('');
 
@@ -2098,8 +2169,17 @@ function updateBomQty(name, value) {
   recalculate();
 }
 
+var bomPriceOverrides = {};
+
+function updateBomPrice(name, value) {
+  var price = parseFloat(value) || 0;
+  bomPriceOverrides[name] = price;
+  recalculate();
+}
+
 function resetBomOverrides() {
   bomQtyOverrides = {};
+  bomPriceOverrides = {};
   recalculate();
 }
 
@@ -2226,6 +2306,22 @@ function selectMulchMaterial(type, btn) {
   selectedMulchMaterial = type;
   document.querySelectorAll('.mulch-material-options .height-btn').forEach(function(b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+  // Update bag price field with this material's default
+  var mat = MULCH[type];
+  if (mat) {
+    var priceField = document.getElementById('mulch-bag-price');
+    if (priceField) priceField.value = mat.bagCost.toFixed(2);
+  }
+  recalculate();
+}
+
+function updateMulchBagPrice(value) {
+  var price = parseFloat(value);
+  if (isNaN(price) || price < 0) return;
+  // Override the material's bag cost via custom pricing
+  customPricing['mulch.' + selectedMulchMaterial + '.bagCost'] = price;
+  customPricing['mulch.' + selectedMulchMaterial + '.bulkCuYdCost'] = Math.round(price * 27 / (MULCH[selectedMulchMaterial]?.bagCuFt || 2) * 0.7); // bulk is ~30% cheaper
+  saveCustomPricing();
   recalculate();
 }
 
@@ -2294,7 +2390,20 @@ function initMulchDragHandlers() {
 }
 
 // --- Shift+click polygon mode (for irregular shapes) ---
+var _lastMulchTap = 0;
 function addMulchPoint(latlng) {
+  // Debounce: ignore taps within 400ms
+  var now = Date.now();
+  if (now - _lastMulchTap < 400) return;
+  _lastMulchTap = now;
+
+  // Minimum distance: ignore taps too close to last point (prevents accidental doubles)
+  if (activeMulchPoints.length > 0) {
+    var lastPx = map.latLngToContainerPoint(activeMulchPoints[activeMulchPoints.length - 1]);
+    var newPx = map.latLngToContainerPoint(latlng);
+    if (lastPx.distanceTo(newPx) < 20) return;
+  }
+
   activeMulchPoints.push(latlng);
 
   var marker = L.circleMarker(latlng, {
@@ -2558,6 +2667,8 @@ function finalizeMulchArea(points) {
     deliveryMode: selectedMulchDelivery
   };
   mulchAreas.push(area);
+  undoStack.push({ type: 'mulchArea', mulchIdx: mulchAreas.length - 1 });
+  redoStack = []; // new action clears redo
 
   rebindMulchMarkerDrags(mulchAreas.length - 1);
   renderMulchAreas();
@@ -2684,6 +2795,17 @@ function rebindMulchMarkerDrags(areaIdx) {
     );
   });
 
+  // Tap polygon to show delete option (not during drag)
+  var areaIndex = areaIdx;
+  area.polygon.on('click', function(e) {
+    L.DomEvent.stopPropagation(e);
+    // Show a popup with delete button
+    var popup = L.popup({ closeButton: true, className: 'mulch-delete-popup', offset: [0, -10] })
+      .setLatLng(e.latlng)
+      .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Area ' + (areaIndex + 1) + '</b><br><button onclick="removeMulchArea(' + areaIndex + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b93a2a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete</button></div>')
+      .openOn(map);
+  });
+
   // Polygon body drag — move the whole shape
   bindDrag(area.polygon,
     function(ll) { return { startLat: ll.lat, startLng: ll.lng, orig: area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }) }; },
@@ -2735,33 +2857,62 @@ function removeMulchArea(idx) {
 
 function renderMulchAreas() {
   var list = document.getElementById('mulch-areas-list');
+  var summary = document.getElementById('mulch-summary');
   if (!list) return;
 
   if (mulchAreas.length === 0) {
     list.innerHTML = '<p class="empty-state">Draw areas on the map with the Mulch tool</p>';
+    if (summary) summary.style.display = 'none';
     return;
   }
 
   var mat = MULCH[selectedMulchMaterial];
+  var bagPrice = mat ? (customPricing['mulch.' + selectedMulchMaterial + '.bagCost'] || mat.bagCost) : 0;
+  var totalSqFt = 0;
+  var totalBags = 0;
+  var totalCuYd = 0;
   var html = '';
+
   mulchAreas.forEach(function(area, idx) {
     var cubicFeet = (area.areaSqFt * selectedMulchDepth) / 12;
-    var qtyStr = '';
-    if (mat) {
-      if (selectedMulchDelivery === 'bags') {
-        qtyStr = ' · ' + Math.ceil(cubicFeet / mat.bagCuFt) + ' bags';
-      } else {
-        qtyStr = ' · ' + (Math.ceil(cubicFeet / 27 * 10) / 10) + ' cu yd';
-      }
-    }
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">' +
-      '<span style="font-size:12px">Area ' + (idx + 1) + ': ' + area.areaSqFt.toLocaleString() + ' sq ft' + qtyStr + '</span>' +
-      '<button onclick="removeMulchArea(' + idx + ')" title="Remove area" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">&times;</button>' +
+    var bags = mat ? Math.ceil(cubicFeet / mat.bagCuFt) : 0;
+    var cuYd = Math.round(cubicFeet / 27 * 10) / 10;
+    var cost = selectedMulchDelivery === 'bags' ? bags * bagPrice : cuYd * (mat ? mat.bulkCuYdCost : 0);
+    totalSqFt += area.areaSqFt;
+    totalBags += bags;
+    totalCuYd += cuYd;
+
+    html += '<div class="bom-row">' +
+      '<div class="bom-name">Area ' + (idx + 1) + '</div>' +
+      '<div class="bom-fields">' +
+        '<label class="bom-field"><span class="bom-field-label">Sq ft</span>' +
+          '<span style="font-size:0.85rem;padding:4px 0;min-width:50px;text-align:right">' + area.areaSqFt.toLocaleString() + '</span>' +
+        '</label>' +
+        '<label class="bom-field"><span class="bom-field-label">' + (selectedMulchDelivery === 'bags' ? 'Bags' : 'Cu yd') + '</span>' +
+          '<span style="font-size:0.85rem;padding:4px 0;min-width:40px;text-align:right">' + (selectedMulchDelivery === 'bags' ? bags : cuYd) + '</span>' +
+        '</label>' +
+        '<span class="bom-cost">$' + Math.round(cost).toLocaleString() + '</span>' +
+        '<button onclick="removeMulchArea(' + idx + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">&times;</button>' +
+      '</div>' +
     '</div>';
   });
   list.innerHTML = html;
 
-  // Update map labels too
+  // Update summary
+  if (summary) {
+    summary.style.display = mulchAreas.length > 0 ? 'block' : 'none';
+    document.getElementById('mulch-total-sqft').textContent = totalSqFt.toLocaleString() + ' sq ft';
+    if (selectedMulchDelivery === 'bags') {
+      document.getElementById('mulch-total-qty-label').textContent = 'Total bags';
+      document.getElementById('mulch-total-qty').textContent = totalBags.toLocaleString();
+    } else {
+      document.getElementById('mulch-total-qty-label').textContent = 'Total bulk';
+      document.getElementById('mulch-total-qty').textContent = totalCuYd + ' cu yd';
+    }
+    document.getElementById('mulch-total-cuyd').textContent = Math.round(totalCuYd * 10) / 10 + ' cu yd';
+  }
+
+  // Update map labels
   mulchAreas.forEach(function(area) {
     var maxLat = Math.max.apply(null, area.points.map(function(p) { return p.lat; }));
     var center = getMulchCenter(area.points);
@@ -3147,6 +3298,58 @@ function showToast(msg) {
 
 // === Map Capture (draws fence diagram to canvas — no CORS issues) ===
 function captureMap() {
+  // Use html2canvas to capture the actual map with satellite imagery
+  if (typeof html2canvas === 'function') {
+    return captureMapReal();
+  }
+  // Fallback to canvas drawing if html2canvas not loaded
+  return captureMapFallback();
+}
+
+function captureMapReal() {
+  return new Promise(function(resolve) {
+    var mapEl = document.getElementById('map');
+    if (!mapEl) { resolve(null); return; }
+
+    // Hide UI elements that shouldn't be in the screenshot
+    var hideEls = document.querySelectorAll('.leaflet-control-container, .map-empty-state, .zoom-indicator, .mulch-area-label, .segment-label, .angle-label');
+    hideEls.forEach(function(el) { el.style.visibility = 'hidden'; });
+
+    // Fit map to show all content
+    var allPts = [];
+    sections.forEach(function(s) { s.points.forEach(function(p) { allPts.push([p.lat, p.lng]); }); });
+    mulchAreas.forEach(function(a) { a.points.forEach(function(p) { allPts.push([p.lat, p.lng]); }); });
+    gates.forEach(function(g) { allPts.push([g.latlng.lat, g.latlng.lng]); });
+
+    var origCenter = map.getCenter();
+    var origZoom = map.getZoom();
+    if (allPts.length >= 2) {
+      map.fitBounds(L.latLngBounds(allPts).pad(0.15), { animate: false });
+    }
+
+    // Wait for tiles to load then capture
+    setTimeout(function() {
+      html2canvas(mapEl, {
+        useCORS: true,
+        allowTaint: true,
+        scale: 2,
+        logging: false,
+        backgroundColor: '#e8e0d6'
+      }).then(function(canvas) {
+        // Restore UI
+        hideEls.forEach(function(el) { el.style.visibility = ''; });
+        map.setView(origCenter, origZoom, { animate: false });
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      }).catch(function() {
+        hideEls.forEach(function(el) { el.style.visibility = ''; });
+        map.setView(origCenter, origZoom, { animate: false });
+        resolve(null);
+      });
+    }, 1500); // wait for tiles to render
+  });
+}
+
+function captureMapFallback() {
   return new Promise(function(resolve) {
     try {
       var canvas = document.createElement('canvas');
@@ -3316,7 +3519,17 @@ function captureMap() {
       ctx.fillStyle = '#2c2417';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText(t('pdf_fence_layout') + ' — ' + updateFootage() + ' ' + t('pdf_linear_ft'), 12, 10);
+      var mapTitle = '';
+      var footage = updateFootage();
+      if (footage > 0 && mulchAreas.length > 0) {
+        mapTitle = 'Fence & Mulch Layout — ' + footage + ' ' + t('pdf_linear_ft');
+      } else if (footage > 0) {
+        mapTitle = t('pdf_fence_layout') + ' — ' + footage + ' ' + t('pdf_linear_ft');
+      } else if (mulchAreas.length > 0) {
+        var totalMulchSqFt = mulchAreas.reduce(function(s,a){return s+a.areaSqFt;},0);
+        mapTitle = 'Mulch Layout — ' + totalMulchSqFt.toLocaleString() + ' sq ft';
+      }
+      if (mapTitle) ctx.fillText(mapTitle, 12, 10);
 
       resolve(canvas.toDataURL('image/jpeg', 0.9));
     } catch (e) {
@@ -3346,323 +3559,486 @@ async function generatePDF(mode) {
   }
   var jsPDF = window.jspdf.jsPDF;
   var doc = new jsPDF({ unit: 'pt', format: 'letter' });
-  const w = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 48;
-  const col2 = w - margin;
-  let y = 0;
+  var w = doc.internal.pageSize.getWidth();   // 612
+  var pageH = doc.internal.pageSize.getHeight(); // 792
 
-  const custName = document.getElementById('cust-name').value || 'Customer';
-  const custPhone = document.getElementById('cust-phone').value;
-  const custAddr = document.getElementById('cust-address').value;
-  const feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
-  const total = document.getElementById('sum-total').textContent;
-  const fType = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1).replace('-', ' ');
-  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const estNum = 'FC-' + Date.now().toString(36).toUpperCase().slice(-6);
+  // ── Colors ──
+  var cDark    = [38, 32, 26];
+  var cAccent  = [192, 98, 46];
+  var cText    = [44, 36, 23];
+  var cSecondary = [120, 112, 100];
+  var cMuted   = [170, 162, 150];
+  var cStripe  = [248, 246, 243];
+  var cSurface = [243, 240, 236];
+  var cGreen   = [34, 120, 60];
+  var cWhite   = [255, 255, 255];
 
-  function checkPage(need) { if (y + need > pageH - 60) { addFooter(); doc.addPage(); y = 48; } }
-  function addFooter() {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(160, 150, 138);
-    doc.text('Generated by FenceTrace  •  fencetrace.com', margin, pageH - 28);
-    doc.text('Estimate #' + estNum, col2, pageH - 28, { align: 'right' });
-  }
-  function sectionTitle(text) {
-    checkPage(30);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(192, 98, 46);
-    doc.text(text.toUpperCase(), margin, y);
-    y += 4;
-    doc.setDrawColor(192, 98, 46);
-    doc.setLineWidth(1.5);
-    doc.line(margin, y, margin + 40, y);
-    y += 14;
-  }
-  function labelValue(label, val) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(100, 90, 76);
-    doc.text(label, margin, y);
-    doc.setTextColor(44, 36, 23);
-    doc.text(val, col2, y, { align: 'right' });
-    y += 14;
-  }
+  // ── Layout constants ──
+  var margin = 48;
+  var col2 = 564;
+  var contentW = 516;
+  var colItem = 52;
+  var colQty = 400;
+  var colUnit = 470;
+  var colTotal = 560;
 
-  // ── Header bar ──
-  doc.setFillColor(44, 36, 23);
-  doc.rect(0, 0, w, 72, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.setTextColor(255, 255, 255);
-  doc.text('FenceTrace', margin, 32);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(192, 98, 46);
-  doc.text('Fence & Landscape Estimating', margin, 48);
-  doc.setTextColor(200, 200, 200);
-  doc.setFontSize(9);
-  doc.text('Estimate #' + estNum, col2, 30, { align: 'right' });
-  doc.text(today, col2, 44, { align: 'right' });
-  y = 92;
+  // ── Data ──
+  var custName = document.getElementById('cust-name').value || 'Customer';
+  var custPhone = document.getElementById('cust-phone').value;
+  var custAddr = document.getElementById('cust-address').value;
+  var feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
+  var fType = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1).replace('-', ' ');
+  var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  var estNum = 'FC-' + Date.now().toString(36).toUpperCase().slice(-6);
+  var hasFence = feet > 0;
+  var hasMulch = mulchAreas.length > 0;
+  var pageNum = 1;
 
-  // ── Customer ──
-  sectionTitle('Prepared For');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(44, 36, 23);
-  doc.text(custName, margin, y);
-  y += 16;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(100, 90, 76);
-  if (custPhone) { doc.text(custPhone, margin, y); y += 13; }
-  if (custAddr) { doc.text(custAddr, margin, y); y += 13; }
-  y += 10;
+  // Company data
+  var co = window._ftCompany || {};
+  var companyName = co.name || 'FenceTrace';
+  var companyPhone = co.phone || '';
+  var companyAddr = co.address || '';
 
-  // ── Map ──
-  if (mapImage) {
-    checkPage(200);
-    const imgW = w - margin * 2;
-    const imgH = imgW * 0.45;
-    doc.setDrawColor(212, 205, 196);
-    doc.setLineWidth(0.5);
-    doc.addImage(mapImage, 'JPEG', margin, y, imgW, imgH);
-    doc.rect(margin, y, imgW, imgH);
-    y += imgH + 16;
-  }
-
-  // ── Project Details ──
-  sectionTitle('Project Details');
   saveActiveSection();
 
-  if (sections.length <= 1) {
-    labelValue('Fence type', fType + (curveMode ? ' (curved)' : ''));
-    labelValue('Height', selectedHeight + ' ft');
-  } else {
-    sections.forEach(function(s, i) {
-      var t = (s.fenceType || 'wood').charAt(0).toUpperCase() + (s.fenceType || 'wood').slice(1).replace('-', ' ');
-      labelValue('Section ' + (i + 1), t + ', ' + (s.fenceHeight || 6) + ' ft');
-    });
-  }
-  labelValue('Total linear footage', feet.toLocaleString() + ' ft');
-  if (terrainMultiplier > 1) {
-    labelValue('Terrain', terrainMultiplier === 1.15 ? 'Slope (+15%)' : 'Rocky (+30%)');
-  }
-  if (gates.length > 0) {
-    labelValue('Gates', gates.length + ' (' + gates.map(function(g) { return g.type; }).join(', ') + ')');
-  }
-  if (mulchAreas.length > 0) {
-    var totalSqFt = mulchAreas.reduce(function(s, a) { return s + a.areaSqFt; }, 0);
-    var matName = MULCH[selectedMulchMaterial] ? MULCH[selectedMulchMaterial].name : selectedMulchMaterial;
-    labelValue('Mulch', mulchAreas.length + ' area' + (mulchAreas.length > 1 ? 's' : '') + ' — ' + totalSqFt.toLocaleString() + ' sq ft, ' + matName + ' ' + selectedMulchDepth + '″');
-  }
-  y += 8;
-
-  // ── Material Breakdown ──
-  var bom = calculateCombinedBOM();
+  // ── BOM calculation ──
+  var bom = hasFence ? calculateCombinedBOM() : null;
   var mulchRes = calculateMulchTotal();
   if (mulchRes.details.length > 0) {
     if (!bom) bom = { items: [], materialTotal: 0 };
     mulchRes.details.forEach(function(d) {
       var mn = MULCH[selectedMulchMaterial] ? MULCH[selectedMulchMaterial].name : selectedMulchMaterial;
-      bom.items.push({ name: 'Mulch Area ' + (d.areaIdx + 1) + ': ' + mn + ' ' + selectedMulchDepth + '″', isHeader: true, qty: 0, unit: '', unitCost: 0, total: 0 });
+      bom.items.push({ name: 'Mulch Area ' + (d.areaIdx + 1) + ': ' + mn + ' ' + selectedMulchDepth + '"', isHeader: true, qty: 0, unit: '', unitCost: 0, total: 0 });
       d.bom.items.forEach(function(item) { bom.items.push(item); });
       bom.materialTotal += d.bom.materialTotal;
     });
   }
 
-  if (bom && bom.items.length > 0) {
-    sectionTitle('Material Breakdown');
+  // ── Totals (calculated from BOM, not DOM) ──
+  var pdfMaterialsTotal = bom ? bom.materialTotal : 0;
+  var pdfGateCost = gates.reduce(function(s, g) { return s + g.price; }, 0);
+  var pdfRemoval = document.getElementById('addon-removal').checked ? feet * 3 : 0;
+  var pdfPermit = document.getElementById('addon-permit').checked ? 150 : 0;
+  var pdfStain = document.getElementById('addon-stain').checked ? feet * 4 : 0;
+  var customTotal = customItems.reduce(function(sum, i) { return sum + (i.qty * i.unitCost); }, 0);
+  var pdfTotal = pdfMaterialsTotal + pdfGateCost + pdfRemoval + pdfPermit + pdfStain + customTotal;
 
-    // Table header
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(140, 130, 118);
-    var qtyX = w - margin - 130;
-    var ucX = w - margin - 65;
-    doc.text('ITEM', margin, y);
-    doc.text('QTY', qtyX, y, { align: 'right' });
-    doc.text('UNIT', ucX, y, { align: 'right' });
-    doc.text('TOTAL', col2, y, { align: 'right' });
-    y += 5;
-    doc.setDrawColor(212, 205, 196);
-    doc.setLineWidth(0.5);
-    doc.line(margin, y, col2, y);
-    y += 10;
-
-    doc.setFontSize(9);
-    var stripe = false;
-    bom.items.forEach(function(item) {
-      checkPage(18);
-      if (item.isHeader) {
-        y += 6;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(192, 98, 46);
-        doc.text(item.name, margin, y);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(70, 62, 50);
-        y += 14;
-        stripe = false;
-        return;
-      }
-      // Alternating row bg
-      if (stripe) {
-        doc.setFillColor(248, 245, 240);
-        doc.rect(margin - 4, y - 9, col2 - margin + 8, 14, 'F');
-      }
-      stripe = !stripe;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(70, 62, 50);
-      doc.text(item.name, margin, y);
-      doc.text(item.qty.toString(), qtyX, y, { align: 'right' });
-      doc.text('$' + item.unitCost.toFixed(2), ucX, y, { align: 'right' });
-      doc.setFont('helvetica', 'bold');
-      doc.text('$' + item.total.toLocaleString(), col2, y, { align: 'right' });
-      y += 14;
-    });
-
-    y += 4;
-    doc.setDrawColor(192, 98, 46);
-    doc.setLineWidth(1);
-    doc.line(margin, y, col2, y);
-    y += 14;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(44, 36, 23);
-    doc.text('Materials Total', margin, y);
-    doc.text('$' + bom.materialTotal.toLocaleString(), col2, y, { align: 'right' });
-    y += 20;
-  }
-
-  // ── Custom Items ──
-  if (customItems.length > 0 && customItems.some(function(i) { return i.name && i.unitCost > 0; })) {
-    sectionTitle('Additional Items');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(70, 62, 50);
-    customItems.filter(function(i) { return i.name && i.unitCost > 0; }).forEach(function(i) {
-      checkPage(16);
-      doc.text(i.name, margin, y);
-      doc.text(i.qty + ' × $' + i.unitCost.toFixed(2), ucX, y, { align: 'right' });
-      doc.setFont('helvetica', 'bold');
-      doc.text('$' + Math.round(i.qty * i.unitCost).toLocaleString(), col2, y, { align: 'right' });
-      doc.setFont('helvetica', 'normal');
-      y += 14;
-    });
-    y += 8;
-  }
-
-  // ── Estimate Total ──
-  checkPage(120);
-  y += 4;
-  doc.setFillColor(248, 245, 240);
-  doc.roundedRect(margin, y, col2 - margin, 0, 6, 6, 'F'); // measure first
-
-  var totalBoxY = y;
-  y += 16;
-  sectionTitle('Estimate Total');
-
-  const fenceCostText = document.getElementById('sum-fence').textContent;
-  if (feet > 0) labelValue(fType + ' fence, ' + selectedHeight + 'ft', fenceCostText);
-  if (gates.length > 0) labelValue('Gates (' + gates.length + ')', document.getElementById('sum-gates').textContent);
-  if (document.getElementById('addon-removal').checked) labelValue('Old fence removal', document.getElementById('sum-removal').textContent);
-  if (document.getElementById('addon-permit').checked) labelValue('Permit fee', '$150');
-  if (document.getElementById('addon-stain').checked) labelValue('Stain / seal', document.getElementById('sum-stain').textContent);
-  if (terrainMultiplier > 1) labelValue('Terrain adjustment', document.getElementById('sum-terrain').textContent);
-  if (mulchRes.total > 0) labelValue('Mulch materials', '$' + Math.round(mulchRes.total).toLocaleString());
-  const customTotal = customItems.reduce(function(sum, i) { return sum + (i.qty * i.unitCost); }, 0);
-  if (customTotal > 0) labelValue('Custom items', '$' + Math.round(customTotal).toLocaleString());
-
-  // Draw the background box now that we know the height
-  doc.setFillColor(248, 245, 240);
-  doc.roundedRect(margin - 8, totalBoxY, col2 - margin + 16, y - totalBoxY + 28, 4, 4, 'F');
-
-  // Re-draw the content on top (bg covered it)
-  y = totalBoxY + 16;
-  sectionTitle('Estimate Total');
-  if (feet > 0) labelValue(fType + ' fence, ' + selectedHeight + 'ft', fenceCostText);
-  if (gates.length > 0) labelValue('Gates (' + gates.length + ')', document.getElementById('sum-gates').textContent);
-  if (document.getElementById('addon-removal').checked) labelValue('Old fence removal', document.getElementById('sum-removal').textContent);
-  if (document.getElementById('addon-permit').checked) labelValue('Permit fee', '$150');
-  if (document.getElementById('addon-stain').checked) labelValue('Stain / seal', document.getElementById('sum-stain').textContent);
-  if (terrainMultiplier > 1) labelValue('Terrain adjustment', document.getElementById('sum-terrain').textContent);
-  if (mulchRes.total > 0) labelValue('Mulch materials', '$' + Math.round(mulchRes.total).toLocaleString());
-  if (customTotal > 0) labelValue('Custom items', '$' + Math.round(customTotal).toLocaleString());
-
-  y += 6;
-  doc.setDrawColor(44, 36, 23);
-  doc.setLineWidth(1.5);
-  doc.line(margin, y, col2, y);
-  y += 18;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(44, 36, 23);
-  // Add labor/markup for contractor or show customer price
   var laborPerFt = parseFloat(document.getElementById('markup-labor').value) || 0;
   var markupPct = parseFloat(document.getElementById('markup-percent').value) || 0;
   var laborCost = Math.round(feet * laborPerFt);
-  var markupAmt = Math.round(parseFloat(total.replace(/[^0-9.-]/g, '')) * markupPct / 100);
-  var customerPrice = parseFloat(total.replace(/[^0-9.-]/g, '')) + laborCost + markupAmt;
+  var markupAmt = Math.round(pdfTotal * markupPct / 100);
+  var customerPrice = pdfTotal + laborCost + markupAmt;
+  var displayTotal = (laborCost > 0 || markupAmt > 0) ? customerPrice : pdfTotal;
 
-  if (isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
-    // Customer sees the final price only
-    doc.text('TOTAL', margin, y);
-    doc.setTextColor(45, 138, 78);
-    doc.text('$' + Math.round(customerPrice).toLocaleString(), col2, y, { align: 'right' });
-  } else if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
-    // Contractor sees the breakdown
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(100, 90, 76);
-    if (laborCost > 0) { labelValue('Labor (' + laborPerFt + '/ft)', '$' + laborCost.toLocaleString()); }
-    if (markupAmt > 0) { labelValue('Markup (' + markupPct + '%)', '$' + markupAmt.toLocaleString()); }
-    y += 4;
-    doc.setDrawColor(44, 36, 23);
-    doc.setLineWidth(1.5);
-    doc.line(margin, y, col2, y);
-    y += 18;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(100, 90, 76);
-    doc.text('Materials + Labor', margin, y);
-    doc.text('$' + Math.round(customerPrice).toLocaleString(), col2, y, { align: 'right' });
-    y += 18;
-    doc.setFontSize(10);
-    doc.setTextColor(45, 138, 78);
-    doc.text('Your Profit: $' + (laborCost + markupAmt).toLocaleString(), margin, y);
-    y += 16;
-    doc.text('CUSTOMER PRICE', margin, y);
-    doc.setFontSize(16);
-    doc.text('$' + Math.round(customerPrice).toLocaleString(), col2, y, { align: 'right' });
-  } else {
-    doc.text('TOTAL', margin, y);
-    doc.setTextColor(45, 138, 78);
-    doc.text(total, col2, y, { align: 'right' });
+  var y = 0;
+
+  // ── Helper: page break ──
+  function checkPage(need) {
+    if (y + need > pageH - 48) {
+      addFooter();
+      doc.addPage();
+      pageNum++;
+      y = 48;
+    }
   }
-  y += 30;
 
-  // ── Notes ──
+  // ── Helper: footer ──
+  function addFooter() {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor.apply(doc, cMuted);
+    doc.text('Generated by FenceTrace  \u2022  fencetrace.com', margin, pageH - 24);
+    doc.text('Estimate #' + estNum + '  \u2022  Page ' + pageNum, col2, pageH - 24, { align: 'right' });
+  }
+
+  // ── Helper: section title ──
+  function sectionTitle(text) {
+    checkPage(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor.apply(doc, cAccent);
+    doc.text(text.toUpperCase(), margin, y);
+    y += 4;
+    doc.setDrawColor.apply(doc, cAccent);
+    doc.setLineWidth(1.5);
+    doc.line(margin, y, margin + 40, y);
+    y += 14;
+  }
+
+  // ── Helper: label-value row ──
+  function labelValue(label, val, opts) {
+    doc.setFont('helvetica', (opts && opts.bold) ? 'bold' : 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor.apply(doc, cSecondary);
+    doc.text(label, margin + ((opts && opts.indent) || 0), y);
+    doc.setTextColor.apply(doc, (opts && opts.valColor) || cText);
+    doc.setFont('helvetica', (opts && opts.bold) ? 'bold' : 'normal');
+    doc.text(val, col2, y, { align: 'right' });
+    y += 14;
+  }
+
+  // ══════════════════════════════════════════
+  // 1. HEADER BAR (0-80pt)
+  // ══════════════════════════════════════════
+  doc.setFillColor.apply(doc, cDark);
+  doc.rect(0, 0, w, 80, 'F');
+
+  // Left: company name
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor.apply(doc, cWhite);
+  doc.text(companyName, margin, 34);
+
+  // Left below: company phone + address
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(140, 130, 118);
-  doc.text('This estimate is for reference only and is valid for 30 days. FenceTrace and RavenWing LLC are not responsible for material shortages,', margin, y);
-  y += 4;
-  doc.text('cost overruns, or construction outcomes. Prices are approximate and may vary by supplier and location.', margin, y);
-  y += 4;
-  doc.text('Always verify measurements on-site before purchasing materials.', margin, y);
+  doc.setTextColor.apply(doc, cMuted);
+  var companyLine = [companyPhone, companyAddr].filter(Boolean).join('  \u2022  ');
+  if (companyLine) doc.text(companyLine, margin, 50);
+
+  // Right: ESTIMATE label
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor.apply(doc, cAccent);
+  doc.text('ESTIMATE', col2, 28, { align: 'right' });
+
+  // Right: estimate number
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor.apply(doc, cMuted);
+  doc.text('#' + estNum, col2, 42, { align: 'right' });
+
+  // Right: date
+  doc.text(today, col2, 54, { align: 'right' });
+
+  // Right: validity
+  doc.setFontSize(7);
+  doc.text('Valid for 30 days', col2, 66, { align: 'right' });
+
+  y = 96;
+
+  // ══════════════════════════════════════════
+  // 2. TWO-COLUMN ROW: Customer + Stat boxes
+  // ══════════════════════════════════════════
+
+  // Left column: PREPARED FOR
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor.apply(doc, cAccent);
+  doc.text('PREPARED FOR', margin, y);
+  y += 14;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor.apply(doc, cText);
+  doc.text(custName, margin, y);
+  y += 14;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor.apply(doc, cSecondary);
+  if (custPhone) { doc.text(custPhone, margin, y); y += 12; }
+  if (custAddr) { doc.text(custAddr, margin, y); y += 12; }
+
+  // Right column: stat boxes
+  var boxW = 120;
+  var boxH = 48;
+  var boxGap = 10;
+  var box1X = col2 - boxW * 2 - boxGap;
+  var box2X = col2 - boxW;
+  var boxY = 96;
+
+  // Box 1: Total Footage or Total Area
+  doc.setFillColor.apply(doc, cSurface);
+  doc.roundedRect(box1X, boxY, boxW, boxH, 4, 4, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor.apply(doc, cSecondary);
+  if (hasFence) {
+    doc.text('TOTAL FOOTAGE', box1X + boxW / 2, boxY + 16, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor.apply(doc, cText);
+    doc.text(feet.toLocaleString() + ' ft', box1X + boxW / 2, boxY + 38, { align: 'center' });
+  } else {
+    var totalMulchSqFt = mulchAreas.reduce(function(s, a) { return s + a.areaSqFt; }, 0);
+    doc.text('TOTAL AREA', box1X + boxW / 2, boxY + 16, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor.apply(doc, cText);
+    doc.text(totalMulchSqFt.toLocaleString() + ' sf', box1X + boxW / 2, boxY + 38, { align: 'center' });
+  }
+
+  // Box 2: Estimate total
+  doc.setFillColor.apply(doc, cSurface);
+  doc.roundedRect(box2X, boxY, boxW, boxH, 4, 4, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor.apply(doc, cSecondary);
+  doc.text('ESTIMATE', box2X + boxW / 2, boxY + 16, { align: 'center' });
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor.apply(doc, cGreen);
+  doc.text('$' + Math.round(displayTotal).toLocaleString(), box2X + boxW / 2, boxY + 38, { align: 'center' });
+
+  // Ensure y is past both columns
+  y = Math.max(y, boxY + boxH) + 16;
+
+  // ══════════════════════════════════════════
+  // 3. MAP IMAGE
+  // ══════════════════════════════════════════
+  if (mapImage) {
+    checkPage(contentW * 0.45 + 20);
+    var imgW = contentW;
+    var imgH = contentW * 0.45;
+    doc.setDrawColor.apply(doc, cSecondary);
+    doc.setLineWidth(1);
+    doc.addImage(mapImage, 'JPEG', margin, y, imgW, imgH);
+    doc.rect(margin, y, imgW, imgH);
+    y += imgH + 16;
+  }
+
+  // ══════════════════════════════════════════
+  // 4. MATERIAL BREAKDOWN TABLE
+  // ══════════════════════════════════════════
+  if (bom && bom.items.length > 0) {
+    sectionTitle('Material Breakdown');
+
+    // Table header bar (dark)
+    var thH = 20;
+    checkPage(thH + 18);
+    doc.setFillColor.apply(doc, cDark);
+    doc.rect(margin, y - 2, contentW, thH, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor.apply(doc, cWhite);
+    doc.text('ITEM', colItem, y + 11);
+    doc.text('QTY', colQty, y + 11, { align: 'right' });
+    doc.text('UNIT COST', colUnit, y + 11, { align: 'right' });
+    doc.text('TOTAL', colTotal, y + 11, { align: 'right' });
+    y += thH + 6;
+
+    var stripe = false;
+    bom.items.forEach(function(item) {
+      if (item.isHeader) {
+        // Category header — keep with at least 1 item (~40pt)
+        checkPage(40);
+        y += 4;
+        doc.setDrawColor.apply(doc, cAccent);
+        doc.setLineWidth(0.75);
+        doc.line(margin, y - 2, col2, y - 2);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor.apply(doc, cAccent);
+        doc.text(item.name, colItem, y + 8);
+        y += 16;
+        stripe = false;
+        return;
+      }
+      checkPage(18);
+      // Alternating stripe
+      if (stripe) {
+        doc.setFillColor.apply(doc, cStripe);
+        doc.rect(margin, y - 5, contentW, 18, 'F');
+      }
+      stripe = !stripe;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor.apply(doc, cText);
+      doc.text(item.name, colItem, y + 6);
+      doc.text(item.qty.toString(), colQty, y + 6, { align: 'right' });
+      doc.text('$' + item.unitCost.toFixed(2), colUnit, y + 6, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text('$' + item.total.toLocaleString(), colTotal, y + 6, { align: 'right' });
+      y += 18;
+    });
+
+    // Materials Total row
+    y += 2;
+    doc.setFillColor.apply(doc, cSurface);
+    doc.rect(margin, y - 4, contentW, 22, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor.apply(doc, cDark);
+    doc.text('Materials Total', colItem, y + 10);
+    doc.text('$' + bom.materialTotal.toLocaleString(), colTotal, y + 10, { align: 'right' });
+    y += 28;
+
+    // Mulch badge summary
+    if (hasMulch && mulchRes.details.length > 0) {
+      var totalBags = 0;
+      var totalCuYd = 0;
+      mulchAreas.forEach(function(a) {
+        var cf = (a.areaSqFt * selectedMulchDepth) / 12;
+        var mat = MULCH[selectedMulchMaterial];
+        if (mat) totalBags += Math.ceil(cf / mat.bagCuFt);
+        totalCuYd += cf / 27;
+      });
+      var badgeText = totalBags + ' Bags Total (' + (Math.round(totalCuYd * 10) / 10) + ' cu yd)';
+      var badgeW = doc.getTextWidth(badgeText) + 16;
+      var badgeH = 16;
+      doc.setFillColor.apply(doc, cAccent);
+      doc.roundedRect(margin, y - 2, badgeW, badgeH, 3, 3, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor.apply(doc, cWhite);
+      doc.text(badgeText, margin + 8, y + 8);
+      y += badgeH + 10;
+    }
+    y += 8;
+  }
+
+  // ══════════════════════════════════════════
+  // 5. CUSTOM ITEMS
+  // ══════════════════════════════════════════
+  var validCustom = customItems.filter(function(i) { return i.name && i.unitCost > 0; });
+  if (validCustom.length > 0) {
+    sectionTitle('Additional Items');
+
+    // Table header bar
+    var cthH = 20;
+    checkPage(cthH + 18);
+    doc.setFillColor.apply(doc, cDark);
+    doc.rect(margin, y - 2, contentW, cthH, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor.apply(doc, cWhite);
+    doc.text('ITEM', colItem, y + 11);
+    doc.text('QTY', colQty, y + 11, { align: 'right' });
+    doc.text('UNIT COST', colUnit, y + 11, { align: 'right' });
+    doc.text('TOTAL', colTotal, y + 11, { align: 'right' });
+    y += cthH + 6;
+
+    var cStripeFlag = false;
+    validCustom.forEach(function(i) {
+      checkPage(18);
+      if (cStripeFlag) {
+        doc.setFillColor.apply(doc, cStripe);
+        doc.rect(margin, y - 5, contentW, 18, 'F');
+      }
+      cStripeFlag = !cStripeFlag;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor.apply(doc, cText);
+      doc.text(i.name, colItem, y + 6);
+      doc.text(i.qty.toString(), colQty, y + 6, { align: 'right' });
+      doc.text('$' + i.unitCost.toFixed(2), colUnit, y + 6, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text('$' + Math.round(i.qty * i.unitCost).toLocaleString(), colTotal, y + 6, { align: 'right' });
+      y += 18;
+    });
+    y += 12;
+  }
+
+  // ══════════════════════════════════════════
+  // 6. ESTIMATE TOTAL BOX
+  // ══════════════════════════════════════════
+  // Estimate height needed for total box
+  var totalBoxLines = 0;
+  if (pdfMaterialsTotal > 0) totalBoxLines++;
+  if (hasFence && pdfGateCost > 0) totalBoxLines++;
+  if (pdfRemoval > 0) totalBoxLines++;
+  if (pdfPermit > 0) totalBoxLines++;
+  if (pdfStain > 0) totalBoxLines++;
+  if (customTotal > 0) totalBoxLines++;
+  if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) totalBoxLines += 2; // labor + markup lines
+  var estBoxH = 60 + totalBoxLines * 16 + 40; // padding + lines + total row
+  checkPage(estBoxH);
+
+  // Draw bordered box background
+  var boxStartY = y;
+  var innerMargin = margin + 16;
+  var innerRight = col2 - 16;
+  y += 20;
+
+  // Line items
+  function totalLine(label, val) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor.apply(doc, cSecondary);
+    doc.text(label, innerMargin, y);
+    doc.setTextColor.apply(doc, cText);
+    doc.text(val, innerRight, y, { align: 'right' });
+    y += 16;
+  }
+
+  if (pdfMaterialsTotal > 0) totalLine('Materials', '$' + pdfMaterialsTotal.toLocaleString());
+  if (hasFence && pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
+  if (pdfRemoval > 0) totalLine('Old fence removal', '$' + Math.round(pdfRemoval).toLocaleString());
+  if (pdfPermit > 0) totalLine('Permit fee', '$150');
+  if (pdfStain > 0) totalLine('Stain / seal', '$' + Math.round(pdfStain).toLocaleString());
+  if (customTotal > 0) totalLine('Custom items', '$' + Math.round(customTotal).toLocaleString());
+
+  // Divider line
+  y += 2;
+  doc.setDrawColor.apply(doc, cMuted);
+  doc.setLineWidth(0.5);
+  doc.line(innerMargin, y, innerRight, y);
   y += 12;
+
+  // Labor + markup (contractor mode only)
+  if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
+    if (laborCost > 0) totalLine('Labor (' + laborPerFt + '/ft)', '$' + laborCost.toLocaleString());
+    if (markupAmt > 0) totalLine('Markup (' + markupPct + '%)', '$' + markupAmt.toLocaleString());
+    // Heavy divider
+    doc.setDrawColor.apply(doc, cDark);
+    doc.setLineWidth(1.5);
+    doc.line(innerMargin, y, innerRight, y);
+    y += 16;
+  }
+
+  // TOTAL row
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor.apply(doc, cDark);
+  doc.text('TOTAL', innerMargin, y);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor.apply(doc, cGreen);
+  doc.text('$' + Math.round(displayTotal).toLocaleString(), innerRight, y + 2, { align: 'right' });
+  y += 20;
+
+  // Profit line (contractor mode only)
+  if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor.apply(doc, cSecondary);
+    doc.text('Profit: $' + (laborCost + markupAmt).toLocaleString(), innerMargin, y);
+    y += 12;
+  }
+
+  y += 10;
+  var boxEndY = y;
+
+  // Draw the 2pt dark border rounded rect
+  doc.setDrawColor.apply(doc, cDark);
+  doc.setLineWidth(2);
+  doc.roundedRect(margin, boxStartY, contentW, boxEndY - boxStartY, 4, 4, 'S');
+
+  y = boxEndY + 12;
+
+  // ══════════════════════════════════════════
+  // 7. DISCLAIMER
+  // ══════════════════════════════════════════
+  checkPage(50);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor.apply(doc, cMuted);
+  var disclaimer = 'This estimate is for reference only and is valid for 30 days. FenceTrace and RavenWing LLC are not responsible for material shortages, cost overruns, or construction outcomes. Prices are approximate and may vary by supplier and location. Always verify measurements on-site before purchasing materials.';
+  var disclaimerLines = doc.splitTextToSize(disclaimer, contentW);
+  doc.text(disclaimerLines, margin, y);
+  y += disclaimerLines.length * 9 + 4;
 
   if (typeof activeEstimatePhotos !== 'undefined' && activeEstimatePhotos.length > 0) {
     doc.text(activeEstimatePhotos.length + ' photo' + (activeEstimatePhotos.length === 1 ? '' : 's') + ' attached (see online version)', margin, y);
     y += 12;
   }
 
-  // ── Footer ──
+  // ══════════════════════════════════════════
+  // 8. FOOTER
+  // ══════════════════════════════════════════
   addFooter();
 
   // Save
@@ -4175,10 +4551,10 @@ document.addEventListener('keydown', function(e) {
     return;
   }
 
-  // Ctrl+Shift+Z: Clear all
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+  // Ctrl+Shift+Z or Ctrl+Y: Redo
+  if ((e.ctrlKey || e.metaKey) && (e.shiftKey && (e.key === 'z' || e.key === 'Z') || e.key === 'y' || e.key === 'Y')) {
     e.preventDefault();
-    clearAll();
+    redoLast();
     return;
   }
 
@@ -4317,6 +4693,13 @@ function updateEmptyMapState() {
 initMap();
 initDoubleClick();
 initSections();
+
+// Set initial mulch bag price
+var initMat = MULCH[selectedMulchMaterial];
+if (initMat && document.getElementById('mulch-bag-price')) {
+  document.getElementById('mulch-bag-price').value = initMat.bagCost.toFixed(2);
+}
+
 recalculate();
 loadFromURL();
 updateEmptyMapState();

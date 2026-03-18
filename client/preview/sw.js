@@ -1,4 +1,4 @@
-var CACHE_NAME = 'fencetrace-v4';
+var CACHE_NAME = 'fencetrace-v7';
 var STATIC_ASSETS = [
   '/',
   '/index.html',
