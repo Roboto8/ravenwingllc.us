@@ -522,6 +522,9 @@ function removeDroneOverlay() {
 }
 
 function onMapClick(e) {
+  // Subscription gate — block drawing after trial ends
+  if (typeof requireSubscription === 'function' && !requireSubscription('create estimates')) return;
+
   // Warn if zoomed too far out for accurate placement
   if (map.getZoom() < 16 && (currentTool === 'draw' || currentTool === 'gate')) {
     showToast(t('toast_zoom_closer'));
@@ -2172,6 +2175,7 @@ function initMulchDragHandlers() {
   map.on('mousedown', function(e) {
     if (currentTool !== 'mulch' || (e.originalEvent && e.originalEvent.shiftKey)) return;
     if (e.originalEvent && e.originalEvent.button !== 0) return;
+    if (typeof requireSubscription === 'function' && !requireSubscription('create estimates')) return;
 
     mulchDragStart = e.latlng;
     map.dragging.disable();
@@ -2794,10 +2798,7 @@ document.getElementById('address-input').addEventListener('keydown', function(e)
 
 // === Share / Approval Workflow ===
 async function shareEstimate() {
-  if (typeof Auth !== 'undefined' && !Auth.isLoggedIn()) {
-    if (typeof requireAuth === 'function') requireAuth('share estimates');
-    return;
-  }
+  if (typeof requireSubscription === 'function' && !requireSubscription('share estimates')) return;
 
   // If we have a saved estimate loaded, use the approval workflow
   if (typeof activeEstimateId !== 'undefined' && activeEstimateId) {
@@ -3173,10 +3174,7 @@ function captureMap() {
 
 // === PDF Generation ===
 async function generatePDF() {
-  if (typeof Auth !== 'undefined' && !Auth.isLoggedIn()) {
-    if (typeof requireAuth === 'function') requireAuth('download PDF estimates');
-    return;
-  }
+  if (typeof requireSubscription === 'function' && !requireSubscription('download PDF estimates')) return;
   try {
   showToast(t('toast_generating_pdf'));
 

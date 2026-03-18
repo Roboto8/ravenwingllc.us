@@ -115,7 +115,7 @@
   <!-- Trial Banner -->
   <div class="trial-banner" id="trial-banner" style="display:none">
     <span id="trial-text"></span>
-    <button class="btn btn-sm" onclick="handleUpgrade()" data-i18n="trial_subscribe_btn">Subscribe</button>
+    <button class="btn btn-sm" onclick="showPricing()" data-i18n="trial_subscribe_btn">Subscribe</button>
     <button class="banner-close" onclick="this.parentElement.style.display='none'">&times;</button>
   </div>
 
@@ -123,26 +123,46 @@
   <div class="modal-overlay" id="paywall-modal" style="display:none">
     <div class="modal" style="max-width:520px">
       <h2 class="modal-title" id="paywall-title">Choose Your Plan</h2>
-      <p class="modal-sub" id="paywall-sub">14-day free trial on all plans. Cancel anytime.</p>
+      <p class="modal-sub" id="paywall-sub">Cancel anytime. No contracts, no cancellation fees.</p>
       <div style="display:flex;gap:8px;margin:16px 0">
         <div class="plan-card" id="plan-solo" onclick="selectPlan('solo')" style="flex:1;border:2px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;text-align:center;transition:border-color 0.15s">
           <div style="font-weight:700;font-size:1rem;color:var(--text)">Solo</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--accent);margin:4px 0">$29<span style="font-size:0.75rem;font-weight:400;color:var(--text-muted)">/mo</span></div>
-          <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.4">1 user<br>10 estimates/mo<br>All materials</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.6">
+            1 user<br>
+            20 estimates/month<br>
+            Fence &amp; mulch estimating<br>
+            PDF export<br>
+            Detailed BOM
+          </div>
         </div>
         <div class="plan-card" id="plan-pro" onclick="selectPlan('pro')" style="flex:1;border:2px solid var(--accent);border-radius:8px;padding:12px;cursor:pointer;text-align:center;position:relative;transition:border-color 0.15s">
-          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600">POPULAR</div>
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600">BEST VALUE</div>
           <div style="font-weight:700;font-size:1rem;color:var(--text)">Pro</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--accent);margin:4px 0">$49<span style="font-size:0.75rem;font-weight:400;color:var(--text-muted)">/mo</span></div>
-          <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.4">1 user<br>Unlimited estimates<br>All materials + mulch</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.6">
+            1 user<br>
+            <b style="color:var(--text)">Unlimited</b> estimates<br>
+            Fence &amp; mulch estimating<br>
+            Custom price book<br>
+            Customer approvals<br>
+            Job site photos
+          </div>
         </div>
         <div class="plan-card" id="plan-team" onclick="selectPlan('team')" style="flex:1;border:2px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;text-align:center;transition:border-color 0.15s">
           <div style="font-weight:700;font-size:1rem;color:var(--text)">Team</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--accent);margin:4px 0">$99<span style="font-size:0.75rem;font-weight:400;color:var(--text-muted)">/mo</span></div>
-          <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.4">5 users<br>Unlimited estimates<br>Roles &amp; reports</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.6">
+            <b style="color:var(--text)">5 users</b><br>
+            Unlimited estimates<br>
+            Everything in Pro<br>
+            Team management<br>
+            Custom roles<br>
+            Reports dashboard
+          </div>
         </div>
       </div>
-      <button class="btn btn-full" id="paywall-subscribe-btn" onclick="handleUpgrade()">Start Free Trial — Pro</button>
+      <button class="btn btn-full" id="paywall-subscribe-btn" onclick="handleUpgrade()">Subscribe — Pro $49/mo</button>
       <p class="auth-switch" style="margin-top:12px"><a href="#" onclick="document.getElementById('paywall-modal').style.display='none'; return false;">Maybe later</a> · <a href="#" onclick="Auth.logout(); location.reload(); return false;">Log out</a></p>
     </div>
   </div>
@@ -580,9 +600,10 @@
           </div>
         </div>
         <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
-          <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none" data-i18n="account_manage_sub">Manage Subscription</button>
+          <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none">Manage Subscription</button>
+          <button class="btn btn-full btn-outline" id="account-cancel-btn" onclick="handleManageBilling()" style="display:none">Cancel Subscription</button>
           <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="showPricing()" style="display:none">View Plans</button>
-          <button class="btn btn-full btn-outline" onclick="handleExportData()" data-i18n="account_export">Export My Data</button>
+          <button class="btn btn-full btn-outline" onclick="handleExportData()">Export My Data</button>
         </div>
         <div class="account-utility-row" style="margin-top:12px">
           <button class="btn btn-sm btn-outline" onclick="resetHints()">Reset Tips</button>
@@ -899,6 +920,8 @@
     }
 
     // Gate check — show signup prompt for premium features
+    var _subscriptionActive = false;
+
     function requireAuth(featureName) {
       if (Auth.isLoggedIn()) return true;
       document.getElementById('auth-modal').style.display = 'flex';
@@ -906,6 +929,15 @@
       document.getElementById('auth-gate-msg').textContent = featureName ? 'Sign up to ' + featureName : '';
       document.getElementById('auth-gate-msg').style.display = featureName ? 'block' : 'none';
       showSignup();
+      return false;
+    }
+
+    function requireSubscription(featureName) {
+      if (!Auth.isLoggedIn()) return requireAuth(featureName);
+      if (_subscriptionActive) return true;
+      document.getElementById('paywall-title').textContent = 'Trial Ended';
+      document.getElementById('paywall-sub').textContent = 'Subscribe to ' + (featureName || 'continue using FenceTrace') + '.';
+      document.getElementById('paywall-modal').style.display = 'flex';
       return false;
     }
 
@@ -925,14 +957,22 @@
       // Check billing status
       try {
         const status = await API.getStatus();
+        _subscriptionActive = status.active;
         if (!status.active) {
+          document.getElementById('paywall-title').textContent = 'Trial Ended';
+          document.getElementById('paywall-sub').textContent = 'Your 14-day trial has ended. Subscribe to keep creating estimates.';
           document.getElementById('paywall-modal').style.display = 'flex';
+        } else if (status.status === 'active') {
+          document.getElementById('trial-banner').style.display = 'none';
+          document.getElementById('paywall-modal').style.display = 'none';
         } else if (status.trialActive && status.status === 'trialing') {
           document.getElementById('trial-banner').style.display = 'flex';
           document.getElementById('trial-text').textContent = status.daysLeft + ' days left in trial';
         }
-        // If status is 'active' — no banner, no paywall, just let them work
-      } catch (e) { /* API not deployed yet, skip */ }
+      } catch (e) {
+        // API not deployed or error — allow access (don't lock people out on errors)
+        _subscriptionActive = true;
+      }
 
       // Load company branding + pricing
       try {
@@ -1136,16 +1176,33 @@
         }
         if (status.planAmount) {
           document.getElementById('account-amount-row').style.display = 'flex';
-          document.getElementById('account-amount').textContent = '$' + status.planAmount + '/month';
+          var tierName = { solo: 'Solo', pro: 'Pro', team: 'Team' }[status.tier] || 'Pro';
+          document.getElementById('account-amount').textContent = tierName + ' — $' + status.planAmount + '/month';
+        } else if (status.tier) {
+          document.getElementById('account-amount-row').style.display = 'flex';
+          var tierName = { solo: 'Solo', pro: 'Pro', team: 'Team' }[status.tier] || '';
+          document.getElementById('account-amount').textContent = tierName + ' (trial)';
         }
 
-        // Show manage button for active subscribers, upgrade for everyone else
+        // Show appropriate buttons based on subscription state
         if (status.canCancel) {
+          // Active subscriber: manage, change plan, cancel
           document.getElementById('account-manage-btn').style.display = '';
-          document.getElementById('account-upgrade-btn').style.display = 'none';
-        } else if (!status.active) {
-          document.getElementById('account-manage-btn').style.display = 'none';
+          document.getElementById('account-cancel-btn').style.display = '';
           document.getElementById('account-upgrade-btn').style.display = '';
+          document.getElementById('account-upgrade-btn').textContent = 'Change Plan';
+        } else if (status.trialActive) {
+          // On trial: show plans
+          document.getElementById('account-manage-btn').style.display = 'none';
+          document.getElementById('account-cancel-btn').style.display = 'none';
+          document.getElementById('account-upgrade-btn').style.display = '';
+          document.getElementById('account-upgrade-btn').textContent = 'View Plans';
+        } else {
+          // Expired/canceled: show plans to resubscribe
+          document.getElementById('account-manage-btn').style.display = 'none';
+          document.getElementById('account-cancel-btn').style.display = 'none';
+          document.getElementById('account-upgrade-btn').style.display = '';
+          document.getElementById('account-upgrade-btn').textContent = 'Subscribe';
         }
       } catch (e) { /* skip */ }
     }
@@ -1411,8 +1468,8 @@
       var card = document.getElementById('plan-' + tier);
       if (card) card.style.borderColor = 'var(--accent)';
       var btn = document.getElementById('paywall-subscribe-btn');
-      var names = { solo: 'Solo', pro: 'Pro', team: 'Team' };
-      if (btn) btn.textContent = 'Start Free Trial — ' + (names[tier] || 'Pro');
+      var prices = { solo: 'Solo $29/mo', pro: 'Pro $49/mo', team: 'Team $99/mo' };
+      if (btn) btn.textContent = 'Subscribe — ' + (prices[tier] || 'Pro $49/mo');
     }
 
     function showPricing() {
@@ -1426,7 +1483,7 @@
       try {
         const { url } = await API.createCheckout(window.location.href, selectedTier);
         window.location.href = url;
-      } catch (e) { showToast('Billing not configured yet'); }
+      } catch (e) { showToast('Billing error: ' + (e.message || e)); console.error('Checkout error:', e); }
     }
 
     // === Save/Load Estimates ===
@@ -1921,6 +1978,8 @@
         if (urlParams.get('billing') === 'success') {
           window.history.replaceState({}, '', window.location.pathname);
           showToast('Subscription activated!');
+          document.getElementById('trial-banner').style.display = 'none';
+          document.getElementById('paywall-modal').style.display = 'none';
         }
         onLoggedIn().catch(function() {
           // If onLoggedIn fails (API down, token expired), fall back to guest
