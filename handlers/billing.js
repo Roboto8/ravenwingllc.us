@@ -129,16 +129,21 @@ module.exports.status = async (event) => {
     }
   }
 
+  // past_due gets a 7-day grace period before lockout
+  const isPastDue = company.subscriptionStatus === 'past_due';
+  const isActive = company.subscriptionStatus === 'active' || trialActive || isPastDue;
+
   return res.ok({
     status: company.subscriptionStatus,
     trialEndsAt: company.trialEndsAt,
     trialActive,
     daysLeft,
-    active: company.subscriptionStatus === 'active' || trialActive,
+    active: isActive,
+    pastDue: isPastDue,
     nextBillingDate,
     planAmount,
     tier,
-    canCancel: company.subscriptionStatus === 'active'
+    canCancel: company.subscriptionStatus === 'active' || isPastDue
   });
 };
 

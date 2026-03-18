@@ -195,5 +195,63 @@ describe('photos handler', () => {
       });
       expect(result.statusCode).toBe(404);
     });
+
+    test('returns 403 when no auth', async () => {
+      auth.getCompanyId.mockResolvedValue(null);
+      const result = await photos.deletePhoto({
+        pathParameters: { id: 'est-1', key: 'comp-1/est-1/a.jpg' }
+      });
+      expect(result.statusCode).toBe(403);
+    });
+  });
+
+  describe('getUploadUrl - edge cases', () => {
+    test('handles missing body gracefully', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+
+      const result = await photos.getUploadUrl({
+        pathParameters: { id: 'est-1' },
+        body: null
+      });
+      expect(result.statusCode).toBe(400);
+    });
+
+    test('handles missing contentType', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+
+      const result = await photos.getUploadUrl({
+        pathParameters: { id: 'est-1' },
+        body: JSON.stringify({ filename: 'test.jpg' })
+      });
+      expect(result.statusCode).toBe(400);
+    });
+
+    test('handles null photos array on estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const estNoPhotos = { ...mockEstimate, photos: null };
+      db.query.mockResolvedValue({ items: [estNoPhotos] });
+
+      const result = await photos.getUploadUrl({
+        pathParameters: { id: 'est-1' },
+        body: JSON.stringify({ filename: 'pic.jpg', contentType: 'image/jpeg' })
+      });
+      expect(result.statusCode).toBe(200);
+    });
+  });
+
+  describe('deletePhoto - edge cases', () => {
+    test('handles estimate with null photos array', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const estNoPhotos = { ...mockEstimate, photos: null };
+      db.query.mockResolvedValue({ items: [estNoPhotos] });
+      db.update.mockResolvedValue({});
+
+      const result = await photos.deletePhoto({
+        pathParameters: { id: 'est-1', key: 'comp-1/est-1/abc-yard.jpg' }
+      });
+      expect(result.statusCode).toBe(200);
+    });
   });
 });

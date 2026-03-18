@@ -405,6 +405,223 @@ describe('billing handler', () => {
     });
   });
 
+  // ===== CHECKOUT - tier selection =====
+  describe('checkout - tier selection', () => {
+    test('checkout with tier=solo uses STRIPE_PRICE_SOLO', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo_123';
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ tier: 'solo' })
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.line_items).toEqual([{ price: 'price_solo_123', quantity: 1 }]);
+    });
+
+    test('checkout with tier=team uses STRIPE_PRICE_TEAM', async () => {
+      process.env.STRIPE_PRICE_TEAM = 'price_team_456';
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ tier: 'team' })
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.line_items).toEqual([{ price: 'price_team_456', quantity: 1 }]);
+    });
+
+    test('checkout with tier=pro uses STRIPE_PRICE_PRO', async () => {
+      process.env.STRIPE_PRICE_PRO = 'price_pro_789';
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ tier: 'pro' })
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.line_items).toEqual([{ price: 'price_pro_789', quantity: 1 }]);
+    });
+
+    test('checkout defaults to pro tier when no tier specified', async () => {
+      process.env.STRIPE_PRICE_PRO = 'price_pro_default';
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({})
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.line_items).toEqual([{ price: 'price_pro_default', quantity: 1 }]);
+    });
+
+    test('checkout falls back to STRIPE_PRICE_ID when tier price not set', async () => {
+      delete process.env.STRIPE_PRICE_PRO;
+      delete process.env.STRIPE_PRICE_SOLO;
+      delete process.env.STRIPE_PRICE_TEAM;
+      process.env.STRIPE_PRICE_ID = 'price_fallback';
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({})
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.line_items).toEqual([{ price: 'price_fallback', quantity: 1 }]);
+    });
+
+    test('checkout passes tier in customer metadata when creating new customer', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo_123';
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithoutStripe);
+      mockStripe.customers.create.mockResolvedValue({ id: 'cus_new' });
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ tier: 'solo' })
+      });
+
+      expect(mockStripe.customers.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({ tier: 'solo' })
+        })
+      );
+    });
+  });
+
+  // ===== STATUS - tier in response =====
+  describe('status - tier info', () => {
+    test('returns tier info for non-subscribed users', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'trialing',
+        trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+        tier: 'solo'
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(body.tier).toBe('solo');
+    });
+
+    test('returns default pro tier when no tier set', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'trialing',
+        trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString()
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(body.tier).toBe('pro');
+    });
+
+    test('returns canCancel true for active subscription', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'active',
+        trialEndsAt: '2025-01-01T00:00:00.000Z'
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(body.canCancel).toBe(true);
+    });
+
+    test('returns canCancel false for non-active subscription', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'canceled',
+        trialEndsAt: '2025-01-01T00:00:00.000Z'
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(body.canCancel).toBe(false);
+    });
+
+    test('does not call Stripe when subscription is not active', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'canceled',
+        subscriptionId: 'sub_123',
+        trialEndsAt: '2025-01-01T00:00:00.000Z'
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(mockStripe.subscriptions.retrieve).not.toHaveBeenCalled();
+      expect(body.nextBillingDate).toBeNull();
+    });
+
+    test('does not call Stripe when no subscriptionId', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'active',
+        trialEndsAt: '2025-01-01T00:00:00.000Z'
+      });
+
+      const result = await billing.status({});
+      expect(mockStripe.subscriptions.retrieve).not.toHaveBeenCalled();
+    });
+  });
+
+  // ===== CHECKOUT - sanitizeReturnUrl additional =====
+  describe('checkout - sanitizeReturnUrl edge cases', () => {
+    test('accepts https URLs', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ returnUrl: 'https://my-domain.com/dashboard' })
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.success_url).toContain('https://my-domain.com/dashboard');
+    });
+
+    test('handles null returnUrl', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ returnUrl: null })
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.success_url).toContain('ravenwingllc-frontend-dev');
+    });
+  });
+
+  // ===== PORTAL - edge cases =====
+  describe('portal - edge cases', () => {
+    test('returns 403 when no company found', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(null);
+
+      const result = await billing.portal({ body: '{}' });
+      expect(result.statusCode).toBe(400);
+    });
+  });
+
   // ===== EXPORT DATA =====
   describe('exportData', () => {
     test('exports all company estimates', async () => {

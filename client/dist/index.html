@@ -115,7 +115,7 @@
   <!-- Trial Banner -->
   <div class="trial-banner" id="trial-banner" style="display:none">
     <span id="trial-text"></span>
-    <button class="btn btn-sm" onclick="showPricing()" data-i18n="trial_subscribe_btn">Subscribe</button>
+    <button class="btn btn-sm" id="trial-action-btn" onclick="showPricing()">Subscribe</button>
     <button class="banner-close" onclick="this.parentElement.style.display='none'">&times;</button>
   </div>
 
@@ -602,7 +602,7 @@
         <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-full" id="account-manage-btn" onclick="handleManageBilling()" style="display:none">Manage Subscription</button>
           <button class="btn btn-full btn-outline" id="account-cancel-btn" onclick="handleManageBilling()" style="display:none">Cancel Subscription</button>
-          <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="showPricing()" style="display:none">View Plans</button>
+          <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="showPricing()">View Plans</button>
           <button class="btn btn-full btn-outline" onclick="handleExportData()">Export My Data</button>
         </div>
         <div class="account-utility-row" style="margin-top:12px">
@@ -777,10 +777,10 @@
   <script>
     // === CONFIG — Update these after first deploy ===
     const FC_CONFIG = {
-      userPoolId: 'us-east-1_iia5EKofI',
-      clientId: '4d2u5tft5g3i5h5jg0tde3dp5e',
-      apiUrl: 'https://88g2oyyl0l.execute-api.us-east-1.amazonaws.com',
-      assetsBucket: 'fencecalc-assets-dev'
+      userPoolId: 'us-east-1_R2XpjOllC',
+      clientId: '5u9qucogbu5fod8rrqptnvmebh',
+      apiUrl: 'https://wkst09rgl3.execute-api.us-east-1.amazonaws.com',
+      assetsBucket: 'fencecalc-assets-prod'
     };
 
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
@@ -962,6 +962,13 @@
           document.getElementById('paywall-title').textContent = 'Trial Ended';
           document.getElementById('paywall-sub').textContent = 'Your 14-day trial has ended. Subscribe to keep creating estimates.';
           document.getElementById('paywall-modal').style.display = 'flex';
+        } else if (status.pastDue) {
+          document.getElementById('trial-banner').style.display = 'flex';
+          document.getElementById('trial-banner').style.background = '#b93a2a';
+          document.getElementById('trial-text').textContent = 'Payment failed — please update your payment method';
+          document.getElementById('trial-action-btn').textContent = 'Update Payment';
+          document.getElementById('trial-action-btn').onclick = handleManageBilling;
+          document.getElementById('paywall-modal').style.display = 'none';
         } else if (status.status === 'active') {
           document.getElementById('trial-banner').style.display = 'none';
           document.getElementById('paywall-modal').style.display = 'none';
@@ -1473,8 +1480,9 @@
     }
 
     function showPricing() {
+      document.getElementById('account-modal').style.display = 'none';
       document.getElementById('paywall-title').textContent = 'Choose Your Plan';
-      document.getElementById('paywall-sub').textContent = '14-day free trial on all plans. Cancel anytime.';
+      document.getElementById('paywall-sub').textContent = 'Cancel anytime. No contracts, no cancellation fees.';
       document.getElementById('paywall-modal').style.display = 'flex';
       selectPlan(selectedTier);
     }

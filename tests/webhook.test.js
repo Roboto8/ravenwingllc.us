@@ -208,6 +208,166 @@ describe('webhook handler', () => {
     });
   });
 
+  // ===== checkout.session.completed - tier detection =====
+  describe('checkout.session.completed - tier detection', () => {
+    test('detects solo tier from price ID', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo_test';
+      process.env.STRIPE_PRICE_TEAM = 'price_team_test';
+      const db = require('../handlers/lib/dynamo');
+
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        items: { data: [{ price: { id: 'price_solo_test' } }] }
+      });
+
+      mockConstructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: { customer: 'cus_123', subscription: 'sub_solo' }
+        }
+      });
+
+      await handler(makeEvent());
+
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-abc', 'PROFILE',
+        expect.objectContaining({ tier: 'solo' })
+      );
+    });
+
+    test('detects team tier from price ID', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo_test';
+      process.env.STRIPE_PRICE_TEAM = 'price_team_test';
+      const db = require('../handlers/lib/dynamo');
+
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        items: { data: [{ price: { id: 'price_team_test' } }] }
+      });
+
+      mockConstructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: { customer: 'cus_123', subscription: 'sub_team' }
+        }
+      });
+
+      await handler(makeEvent());
+
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-abc', 'PROFILE',
+        expect.objectContaining({ tier: 'team' })
+      );
+    });
+
+    test('defaults to pro tier when price does not match', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo_test';
+      process.env.STRIPE_PRICE_TEAM = 'price_team_test';
+      const db = require('../handlers/lib/dynamo');
+
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        items: { data: [{ price: { id: 'price_unknown' } }] }
+      });
+
+      mockConstructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: { customer: 'cus_123', subscription: 'sub_pro' }
+        }
+      });
+
+      await handler(makeEvent());
+
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-abc', 'PROFILE',
+        expect.objectContaining({ tier: 'pro' })
+      );
+    });
+
+    test('defaults to pro tier when subscription retrieve fails', async () => {
+      const db = require('../handlers/lib/dynamo');
+
+      mockSubscriptionsRetrieve.mockRejectedValue(new Error('Stripe error'));
+
+      mockConstructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: { customer: 'cus_123', subscription: 'sub_err' }
+        }
+      });
+
+      await handler(makeEvent());
+
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-abc', 'PROFILE',
+        expect.objectContaining({ tier: 'pro' })
+      );
+    });
+
+    test('no-op when subscription is missing', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockConstructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: { customer: 'cus_123', subscription: null }
+        }
+      });
+
+      await handler(makeEvent());
+      expect(db.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ===== company not found paths =====
+  describe('customer.subscription.updated - company not found', () => {
+    test('no-op when company not found', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockScan.mockResolvedValue({ Items: [] });
+      mockConstructEvent.mockReturnValue({
+        type: 'customer.subscription.updated',
+        data: {
+          object: { customer: 'cus_unknown', id: 'sub_xyz', status: 'active' }
+        }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(db.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('customer.subscription.deleted - company not found', () => {
+    test('no-op when company not found', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockScan.mockResolvedValue({ Items: [] });
+      mockConstructEvent.mockReturnValue({
+        type: 'customer.subscription.deleted',
+        data: {
+          object: { customer: 'cus_unknown', id: 'sub_xyz' }
+        }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(db.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('invoice.payment_failed - company not found', () => {
+    test('no-op when company not found', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockScan.mockResolvedValue({ Items: [] });
+      mockConstructEvent.mockReturnValue({
+        type: 'invoice.payment_failed',
+        data: {
+          object: { customer: 'cus_unknown' }
+        }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(db.update).not.toHaveBeenCalled();
+    });
+  });
+
   // ===== Unknown event type =====
   describe('unknown event type', () => {
     test('returns 200 without updating', async () => {

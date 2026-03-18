@@ -78,6 +78,51 @@ describe('approval handler', () => {
       const result = await approval.share({ pathParameters: { id: 'est-1' }, headers: {} });
       expect(result.statusCode).toBe(403);
     });
+
+    test('does not reinitialize approvalHistory when already present', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const existingHistory = [{ action: 'sent', timestamp: '2026-01-01T00:00:00Z' }];
+      db.query.mockResolvedValue({
+        items: [{ ...mockEstimate, approvalHistory: existingHistory }]
+      });
+      db.update.mockResolvedValue({});
+
+      await approval.share({
+        pathParameters: { id: 'est-1' },
+        headers: { origin: 'https://fencetrace.com' }
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.approvalHistory).toBeUndefined();
+    });
+
+    test('uses Origin header fallback', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.update.mockResolvedValue({});
+
+      const result = await approval.share({
+        pathParameters: { id: 'est-1' },
+        headers: { Origin: 'https://app.fencetrace.com' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(body.link).toContain('https://app.fencetrace.com');
+    });
+
+    test('works with no origin header', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.update.mockResolvedValue({});
+
+      const result = await approval.share({
+        pathParameters: { id: 'est-1' },
+        headers: {}
+      });
+      const body = JSON.parse(result.body);
+
+      expect(body.link).toContain('approve.html?token=');
+    });
   });
 
   describe('getPublic', () => {
@@ -107,6 +152,79 @@ describe('approval handler', () => {
         pathParameters: { token: 'bad-token' }
       });
       expect(result.statusCode).toBe(404);
+    });
+
+    test('returns empty companyName when company not found', async () => {
+      db.queryGSI.mockResolvedValue([{
+        ...mockEstimate,
+        GSI1SK: 'COMPANY#comp-1'
+      }]);
+      db.get.mockResolvedValue(null);
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(body.companyName).toBe('');
+    });
+
+    test('returns empty companyName when GSI1SK has no company', async () => {
+      db.queryGSI.mockResolvedValue([{
+        ...mockEstimate,
+        GSI1SK: ''
+      }]);
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+    });
+
+    test('returns default values for missing estimate fields', async () => {
+      db.queryGSI.mockResolvedValue([{
+        PK: 'COMPANY#comp-1', SK: 'EST#1',
+        GSI1SK: 'COMPANY#comp-1'
+      }]);
+      db.get.mockResolvedValue({ companyName: 'Test Co' });
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(body.customerName).toBe('');
+      expect(body.fenceType).toBe('');
+      expect(body.fenceHeight).toBe(6);
+      expect(body.totalCost).toBe(0);
+      expect(body.approvalStatus).toBe('draft');
+      expect(body.approvalHistory).toEqual([]);
+    });
+
+    test('maps gates to only type and price', async () => {
+      db.queryGSI.mockResolvedValue([{
+        ...mockEstimate,
+        GSI1SK: 'COMPANY#comp-1',
+        gates: [
+          { type: 'single', price: 350, internalId: 'g1', notes: 'private' },
+          { type: 'double', price: 600, internalId: 'g2' }
+        ]
+      }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(body.gates).toEqual([
+        { type: 'single', price: 350 },
+        { type: 'double', price: 600 }
+      ]);
+      // Should not leak internal fields
+      expect(body.gates[0].internalId).toBeUndefined();
     });
   });
 

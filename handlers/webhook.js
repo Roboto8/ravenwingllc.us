@@ -86,6 +86,67 @@ module.exports.handler = async (event) => {
       }
       break;
     }
+
+    case 'invoice.paid': {
+      // Successful payment — ensure status is active
+      const customerId = data.customer;
+      const companyId = await findCompanyByStripeId(customerId);
+      if (companyId && data.subscription) {
+        await db.update('COMPANY#' + companyId, 'PROFILE', {
+          subscriptionStatus: 'active',
+          subscriptionId: data.subscription,
+          lastPaymentAt: new Date().toISOString()
+        });
+      }
+      break;
+    }
+
+    case 'charge.refunded': {
+      // Full refund — cancel access
+      const customerId = data.customer;
+      const companyId = await findCompanyByStripeId(customerId);
+      if (companyId && data.refunded) {
+        await db.update('COMPANY#' + companyId, 'PROFILE', {
+          subscriptionStatus: 'canceled',
+          subscriptionId: '',
+          canceledAt: new Date().toISOString(),
+          cancelReason: 'refunded'
+        });
+        // Cancel the subscription in Stripe too
+        try {
+          if (data.invoice) {
+            const invoice = await s.invoices.retrieve(data.invoice);
+            if (invoice.subscription) {
+              await s.subscriptions.cancel(invoice.subscription);
+            }
+          }
+        } catch (e) {
+          console.error('Could not cancel subscription after refund:', e.message);
+        }
+      }
+      break;
+    }
+
+    case 'customer.subscription.trial_will_end': {
+      // Trial ending in 3 days — could send notification email
+      console.log('Trial ending soon for customer:', data.customer);
+      break;
+    }
+
+    case 'charge.dispute.created': {
+      // Chargeback — immediately revoke access
+      const customerId = data.customer;
+      const companyId = await findCompanyByStripeId(customerId);
+      if (companyId) {
+        await db.update('COMPANY#' + companyId, 'PROFILE', {
+          subscriptionStatus: 'canceled',
+          subscriptionId: '',
+          canceledAt: new Date().toISOString(),
+          cancelReason: 'dispute'
+        });
+      }
+      break;
+    }
   }
 
   return { statusCode: 200, body: 'ok' };

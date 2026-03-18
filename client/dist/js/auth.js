@@ -77,7 +77,7 @@ const Auth = {
   },
 
   async refresh() {
-    if (!this.tokens && this.tokens.refreshToken) throw new Error('No refresh token');
+    if (!this.tokens || !this.tokens.refreshToken) throw new Error('No refresh token');
 
     const data = await this._call('InitiateAuth', {
       ClientId: this.clientId,
@@ -103,7 +103,13 @@ const Auth = {
     if (!this.tokens || !this.tokens.idToken) return false;
     try {
       var payload = this._parseToken(this.tokens.idToken);
-      return payload.exp * 1000 > Date.now();
+      if (payload.exp * 1000 > Date.now()) return true;
+      // Token expired but we have a refresh token — consider logged in, refresh in background
+      if (this.tokens.refreshToken) {
+        this.refresh().catch(function() {});
+        return true;
+      }
+      return false;
     } catch (e) {
       return false;
     }
@@ -131,12 +137,15 @@ const Auth = {
       if (stored) {
         this.tokens = JSON.parse(stored);
         this.user = this._parseToken(this.tokens.idToken);
-        // Check if expired
-        if (this.user.exp * 1000 < Date.now()) {
-          this.refresh().catch(() => this.logout());
+        // Refresh in background if expired — don't logout on failure
+        if (this.user.exp * 1000 < Date.now() && this.tokens.refreshToken) {
+          this.refresh().catch(function() {
+            // Silent fail — next API call will get 401 and prompt login
+          });
         }
       }
     } catch (e) {
+      // Corrupted tokens — clear them
       this.logout();
     }
   }

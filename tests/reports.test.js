@@ -127,5 +127,113 @@ describe('reports handler', () => {
       const result = await reports.dashboard({ queryStringParameters: {} });
       expect(result.statusCode).toBe(403);
     });
+
+    test('filters by 30d period', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const recent = makeEstimate({ createdAt: new Date().toISOString() });
+      const old = makeEstimate({ createdAt: '2020-01-01T00:00:00.000Z' });
+      db.query.mockResolvedValue({ items: [recent, old], nextKey: null });
+
+      const result = await reports.dashboard({ queryStringParameters: { period: '30d' } });
+      const body = JSON.parse(result.body);
+
+      expect(body.totalEstimates).toBe(1);
+    });
+
+    test('filters by 90d period', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const recent = makeEstimate({ createdAt: new Date().toISOString() });
+      const old = makeEstimate({ createdAt: '2020-01-01T00:00:00.000Z' });
+      db.query.mockResolvedValue({ items: [recent, old], nextKey: null });
+
+      const result = await reports.dashboard({ queryStringParameters: { period: '90d' } });
+      const body = JSON.parse(result.body);
+
+      expect(body.totalEstimates).toBe(1);
+    });
+
+    test('filters by 12m period', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const recent = makeEstimate({ createdAt: new Date().toISOString() });
+      const old = makeEstimate({ createdAt: '2020-01-01T00:00:00.000Z' });
+      db.query.mockResolvedValue({ items: [recent, old], nextKey: null });
+
+      const result = await reports.dashboard({ queryStringParameters: { period: '12m' } });
+      const body = JSON.parse(result.body);
+
+      expect(body.totalEstimates).toBe(1);
+    });
+
+    test('paginates through multiple query pages', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query
+        .mockResolvedValueOnce({
+          items: [makeEstimate()],
+          nextKey: 'cursor1'
+        })
+        .mockResolvedValueOnce({
+          items: [makeEstimate()],
+          nextKey: null
+        });
+
+      const result = await reports.dashboard({ queryStringParameters: {} });
+      const body = JSON.parse(result.body);
+
+      expect(body.totalEstimates).toBe(2);
+      expect(db.query).toHaveBeenCalledTimes(2);
+    });
+
+    test('handles null queryStringParameters', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [], nextKey: null });
+
+      const result = await reports.dashboard({ queryStringParameters: null });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.totalEstimates).toBe(0);
+    });
+
+    test('tracks revenue by month for approved estimates', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({
+        items: [
+          makeEstimate({ status: 'approved', totalCost: '500', createdAt: '2026-01-10T00:00:00Z' }),
+          makeEstimate({ status: 'draft', totalCost: '300', createdAt: '2026-01-20T00:00:00Z' })
+        ],
+        nextKey: null
+      });
+
+      const result = await reports.dashboard({ queryStringParameters: {} });
+      const body = JSON.parse(result.body);
+
+      expect(body.estimatesByMonth[0].revenue).toBe(500);
+    });
+
+    test('estimates with missing fenceType counted as unknown', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({
+        items: [makeEstimate({ fenceType: undefined })],
+        nextKey: null
+      });
+
+      const result = await reports.dashboard({ queryStringParameters: {} });
+      const body = JSON.parse(result.body);
+
+      expect(body.topMaterials[0].material).toBe('unknown');
+    });
+
+    test('estimates with missing status counted as draft', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({
+        items: [makeEstimate({ status: undefined })],
+        nextKey: null
+      });
+
+      const result = await reports.dashboard({ queryStringParameters: {} });
+      const body = JSON.parse(result.body);
+
+      expect(body.estimatesByStatus.draft).toBe(1);
+    });
   });
 });
