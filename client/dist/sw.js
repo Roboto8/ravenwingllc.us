@@ -1,4 +1,4 @@
-var CACHE_NAME = 'fencetrace-v2';
+var CACHE_NAME = 'fencetrace-v4';
 var STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -7,7 +7,8 @@ var STATIC_ASSETS = [
   '/js/app.js',
   '/js/api.js',
   '/js/auth.js',
-  '/js/bom.js',
+  '/js/i18n.js',
+  '/js/regions.js',
   '/manifest.json',
   '/icon-192.svg',
   '/icon-512.svg',
@@ -38,7 +39,7 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
 
-  // Network-first for API calls
+  // Network-first for API calls and cross-origin
   if (url.pathname.startsWith('/api') || url.hostname !== self.location.hostname) {
     e.respondWith(
       fetch(e.request).catch(function() {
@@ -48,15 +49,20 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Cache-first for static assets
+  // Stale-while-revalidate for static assets
+  // Serve cached version immediately, fetch fresh in background
   e.respondWith(
-    caches.match(e.request).then(function(cached) {
-      return cached || fetch(e.request).then(function(response) {
-        var clone = response.clone();
-        caches.open(CACHE_NAME).then(function(cache) {
-          cache.put(e.request, clone);
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.match(e.request).then(function(cached) {
+        var fetchPromise = fetch(e.request).then(function(response) {
+          if (response.ok) {
+            cache.put(e.request, response.clone());
+          }
+          return response;
+        }).catch(function() {
+          return cached;
         });
-        return response;
+        return cached || fetchPromise;
       });
     })
   );

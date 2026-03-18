@@ -8,6 +8,10 @@ function getStripe() {
   return stripe;
 }
 
+// In-memory rate limit: companyId -> last checkout timestamp
+const _checkoutTimestamps = {};
+const RATE_LIMIT_MS = 10000; // 10 seconds
+
 // Allowed return URL origins to prevent open redirects
 const ALLOWED_ORIGINS = [
   'http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com',
@@ -33,8 +37,20 @@ module.exports.checkout = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
+  // Rate limit: prevent same company from spamming checkout
+  const now = Date.now();
+  if (_checkoutTimestamps[companyId] && (now - _checkoutTimestamps[companyId]) < RATE_LIMIT_MS) {
+    return res.tooMany('Please wait before starting another checkout');
+  }
+  _checkoutTimestamps[companyId] = now;
+
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!company) return res.notFound();
+
+  // Prevent double-charge: block checkout if subscription is already active
+  if (company.subscriptionStatus === 'active' && company.subscriptionId) {
+    return res.bad('Company already has an active subscription');
+  }
 
   const s = getStripe();
   const body = JSON.parse(event.body || '{}');
@@ -62,8 +78,11 @@ module.exports.checkout = async (event) => {
     await db.update('COMPANY#' + companyId, 'PROFILE', { stripeCustomerId: customerId });
   }
 
+  const clientRefId = companyId + '_' + Date.now();
+
   const session = await s.checkout.sessions.create({
     customer: customerId,
+    client_reference_id: clientRefId,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: returnUrl + '?billing=success',
@@ -179,3 +198,6 @@ module.exports.exportData = async (event) => {
     totalEstimates: allEstimates.length
   });
 };
+
+// Exposed for testing
+module.exports._checkoutTimestamps = _checkoutTimestamps;

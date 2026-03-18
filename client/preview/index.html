@@ -136,8 +136,8 @@
             Detailed BOM
           </div>
         </div>
-        <div class="plan-card" id="plan-pro" onclick="selectPlan('pro')" style="flex:1;border:2px solid var(--accent);border-radius:8px;padding:12px;cursor:pointer;text-align:center;position:relative;transition:border-color 0.15s">
-          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600">BEST VALUE</div>
+        <div class="plan-card" id="plan-pro" onclick="selectPlan('pro')" style="flex:1;border:2px solid var(--accent);border-radius:8px;padding:20px 12px 12px;cursor:pointer;text-align:center;position:relative;transition:border-color 0.15s">
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap">BEST VALUE</div>
           <div style="font-weight:700;font-size:1rem;color:var(--text)">Pro</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--accent);margin:4px 0">$49<span style="font-size:0.75rem;font-weight:400;color:var(--text-muted)">/mo</span></div>
           <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.6">
@@ -169,7 +169,7 @@
 
   <nav class="nav">
     <div class="nav-left">
-      <span class="nav-brand">Fence<span class="accent">Trace</span></span>
+      <a href="/" class="nav-brand" style="text-decoration:none;color:inherit">Fence<span class="accent">Trace</span></a>
       <span class="nav-tagline" data-i18n="nav_tagline">Satellite fence estimates</span>
     </div>
     <div class="nav-right">
@@ -244,29 +244,29 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
           <span data-i18n="tool_draw">Draw</span>
         </button>
+        <button class="tool-btn" id="undo-btn" onclick="undoLast()" title="Undo last point (Ctrl+Z)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6.69 3L3 13"/></svg>
+          <span data-i18n="tool_undo">Undo</span>
+        </button>
         <button class="tool-btn" id="gate-btn" onclick="setTool('gate')" title="Gate tool (G)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
           <span data-i18n="tool_gate">Gate</span>
-        </button>
-        <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
-          <span data-i18n="tool_curve">Curve</span>
         </button>
         <button class="tool-btn" id="mulch-btn" onclick="setTool('mulch')" title="Mulch area tool (A)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20L12 4 2 20z"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="14" cy="14" r="1" fill="currentColor"/><circle cx="11" cy="18" r="1" fill="currentColor"/></svg>
           <span data-i18n="tool_mulch">Mulch</span>
         </button>
-        <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="New section (N)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          <span data-i18n="tool_section">Section</span>
-        </button>
         <button class="tool-btn" id="close-btn" style="display:none" onclick="closeFence()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
           <span data-i18n="tool_close">Close</span>
         </button>
-        <button class="tool-btn" id="undo-btn" onclick="undoLast()" title="Undo last point (Ctrl+Z)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6.69 3L3 13"/></svg>
-          <span data-i18n="tool_undo">Undo</span>
+        <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
+          <span data-i18n="tool_curve">Curve</span>
+        </button>
+        <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="New section (N)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <span data-i18n="tool_section">Section</span>
         </button>
         <button class="tool-btn danger" id="clear-btn" onclick="clearAll()" title="Clear all (Ctrl+Shift+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
@@ -1988,6 +1988,9 @@
           showToast('Subscription activated!');
           document.getElementById('trial-banner').style.display = 'none';
           document.getElementById('paywall-modal').style.display = 'none';
+        } else if (urlParams.get('billing') === 'cancel') {
+          window.history.replaceState({}, '', window.location.pathname);
+          showToast('Payment cancelled');
         }
         onLoggedIn().catch(function() {
           // If onLoggedIn fails (API down, token expired), fall back to guest

@@ -32,9 +32,11 @@ const mockStripe = {
 };
 jest.mock('stripe', () => jest.fn().mockReturnValue(mockStripe));
 
-// Mock dynamo lib (used in db.update)
+// Mock dynamo lib (used in db.update, db.get, db.put for idempotency)
 jest.mock('../handlers/lib/dynamo', () => ({
-  update: jest.fn().mockResolvedValue({})
+  update: jest.fn().mockResolvedValue({}),
+  get: jest.fn().mockResolvedValue(null),
+  put: jest.fn().mockResolvedValue({})
 }));
 
 const db = require('../handlers/lib/dynamo');
@@ -71,7 +73,9 @@ describe('webhook handler', () => {
     }));
     jest.mock('stripe', () => jest.fn().mockReturnValue(mockStripe));
     jest.mock('../handlers/lib/dynamo', () => ({
-      update: jest.fn().mockResolvedValue({})
+      update: jest.fn().mockResolvedValue({}),
+      get: jest.fn().mockResolvedValue(null),
+      put: jest.fn().mockResolvedValue({})
     }));
 
     handler = require('../handlers/webhook').handler;
@@ -380,6 +384,63 @@ describe('webhook handler', () => {
       const result = await handler(makeEvent());
       expect(result.statusCode).toBe(200);
       expect(db.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ===== Webhook idempotency =====
+  describe('idempotency', () => {
+    test('skips already-processed event', async () => {
+      const db = require('../handlers/lib/dynamo');
+      db.get.mockResolvedValue({ PK: 'WEBHOOK', SK: 'evt_already', processedAt: '2025-01-01' });
+
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_already',
+        type: 'checkout.session.completed',
+        data: { object: { customer: 'cus_123', subscription: 'sub_abc' } }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toContain('already processed');
+      expect(db.update).not.toHaveBeenCalled();
+      expect(db.put).not.toHaveBeenCalled();
+    });
+
+    test('records new event ID and processes it', async () => {
+      const db = require('../handlers/lib/dynamo');
+      db.get.mockResolvedValue(null);
+
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_new_123',
+        type: 'checkout.session.completed',
+        data: { object: { customer: 'cus_123', subscription: 'sub_abc' } }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(db.put).toHaveBeenCalledWith(
+        expect.objectContaining({
+          PK: 'WEBHOOK',
+          SK: 'evt_new_123',
+          processedAt: expect.any(String),
+          ttl: expect.any(Number)
+        })
+      );
+      expect(db.update).toHaveBeenCalled();
+    });
+
+    test('processes events without id (no idempotency check)', async () => {
+      const db = require('../handlers/lib/dynamo');
+
+      mockConstructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: { object: { customer: 'cus_123', subscription: 'sub_abc' } }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(db.get).not.toHaveBeenCalled();
+      expect(db.update).toHaveBeenCalled();
     });
   });
 });

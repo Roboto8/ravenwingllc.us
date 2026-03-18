@@ -451,7 +451,7 @@ function calculateMulchBOM(areaSqFt, materialType, depthInches, options) {
   } else {
     var bags = Math.ceil(cubicFeet / mat.bagCuFt);
     items.push({
-      name: mat.name + ' (2 cu ft bags)',
+      name: mat.name + ' (' + mat.bagCuFt + ' cu ft bags)',
       qty: bags,
       unit: 'bags',
       unitCost: mp('bagCost', mat.bagCost)

@@ -14,6 +14,9 @@ module.exports = {
   notFound(msg) {
     return { statusCode: 404, body: JSON.stringify({ error: msg || 'Not found' }) };
   },
+  tooMany(msg) {
+    return { statusCode: 429, body: JSON.stringify({ error: msg || 'Too many requests' }) };
+  },
   error(msg) {
     return { statusCode: 500, body: JSON.stringify({ error: msg || 'Internal error' }) };
   }

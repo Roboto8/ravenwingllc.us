@@ -22,6 +22,23 @@ module.exports.handler = async (event) => {
     return { statusCode: 400, body: 'Invalid signature' };
   }
 
+  // Idempotency: skip events already processed
+  const eventId = stripeEvent.id;
+  if (eventId) {
+    const existing = await db.get('WEBHOOK', eventId);
+    if (existing) {
+      console.log('Skipping already-processed webhook event:', eventId);
+      return { statusCode: 200, body: 'already processed' };
+    }
+    // Record event with TTL (24 hours from now)
+    await db.put({
+      PK: 'WEBHOOK',
+      SK: eventId,
+      processedAt: new Date().toISOString(),
+      ttl: Math.floor(Date.now() / 1000) + 86400
+    });
+  }
+
   const data = stripeEvent.data.object;
 
   switch (stripeEvent.type) {

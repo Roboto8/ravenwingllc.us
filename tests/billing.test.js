@@ -44,6 +44,8 @@ describe('billing handler', () => {
     jest.clearAllMocks();
     process.env.STRIPE_SECRET_KEY = 'sk_test_xxx';
     process.env.STRIPE_PRICE_ID = 'price_test_xxx';
+    // Clear rate limit timestamps between tests
+    Object.keys(billing._checkoutTimestamps).forEach(k => delete billing._checkoutTimestamps[k]);
   });
 
   const companyWithStripe = {
@@ -608,6 +610,83 @@ describe('billing handler', () => {
 
       const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
       expect(sessionArg.success_url).toContain('ravenwingllc-frontend-dev');
+    });
+  });
+
+  // ===== CHECKOUT - double-charge prevention =====
+  describe('checkout - double-charge prevention', () => {
+    test('returns 400 if company already has active subscription', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        email: 'billing@test.com',
+        stripeCustomerId: 'cus_existing',
+        subscriptionStatus: 'active',
+        subscriptionId: 'sub_existing'
+      });
+
+      const result = await billing.checkout({ body: '{}' });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('already has an active subscription');
+      expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled();
+    });
+
+    test('allows checkout when subscription is canceled', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        email: 'billing@test.com',
+        stripeCustomerId: 'cus_existing',
+        subscriptionStatus: 'canceled',
+        subscriptionId: ''
+      });
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe.com/ok' });
+
+      const result = await billing.checkout({ body: '{}' });
+      expect(result.statusCode).toBe(200);
+    });
+
+    test('includes client_reference_id in checkout session', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({ body: '{}' });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.client_reference_id).toMatch(/^comp-1_\d+$/);
+    });
+  });
+
+  // ===== CHECKOUT - rate limiting =====
+  describe('checkout - rate limiting', () => {
+    test('returns 429 if same company calls checkout within 10 seconds', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-rate');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      // First call should succeed
+      const result1 = await billing.checkout({ body: '{}' });
+      expect(result1.statusCode).toBe(200);
+
+      // Second call within 10s should be rate limited
+      const result2 = await billing.checkout({ body: '{}' });
+      expect(result2.statusCode).toBe(429);
+      expect(JSON.parse(result2.body).error).toContain('Please wait');
+    });
+
+    test('allows checkout after rate limit window passes', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-rate2');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      // First call
+      await billing.checkout({ body: '{}' });
+
+      // Simulate time passing by manipulating the timestamp
+      billing._checkoutTimestamps['comp-rate2'] = Date.now() - 11000;
+
+      // Should succeed now
+      const result = await billing.checkout({ body: '{}' });
+      expect(result.statusCode).toBe(200);
     });
   });
 

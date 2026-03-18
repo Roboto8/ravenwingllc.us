@@ -537,11 +537,10 @@ function onMapClick(e) {
     addFencePoint(e.latlng);
   } else if (currentTool === 'gate') {
     addGate(e.latlng);
-  } else if (currentTool === 'mulch' && e.originalEvent && e.originalEvent.shiftKey) {
-    // Shift+click: polygon mode for irregular shapes
+  } else if (currentTool === 'mulch') {
+    // Tap to place mulch corners (works on mobile + desktop)
     addMulchPoint(e.latlng);
   }
-  // Regular mulch click-drag is handled by mousedown/mousemove/mouseup below
 }
 
 // === Segment Labels ===
@@ -1254,6 +1253,17 @@ function removeGate(id) {
 
 // === Tools ===
 function setTool(tool) {
+  // Clean up mulch drawing state when switching away
+  if (currentTool === 'mulch' && tool !== 'mulch') {
+    hideMulchDoneBtn();
+    if (activeMulchPoints.length > 0) {
+      activeMulchMarkers.forEach(function(m) { map.removeLayer(m); });
+      activeMulchPoints = [];
+      activeMulchMarkers = [];
+      if (activeMulchPolygon) { map.removeLayer(activeMulchPolygon); activeMulchPolygon = null; }
+    }
+  }
+
   currentTool = tool;
   document.querySelectorAll('.tool-btn:not(#close-btn)').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById(tool + '-btn');
@@ -1262,8 +1272,14 @@ function setTool(tool) {
   map.getContainer().style.cursor = tool === 'draw' ? 'crosshair' : tool === 'gate' ? 'cell' : tool === 'mulch' ? 'crosshair' : '';
 
   if (tool === 'mulch') {
-    showToast('Drag to draw a bed. Then drag to move, corners to resize, orange dot to rotate.');
+    var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isMobile) {
+      showToast('Tap corners to outline the mulch bed');
+    } else {
+      showToast('Click corners or drag to draw a mulch bed');
+    }
   }
+  updateEmptyMapState();
 }
 
 // === Undo Stack ===
@@ -1277,6 +1293,7 @@ function undoLast() {
       var mp = activeMulchMarkers.pop();
       if (mp) map.removeLayer(mp);
       redrawActiveMulchPolygon();
+      if (activeMulchPoints.length < 3) hideMulchDoneBtn();
       markUnsaved();
       return;
     }
@@ -1713,7 +1730,7 @@ function calculateMulchBOM(areaSqFt, materialType, depthInches, options) {
   if (deliveryMode === 'bulk') {
     items.push({ name: mat.name + ' (bulk)', qty: Math.ceil(cubicYards * 10) / 10, unit: 'cu yd', unitCost: mp('bulkCuYdCost', mat.bulkCuYdCost) });
   } else {
-    items.push({ name: mat.name + ' (2 cu ft bags)', qty: Math.ceil(cubicFeet / mat.bagCuFt), unit: 'bags', unitCost: mp('bagCost', mat.bagCost) });
+    items.push({ name: mat.name + ' (' + mat.bagCuFt + ' cu ft bags)', qty: Math.ceil(cubicFeet / mat.bagCuFt), unit: 'bags', unitCost: mp('bagCost', mat.bagCost) });
   }
 
   if (options.addFabric) {
@@ -2231,15 +2248,11 @@ function addMulchPoint(latlng) {
 
   redrawActiveMulchPolygon();
 
-  if (activeMulchPoints.length === 3) {
-    showToast('Double-click to close the area');
-  }
-
-  // Check if clicking near first point to close
+  // Check if tapping near first point to close (larger radius for touch)
   if (activeMulchPoints.length > 3) {
     var first = map.latLngToContainerPoint(activeMulchPoints[0]);
     var clicked = map.latLngToContainerPoint(latlng);
-    if (first.distanceTo(clicked) < 20) {
+    if (first.distanceTo(clicked) < 30) {
       activeMulchPoints.pop();
       map.removeLayer(activeMulchMarkers.pop());
       closeMulchArea();
@@ -2247,7 +2260,34 @@ function addMulchPoint(latlng) {
     }
   }
 
+  // Show close button when we have enough points
+  if (activeMulchPoints.length >= 3) {
+    showMulchDoneBtn();
+  }
+
+  if (activeMulchPoints.length === 1) {
+    showToast('Tap corners to outline the mulch bed');
+  } else if (activeMulchPoints.length === 3) {
+    showToast('Tap first point or press Done to close');
+  }
+
   markUnsaved();
+}
+
+function showMulchDoneBtn() {
+  if (document.getElementById('mulch-done-btn')) return;
+  var btn = document.createElement('button');
+  btn.id = 'mulch-done-btn';
+  btn.textContent = 'Done ✓';
+  btn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9000;padding:12px 32px;background:var(--accent,#2d8a4e);color:#fff;border:none;border-radius:24px;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
+  btn.style.background = '#2d8a4e';
+  btn.onclick = function() { closeMulchArea(); hideMulchDoneBtn(); };
+  document.body.appendChild(btn);
+}
+
+function hideMulchDoneBtn() {
+  var btn = document.getElementById('mulch-done-btn');
+  if (btn) btn.remove();
 }
 
 function redrawActiveMulchPolygon() {
@@ -2260,6 +2300,7 @@ function redrawActiveMulchPolygon() {
 }
 
 function closeMulchArea() {
+  hideMulchDoneBtn();
   if (activeMulchPoints.length < 3) {
     showToast('Need at least 3 points to create an area');
     return;
@@ -2406,10 +2447,14 @@ function finalizeMulchArea(points) {
   }).addTo(map);
   polygon.getElement && polygon.getElement() && (polygon.getElement().style.cursor = 'move');
 
-  // Corner markers for dragging (white fill = resize handle)
+  // Corner markers — bigger on touch devices for easier tapping
+  var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  var handleRadius = isMobile ? 10 : 5;
+  var rotRadius = isMobile ? 12 : 6;
+
   var markers = points.map(function(p) {
     var m = L.circleMarker([p.lat, p.lng], {
-      radius: 5, color: '#2d8a4e', fillColor: '#fff', fillOpacity: 1, weight: 2,
+      radius: handleRadius, color: '#2d8a4e', fillColor: '#fff', fillOpacity: 1, weight: 2,
       interactive: true, bubblingMouseEvents: false
     }).addTo(map);
     m.getElement && m.getElement() && (m.getElement().style.cursor = 'nwse-resize');
@@ -2420,7 +2465,7 @@ function finalizeMulchArea(points) {
   var rotCenter = getMulchCenter(points);
   var rotHandlePos = getRotationHandlePos(points, rotCenter);
   var rotMarker = L.circleMarker(rotHandlePos, {
-    radius: 6, color: '#c0622e', fillColor: '#c0622e', fillOpacity: 0.9, weight: 2,
+    radius: rotRadius, color: '#c0622e', fillColor: '#c0622e', fillOpacity: 0.9, weight: 2,
     interactive: true, bubblingMouseEvents: false
   }).addTo(map);
   rotMarker.getElement && rotMarker.getElement() && (rotMarker.getElement().style.cursor = 'grab');
@@ -2510,94 +2555,102 @@ function updateMulchAreaVisuals(area) {
   area.rotLine.setLatLngs([center, rotPos]);
 }
 
+// Touch-aware drag helper for Leaflet layers
+function bindDrag(layer, onStart, onDrag, onEnd) {
+  layer.off('mousedown touchstart');
+
+  function startHandler(e) {
+    L.DomEvent.stopPropagation(e);
+    map.dragging.disable();
+    var latlng = e.latlng || (e.touches && map.containerPointToLatLng(L.point(e.touches[0].clientX - map.getContainer().getBoundingClientRect().left, e.touches[0].clientY - map.getContainer().getBoundingClientRect().top)));
+    var ctx = onStart(latlng) || {};
+
+    function moveHandler(ev) {
+      var ll = ev.latlng || (ev.touches && map.containerPointToLatLng(L.point(ev.touches[0].clientX - map.getContainer().getBoundingClientRect().left, ev.touches[0].clientY - map.getContainer().getBoundingClientRect().top)));
+      if (ll) onDrag(ll, ctx);
+    }
+    function endHandler() {
+      map.off('mousemove', moveHandler);
+      map.off('mouseup', endHandler);
+      document.removeEventListener('touchmove', touchMoveHandler);
+      document.removeEventListener('touchend', touchEndHandler);
+      map.dragging.enable();
+      if (onEnd) onEnd(ctx);
+    }
+    function touchMoveHandler(te) {
+      te.preventDefault();
+      var touch = te.touches[0];
+      var rect = map.getContainer().getBoundingClientRect();
+      var ll = map.containerPointToLatLng(L.point(touch.clientX - rect.left, touch.clientY - rect.top));
+      onDrag(ll, ctx);
+    }
+    function touchEndHandler() { endHandler(); }
+
+    map.on('mousemove', moveHandler);
+    map.on('mouseup', endHandler);
+    document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+    document.addEventListener('touchend', touchEndHandler);
+  }
+
+  layer.on('mousedown', startHandler);
+  // For touch, attach to the DOM element directly
+  var el = layer.getElement ? layer.getElement() : null;
+  if (el) {
+    el.addEventListener('touchstart', function(te) {
+      te.preventDefault();
+      te.stopPropagation();
+      var touch = te.touches[0];
+      var rect = map.getContainer().getBoundingClientRect();
+      var latlng = map.containerPointToLatLng(L.point(touch.clientX - rect.left, touch.clientY - rect.top));
+      var fakeEvent = { latlng: latlng };
+      startHandler(fakeEvent);
+    }, { passive: false });
+  }
+}
+
 function rebindMulchMarkerDrags(areaIdx) {
   var area = mulchAreas[areaIdx];
   if (!area) return;
 
   // Corner drag — move individual points
   area.markers.forEach(function(marker, ptIdx) {
-    marker.off('mousedown');
-    marker.on('mousedown', function(e) {
-      map.dragging.disable();
-      var onMove = function(ev) {
-        area.points[ptIdx] = { lat: ev.latlng.lat, lng: ev.latlng.lng };
+    bindDrag(marker,
+      function() {},
+      function(ll) {
+        area.points[ptIdx] = { lat: ll.lat, lng: ll.lng };
+        marker.setLatLng(ll);
         updateMulchAreaVisuals(area);
-      };
-      var onUp = function() {
-        map.off('mousemove', onMove);
-        map.off('mouseup', onUp);
-        map.dragging.enable();
-        renderMulchAreas();
-        recalculate();
-        markUnsaved();
-      };
-      map.on('mousemove', onMove);
-      map.on('mouseup', onUp);
-      L.DomEvent.stopPropagation(e);
-    });
+      },
+      function() { renderMulchAreas(); recalculate(); markUnsaved(); }
+    );
   });
 
   // Polygon body drag — move the whole shape
-  area.polygon.off('mousedown');
-  area.polygon.on('mousedown', function(e) {
-    map.dragging.disable();
-    var startLat = e.latlng.lat;
-    var startLng = e.latlng.lng;
-    var origPoints = area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; });
-
-    var onMove = function(ev) {
-      var dLat = ev.latlng.lat - startLat;
-      var dLng = ev.latlng.lng - startLng;
-      area.points = origPoints.map(function(p) {
-        return { lat: p.lat + dLat, lng: p.lng + dLng };
-      });
+  bindDrag(area.polygon,
+    function(ll) { return { startLat: ll.lat, startLng: ll.lng, orig: area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }) }; },
+    function(ll, ctx) {
+      var dLat = ll.lat - ctx.startLat;
+      var dLng = ll.lng - ctx.startLng;
+      area.points = ctx.orig.map(function(p) { return { lat: p.lat + dLat, lng: p.lng + dLng }; });
       updateMulchAreaVisuals(area);
-    };
-    var onUp = function() {
-      map.off('mousemove', onMove);
-      map.off('mouseup', onUp);
-      map.dragging.enable();
-      renderMulchAreas();
-      recalculate();
-      markUnsaved();
-    };
-    map.on('mousemove', onMove);
-    map.on('mouseup', onUp);
-    L.DomEvent.stopPropagation(e);
-  });
+    },
+    function() { renderMulchAreas(); recalculate(); markUnsaved(); }
+  );
 
   // Rotation handle drag
-  area.rotMarker.off('mousedown');
-  area.rotMarker.on('mousedown', function(e) {
-    map.dragging.disable();
-    var center = getMulchCenter(area.points);
-    var startAngle = Math.atan2(
-      e.latlng.lng - center.lng,
-      e.latlng.lat - center.lat
-    );
-    var origPoints = area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; });
-
-    var onMove = function(ev) {
-      var curAngle = Math.atan2(
-        ev.latlng.lng - center.lng,
-        ev.latlng.lat - center.lat
-      );
-      var delta = (curAngle - startAngle) * 180 / Math.PI;
-      area.points = origPoints.map(function(p) { return rotatePoint(p, center, delta); });
+  bindDrag(area.rotMarker,
+    function(ll) {
+      var center = getMulchCenter(area.points);
+      return { center: center, startAngle: Math.atan2(ll.lng - center.lng, ll.lat - center.lat), orig: area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }) };
+    },
+    function(ll, ctx) {
+      var curAngle = Math.atan2(ll.lng - ctx.center.lng, ll.lat - ctx.center.lat);
+      var delta = (curAngle - ctx.startAngle) * 180 / Math.PI;
+      area.points = ctx.orig.map(function(p) { return rotatePoint(p, ctx.center, delta); });
       updateMulchAreaVisuals(area);
-    };
-    var onUp = function() {
-      map.off('mousemove', onMove);
-      map.off('mouseup', onUp);
-      map.dragging.enable();
-      renderMulchAreas();
-      recalculate();
-      markUnsaved();
-    };
-    map.on('mousemove', onMove);
-    map.on('mouseup', onUp);
-    L.DomEvent.stopPropagation(e);
-  });
+    },
+    function() { renderMulchAreas(); recalculate(); markUnsaved(); }
+  );
 }
 
 function removeMulchArea(idx) {
@@ -4101,7 +4154,7 @@ function initDoubleClick() {
 // === Empty Map State ===
 function updateEmptyMapState() {
   var existing = document.getElementById('map-empty-state');
-  if (fencePoints.length > 0) {
+  if (fencePoints.length > 0 || mulchAreas.length > 0 || activeMulchPoints.length > 0 || currentTool === 'mulch') {
     if (existing) existing.remove();
     return;
   }
@@ -4123,6 +4176,15 @@ initSections();
 recalculate();
 loadFromURL();
 updateEmptyMapState();
+
+// Collapse estimate panel on mobile to show more map
+if (window.innerWidth < 768) {
+  var panel = document.getElementById('estimate-panel');
+  if (panel && !panel.classList.contains('collapsed')) {
+    panel.classList.add('collapsed');
+    setTimeout(function() { map.invalidateSize(); }, 350);
+  }
+}
 
 // Increment estimate counter for a fresh session
 if (fencePoints.length === 0) {
