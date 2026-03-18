@@ -35,7 +35,7 @@ module.exports.update = res.wrap(async (event) => {
 
   const body = res.parseBody(event);
   if (!body) return res.bad('Invalid JSON');
-  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'logo', 'region', 'pricebook', 'language'];
+  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'logo', 'region', 'pricebook', 'language', 'emailOptOut'];
   const updates = {};
 
   for (const key of allowed) {

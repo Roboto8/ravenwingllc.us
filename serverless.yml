@@ -402,8 +402,10 @@ functions:
   trialReminder:
     handler: handlers/trial-reminder.handler
     timeout: 30
-    events:
-      - schedule: rate(1 day)
+    # DISABLED until physical mailing address is set up (CAN-SPAM compliance)
+    # Uncomment when virtual mailbox is active
+    # events:
+    #   - schedule: rate(1 day)
 
   stripeWebhook:
     handler: handlers/webhook.handler

@@ -112,7 +112,7 @@ describe('billing handler', () => {
       );
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-1', 'PROFILE',
-        { stripeCustomerId: 'cus_new' }
+        { stripeCustomerId: 'cus_new', GSI1PK: 'STRIPE#cus_new', GSI1SK: 'PROFILE' }
       );
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({ customer: 'cus_new' })

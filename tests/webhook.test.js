@@ -36,7 +36,8 @@ jest.mock('stripe', () => jest.fn().mockReturnValue(mockStripe));
 jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn().mockResolvedValue({}),
   get: jest.fn().mockResolvedValue(null),
-  put: jest.fn().mockResolvedValue({})
+  put: jest.fn().mockResolvedValue({}),
+  queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
 }));
 
 const db = require('../handlers/lib/dynamo');
@@ -75,7 +76,8 @@ describe('webhook handler', () => {
     jest.mock('../handlers/lib/dynamo', () => ({
       update: jest.fn().mockResolvedValue({}),
       get: jest.fn().mockResolvedValue(null),
-      put: jest.fn().mockResolvedValue({})
+      put: jest.fn().mockResolvedValue({}),
+      queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
     }));
 
     handler = require('../handlers/webhook').handler;
@@ -126,7 +128,7 @@ describe('webhook handler', () => {
 
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
-      mockScan.mockResolvedValue({ Items: [] });
+      db.queryGSI.mockResolvedValueOnce([]);
       mockConstructEvent.mockReturnValue({
         type: 'checkout.session.completed',
         data: { object: { customer: 'cus_unknown', subscription: 'sub_abc' } }
@@ -324,7 +326,7 @@ describe('webhook handler', () => {
   describe('customer.subscription.updated - company not found', () => {
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
-      mockScan.mockResolvedValue({ Items: [] });
+      db.queryGSI.mockResolvedValueOnce([]);
       mockConstructEvent.mockReturnValue({
         type: 'customer.subscription.updated',
         data: {
@@ -341,7 +343,7 @@ describe('webhook handler', () => {
   describe('customer.subscription.deleted - company not found', () => {
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
-      mockScan.mockResolvedValue({ Items: [] });
+      db.queryGSI.mockResolvedValueOnce([]);
       mockConstructEvent.mockReturnValue({
         type: 'customer.subscription.deleted',
         data: {
@@ -358,7 +360,7 @@ describe('webhook handler', () => {
   describe('invoice.payment_failed - company not found', () => {
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
-      mockScan.mockResolvedValue({ Items: [] });
+      db.queryGSI.mockResolvedValueOnce([]);
       mockConstructEvent.mockReturnValue({
         type: 'invoice.payment_failed',
         data: {

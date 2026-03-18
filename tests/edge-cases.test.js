@@ -40,7 +40,8 @@ jest.mock('stripe', () => jest.fn().mockReturnValue(mockStripeWebhook));
 jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn().mockResolvedValue({}),
   get: jest.fn().mockResolvedValue(null),
-  put: jest.fn().mockResolvedValue({})
+  put: jest.fn().mockResolvedValue({}),
+  queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
 }));
 
 describe('webhook handler - missing event types', () => {
@@ -75,7 +76,8 @@ describe('webhook handler - missing event types', () => {
     jest.mock('../handlers/lib/dynamo', () => ({
       update: jest.fn().mockResolvedValue({}),
       get: jest.fn().mockResolvedValue(null),
-      put: jest.fn().mockResolvedValue({})
+      put: jest.fn().mockResolvedValue({}),
+      queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
     }));
 
     handler = require('../handlers/webhook').handler;
@@ -114,7 +116,7 @@ describe('webhook handler - missing event types', () => {
 
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
-      mockScan.mockResolvedValue({ Items: [] });
+      db.queryGSI.mockResolvedValueOnce([]);
       mockConstructEvent.mockReturnValue({
         id: 'evt_paid_2',
         type: 'invoice.paid',
@@ -231,7 +233,7 @@ describe('webhook handler - missing event types', () => {
 
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
-      mockScan.mockResolvedValue({ Items: [] });
+      db.queryGSI.mockResolvedValueOnce([]);
       mockConstructEvent.mockReturnValue({
         id: 'evt_refund_5',
         type: 'charge.refunded',
@@ -269,7 +271,7 @@ describe('webhook handler - missing event types', () => {
 
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
-      mockScan.mockResolvedValue({ Items: [] });
+      db.queryGSI.mockResolvedValueOnce([]);
       mockConstructEvent.mockReturnValue({
         id: 'evt_dispute_2',
         type: 'charge.dispute.created',
