@@ -269,9 +269,29 @@ function getPrice(fenceType, height, key, fallback) {
 let baseLayers = {};
 
 function initMap() {
+  // Check if opening a shared link — start at those coordinates instead of default
+  var initCenter = [37.6068, -77.3732];
+  var initZoom = 18;
+  try {
+    var ep = new URLSearchParams(window.location.search).get('e');
+    if (ep) {
+      var sd = JSON.parse(atob(ep));
+      if (sd.vw && sd.vz) {
+        initCenter = sd.vw;
+        initZoom = sd.vz;
+      } else if (sd.ma && sd.ma.length > 0 && sd.ma[0].pts.length > 0) {
+        initCenter = sd.ma[0].pts[0];
+        initZoom = 19;
+      } else if (sd.p && sd.p.length > 0) {
+        initCenter = sd.p[0];
+        initZoom = 19;
+      }
+    }
+  } catch (e) {}
+
   map = L.map('map', {
-    center: [37.6068, -77.3732],
-    zoom: 18,
+    center: initCenter,
+    zoom: initZoom,
     zoomControl: false
   });
 
@@ -2795,11 +2815,16 @@ function rebindMulchMarkerDrags(areaIdx) {
     );
   });
 
-  // Tap polygon to show delete option (not during drag)
+  // Track drag state to suppress click after drag/rotate
+  var _wasDragged = false;
+  function flagDragStart() { _wasDragged = true; }
+  function flagDragEnd() { setTimeout(function() { _wasDragged = false; }, 300); }
+
+  // Tap polygon to show delete option — suppressed after drag/rotate
   var areaIndex = areaIdx;
   area.polygon.on('click', function(e) {
+    if (_wasDragged) return;
     L.DomEvent.stopPropagation(e);
-    // Show a popup with delete button
     var popup = L.popup({ closeButton: true, className: 'mulch-delete-popup', offset: [0, -10] })
       .setLatLng(e.latlng)
       .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Area ' + (areaIndex + 1) + '</b><br><button onclick="removeMulchArea(' + areaIndex + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b93a2a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete</button></div>')
@@ -2808,19 +2833,20 @@ function rebindMulchMarkerDrags(areaIdx) {
 
   // Polygon body drag — move the whole shape
   bindDrag(area.polygon,
-    function(ll) { return { startLat: ll.lat, startLng: ll.lng, orig: area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }) }; },
+    function(ll) { flagDragStart(); return { startLat: ll.lat, startLng: ll.lng, orig: area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }) }; },
     function(ll, ctx) {
       var dLat = ll.lat - ctx.startLat;
       var dLng = ll.lng - ctx.startLng;
       area.points = ctx.orig.map(function(p) { return { lat: p.lat + dLat, lng: p.lng + dLng }; });
       updateMulchAreaVisuals(area);
     },
-    function() { renderMulchAreas(); recalculate(); markUnsaved(); }
+    function() { flagDragEnd(); renderMulchAreas(); recalculate(); markUnsaved(); }
   );
 
   // Rotation handle drag
   bindDrag(area.rotMarker,
     function(ll) {
+      flagDragStart();
       var center = getMulchCenter(area.points);
       return { center: center, startAngle: Math.atan2(ll.lng - center.lng, ll.lat - center.lat), orig: area.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }) };
     },
@@ -2830,8 +2856,68 @@ function rebindMulchMarkerDrags(areaIdx) {
       area.points = ctx.orig.map(function(p) { return rotatePoint(p, ctx.center, delta); });
       updateMulchAreaVisuals(area);
     },
-    function() { renderMulchAreas(); recalculate(); markUnsaved(); }
+    function() {
+      flagDragEnd();
+      // Rebuild corner markers to prevent orphaned DOM elements
+      rebuildMulchCorners(areaIdx);
+      renderMulchAreas();
+      recalculate();
+      markUnsaved();
+    }
   );
+
+  // Corner drags also flag and rebuild after
+  area.markers.forEach(function(marker) {
+    marker.on('mousedown touchstart', flagDragStart);
+  });
+}
+
+function rebuildMulchCorners(areaIdx) {
+  var area = mulchAreas[areaIdx];
+  if (!area) return;
+
+  var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  var handleRadius = isMobile ? 10 : 5;
+
+  // Remove old markers completely
+  area.markers.forEach(function(m) { map.removeLayer(m); });
+
+  // Create fresh markers at current positions
+  area.markers = area.points.map(function(p) {
+    var m = L.circleMarker([p.lat, p.lng], {
+      radius: handleRadius, color: '#2d8a4e', fillColor: '#fff', fillOpacity: 1, weight: 2,
+      interactive: true, bubblingMouseEvents: false
+    }).addTo(map);
+    if (m.getElement) {
+      var el = m.getElement();
+      if (el) el.style.cursor = 'nwse-resize';
+    }
+    return m;
+  });
+
+  // Remove and recreate rotation handle
+  if (area.rotMarker) map.removeLayer(area.rotMarker);
+  if (area.rotLine) map.removeLayer(area.rotLine);
+
+  var rotRadius = isMobile ? 12 : 6;
+  var center = getMulchCenter(area.points);
+  var rotPos = getRotationHandlePos(area.points, center);
+
+  area.rotMarker = L.circleMarker(rotPos, {
+    radius: rotRadius, color: '#c0622e', fillColor: '#c0622e', fillOpacity: 0.9, weight: 2,
+    interactive: true, bubblingMouseEvents: false
+  }).addTo(map);
+  if (area.rotMarker.getElement) {
+    var el = area.rotMarker.getElement();
+    if (el) el.style.cursor = 'grab';
+  }
+
+  area.rotLine = L.polyline([center, rotPos], {
+    color: '#c0622e', weight: 1, dashArray: '4,4', opacity: 0.6
+  }).addTo(map);
+
+  // Re-bind all drag handlers
+  rebindMulchMarkerDrags(areaIdx);
 }
 
 function removeMulchArea(idx) {
@@ -3101,32 +3187,8 @@ document.getElementById('address-input').addEventListener('keydown', function(e)
 });
 
 // === Share / Approval Workflow ===
-async function shareEstimate() {
-  if (typeof requireSubscription === 'function' && !requireSubscription('share estimates')) return;
-
-  // If we have a saved estimate loaded, use the approval workflow
-  if (typeof activeEstimateId !== 'undefined' && activeEstimateId) {
-    try {
-      showToast('Generating approval link...');
-      const result = await API.shareEstimate(activeEstimateId);
-      const url = result.link;
-
-      if (navigator.share) {
-        navigator.share({ title: 'Fence Estimate — Review & Approve', url: url }).catch(() => {
-          copyToClipboard(url);
-        });
-      } else {
-        copyToClipboard(url);
-      }
-      showToast('Approval link copied!');
-      return;
-    } catch (e) {
-      showToast('Could not generate approval link: ' + e.message);
-      return;
-    }
-  }
-
-  // Fallback: no saved estimate — use the old base64 share link
+// Share interactive map view — for teammates/collaboration
+function shareView() {
   const data = {
     p: fencePoints.map(p => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6]),
     g: gates.map(g => ({ t: g.type, lt: Math.round(g.latlng.lat * 1e6) / 1e6, ln: Math.round(g.latlng.lng * 1e6) / 1e6 })),
@@ -3143,11 +3205,24 @@ async function shareEstimate() {
     n: document.getElementById('cust-name').value,
     ph: document.getElementById('cust-phone').value,
     ad: document.getElementById('cust-address').value,
-    ci: customItems.filter(i => i.name && i.unitCost > 0).map(i => ({ nm: i.name, q: i.qty, uc: i.unitCost }))
+    ci: customItems.filter(i => i.name && i.unitCost > 0).map(i => ({ nm: i.name, q: i.qty, uc: i.unitCost })),
+    ma: mulchAreas.map(function(a) {
+      return { pts: a.points.map(function(p) { return [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6]; }), sq: a.areaSqFt, pm: a.perimeterFt };
+    }),
+    mm: selectedMulchMaterial,
+    md: selectedMulchDepth,
+    mv: selectedMulchDelivery,
+    vw: [Math.round(map.getCenter().lat * 1e6) / 1e6, Math.round(map.getCenter().lng * 1e6) / 1e6],
+    vz: map.getZoom()
   };
 
   const encoded = btoa(JSON.stringify(data));
-  const url = window.location.origin + window.location.pathname + '?e=' + encoded;
+  var url = window.location.origin + window.location.pathname + '?e=' + encoded;
+  // If URL is too long (>2000 chars), warn user to save first
+  if (url.length > 8000) {
+    showToast('Estimate is too large to share via link. Save it first, then share.');
+    return;
+  }
 
   if (navigator.share) {
     navigator.share({ title: 'Fence Estimate', url: url }).catch(() => {
@@ -3185,6 +3260,33 @@ function fallbackCopy(text) {
     prompt('Copy this link:', text);
   }
   document.body.removeChild(ta);
+}
+
+// Send estimate to customer for approval — requires saved estimate
+async function shareEstimate() {
+  if (typeof requireSubscription === 'function' && !requireSubscription('share estimates')) return;
+
+  if (typeof activeEstimateId === 'undefined' || !activeEstimateId) {
+    showToast('Save the estimate first, then send to customer');
+    return;
+  }
+
+  try {
+    showToast('Generating approval link...');
+    const result = await API.shareEstimate(activeEstimateId);
+    const url = result.link;
+
+    if (navigator.share) {
+      navigator.share({ title: 'Fence Estimate — Review & Approve', url: url }).catch(() => {
+        copyToClipboard(url);
+      });
+    } else {
+      copyToClipboard(url);
+    }
+    showToast('Approval link sent!');
+  } catch (e) {
+    showToast('Could not generate approval link: ' + e.message);
+  }
 }
 
 function loadFromURL() {
@@ -3238,12 +3340,7 @@ function loadFromURL() {
 
     // Draw fence points
     if (data.p && data.p.length > 0) {
-      // Center map on first point
-      map.setView(data.p[0], 19);
-
       data.p.forEach(pt => addFencePoint(L.latLng(pt[0], pt[1])));
-
-      // Close if needed
       if (data.c) closeFence();
     }
 
@@ -3275,12 +3372,49 @@ function loadFromURL() {
       renderCustomItems();
     }
 
+    // Mulch areas
+    if (data.ma && data.ma.length > 0) {
+      if (data.mm) selectedMulchMaterial = data.mm;
+      if (data.md) selectedMulchDepth = data.md;
+      if (data.mv) selectedMulchDelivery = data.mv;
+      data.ma.forEach(function(a, idx) {
+        try {
+          var pts = a.pts.map(function(p) { return { lat: p[0], lng: p[1] }; });
+          finalizeMulchArea(pts);
+        } catch (err) {
+          console.error('Failed to load mulch area ' + idx + ':', err);
+        }
+      });
+    }
+
+    // Fit map to show everything that was loaded
+    var allLoadedPts = [];
+    if (data.p) data.p.forEach(function(pt) { allLoadedPts.push([pt[0], pt[1]]); });
+    if (data.g) data.g.forEach(function(g) { allLoadedPts.push([g.lt, g.ln]); });
+    if (data.ma) data.ma.forEach(function(a) { a.pts.forEach(function(pt) { allLoadedPts.push([pt[0], pt[1]]); }); });
+
     recalculate();
+
+    // Force the map view — retry multiple times to override anything that runs after
+    function setSharedView() {
+      if (data.vw && data.vz) {
+        map.setView(data.vw, data.vz, { animate: false });
+      } else if (allLoadedPts.length >= 2) {
+        map.fitBounds(L.latLngBounds(allLoadedPts).pad(0.15), { animate: false, maxZoom: 20 });
+      } else if (allLoadedPts.length === 1) {
+        map.setView(allLoadedPts[0], 19, { animate: false });
+      }
+    }
+    setSharedView();
+    setTimeout(setSharedView, 300);
+    setTimeout(setSharedView, 1000);
+    setTimeout(setSharedView, 2500);
 
     // Clean URL
     window.history.replaceState({}, '', window.location.pathname);
   } catch (e) {
-    // Bad data, ignore
+    console.error('loadFromURL failed:', e);
+    showToast('Could not load shared estimate');
   }
 }
 
@@ -3298,12 +3432,171 @@ function showToast(msg) {
 
 // === Map Capture (draws fence diagram to canvas — no CORS issues) ===
 function captureMap() {
-  // Use html2canvas to capture the actual map with satellite imagery
-  if (typeof html2canvas === 'function') {
-    return captureMapReal();
-  }
-  // Fallback to canvas drawing if html2canvas not loaded
-  return captureMapFallback();
+  // Use tile-based capture — download satellite tiles directly and draw overlays
+  return captureMapWithTiles();
+}
+
+function captureMapWithTiles() {
+  return new Promise(function(resolve) {
+    saveActiveSection();
+
+    // Gather all points
+    var allPts = [];
+    sections.forEach(function(s) { if (s.points) s.points.forEach(function(p) { allPts.push({ lat: p.lat, lng: p.lng }); }); });
+    mulchAreas.forEach(function(a) { if (a.points) a.points.forEach(function(p) { allPts.push({ lat: p.lat, lng: p.lng }); }); });
+    gates.forEach(function(g) { if (g.latlng) allPts.push({ lat: g.latlng.lat, lng: g.latlng.lng }); });
+
+    if (allPts.length === 0) { resolve(null); return; }
+
+    // Calculate bounds
+    var minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    allPts.forEach(function(p) {
+      if (p.lat < minLat) minLat = p.lat;
+      if (p.lat > maxLat) maxLat = p.lat;
+      if (p.lng < minLng) minLng = p.lng;
+      if (p.lng > maxLng) maxLng = p.lng;
+    });
+
+    // Add padding
+    var padLat = (maxLat - minLat) * 0.3 || 0.0005;
+    var padLng = (maxLng - minLng) * 0.3 || 0.0005;
+    minLat -= padLat; maxLat += padLat;
+    minLng -= padLng; maxLng += padLng;
+
+    // Choose zoom level — higher zoom = sharper image, more tiles
+    var zoom = 20;
+    for (var z = 21; z >= 16; z--) {
+      var tileCountX = lng2tile(maxLng, z) - lng2tile(minLng, z) + 1;
+      var tileCountY = lat2tile(minLat, z) - lat2tile(maxLat, z) + 1;
+      if (tileCountX * tileCountY <= 25) { zoom = z; break; } // cap at 25 tiles (5x5)
+    }
+
+    // Tile math helpers
+    function lng2tile(lng, z) { return Math.floor((lng + 180) / 360 * Math.pow(2, z)); }
+    function lat2tile(lat, z) { return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z)); }
+    function tile2lng(x, z) { return x / Math.pow(2, z) * 360 - 180; }
+    function tile2lat(y, z) { var n = Math.PI - 2 * Math.PI * y / Math.pow(2, z); return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))); }
+
+    var tileXmin = lng2tile(minLng, zoom);
+    var tileXmax = lng2tile(maxLng, zoom);
+    var tileYmin = lat2tile(maxLat, zoom);
+    var tileYmax = lat2tile(minLat, zoom);
+
+    var tilesW = tileXmax - tileXmin + 1;
+    var tilesH = tileYmax - tileYmin + 1;
+    var canvasW = tilesW * 256;
+    var canvasH = tilesH * 256;
+
+    var canvas = document.createElement('canvas');
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#e8e0d6';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    // Geographic bounds of the tile grid
+    var gridWest = tile2lng(tileXmin, zoom);
+    var gridEast = tile2lng(tileXmax + 1, zoom);
+    var gridNorth = tile2lat(tileYmin, zoom);
+    var gridSouth = tile2lat(tileYmax + 1, zoom);
+
+    // Convert lat/lng to pixel on canvas
+    function toX(p) { return ((p.lng - gridWest) / (gridEast - gridWest)) * canvasW; }
+    function toY(p) {
+      // Mercator projection for Y
+      function latToY(lat) { return Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)); }
+      return ((latToY(gridNorth) - latToY(p.lat)) / (latToY(gridNorth) - latToY(gridSouth))) * canvasH;
+    }
+
+    // Load all tiles
+    var loaded = 0;
+    var totalTiles = tilesW * tilesH;
+
+    function drawOverlays() {
+      // Draw mulch areas
+      mulchAreas.forEach(function(area) {
+        ctx.beginPath();
+        area.points.forEach(function(p, i) {
+          if (i === 0) ctx.moveTo(toX(p), toY(p)); else ctx.lineTo(toX(p), toY(p));
+        });
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(45, 138, 78, 0.3)';
+        ctx.fill();
+        ctx.strokeStyle = '#2d8a4e';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Label
+        var cx = area.points.reduce(function(s, p) { return s + toX(p); }, 0) / area.points.length;
+        var cy = area.points.reduce(function(s, p) { return s + toY(p); }, 0) / area.points.length;
+        var label = area.areaSqFt.toLocaleString() + ' sq ft';
+        ctx.font = 'bold 18px sans-serif';
+        var tw = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(45, 138, 78, 0.85)';
+        ctx.fillRect(cx - tw / 2 - 6, cy - 12, tw + 12, 24);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, cx, cy);
+      });
+
+      // Draw fence lines
+      sections.forEach(function(sec) {
+        if (sec.points.length < 2) return;
+        ctx.beginPath();
+        sec.points.forEach(function(p, i) {
+          if (i === 0) ctx.moveTo(toX(p), toY(p)); else ctx.lineTo(toX(p), toY(p));
+        });
+        if (sec.closed) ctx.closePath();
+        ctx.strokeStyle = '#c0622e';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        sec.points.forEach(function(p) {
+          ctx.beginPath();
+          ctx.arc(toX(p), toY(p), 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#c0622e'; ctx.fill();
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        });
+      });
+
+      // Draw gates
+      gates.forEach(function(g) {
+        var x = toX(g.latlng), y = toY(g.latlng);
+        ctx.font = 'bold 14px sans-serif';
+        var tw = ctx.measureText('GATE').width;
+        ctx.fillStyle = '#c0622e';
+        ctx.fillRect(x - tw / 2 - 4, y - 10, tw + 8, 20);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('GATE', x, y);
+      });
+
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
+    }
+
+    // Load satellite tiles
+    for (var ty = tileYmin; ty <= tileYmax; ty++) {
+      for (var tx = tileXmin; tx <= tileXmax; tx++) {
+        (function(tx, ty) {
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function() {
+            ctx.drawImage(img, (tx - tileXmin) * 256, (ty - tileYmin) * 256, 256, 256);
+            loaded++;
+            if (loaded >= totalTiles) drawOverlays();
+          };
+          img.onerror = function() {
+            loaded++;
+            if (loaded >= totalTiles) drawOverlays();
+          };
+          var s = (tx + ty) % 4;
+          img.src = 'https://mt' + s + '.google.com/vt/lyrs=s&x=' + tx + '&y=' + ty + '&z=' + zoom;
+        })(tx, ty);
+      }
+    }
+
+    // Timeout fallback
+    setTimeout(function() { if (loaded < totalTiles) drawOverlays(); }, 5000);
+  });
 }
 
 function captureMapReal() {
@@ -3311,24 +3604,37 @@ function captureMapReal() {
     var mapEl = document.getElementById('map');
     if (!mapEl) { resolve(null); return; }
 
-    // Hide UI elements that shouldn't be in the screenshot
-    var hideEls = document.querySelectorAll('.leaflet-control-container, .map-empty-state, .zoom-indicator, .mulch-area-label, .segment-label, .angle-label');
+    // Hide only UI controls — keep fence lines, mulch polygons, markers visible
+    var hideEls = document.querySelectorAll('.leaflet-control-container, .map-empty-state, .zoom-indicator, .mulch-area-label, .segment-label, .angle-label, .leaflet-popup-pane, .drone-handle, .mulch-delete-popup');
     hideEls.forEach(function(el) { el.style.visibility = 'hidden'; });
 
     // Fit map to show all content
+    saveActiveSection();
     var allPts = [];
-    sections.forEach(function(s) { s.points.forEach(function(p) { allPts.push([p.lat, p.lng]); }); });
-    mulchAreas.forEach(function(a) { a.points.forEach(function(p) { allPts.push([p.lat, p.lng]); }); });
-    gates.forEach(function(g) { allPts.push([g.latlng.lat, g.latlng.lng]); });
+    sections.forEach(function(s) {
+      if (s.points) s.points.forEach(function(p) { allPts.push([p.lat, p.lng]); });
+    });
+    mulchAreas.forEach(function(a) {
+      if (a.points) a.points.forEach(function(p) { allPts.push([p.lat, p.lng]); });
+    });
+    gates.forEach(function(g) {
+      if (g.latlng) allPts.push([g.latlng.lat, g.latlng.lng]);
+    });
 
     var origCenter = map.getCenter();
     var origZoom = map.getZoom();
     if (allPts.length >= 2) {
-      map.fitBounds(L.latLngBounds(allPts).pad(0.15), { animate: false });
+      var bounds = L.latLngBounds(allPts);
+      map.fitBounds(bounds.pad(0.3), { animate: false, maxZoom: 20 });
+      // Don't zoom out too far — ensure drawn areas are prominent
+      if (map.getZoom() < 18) map.setZoom(18, { animate: false });
+    } else if (allPts.length === 1) {
+      map.setView(allPts[0], 19, { animate: false });
     }
 
-    // Wait for tiles to load then capture
+    map.invalidateSize();
     setTimeout(function() {
+      // Capture just the satellite tiles
       html2canvas(mapEl, {
         useCORS: true,
         allowTaint: true,
@@ -3336,7 +3642,7 @@ function captureMapReal() {
         logging: false,
         backgroundColor: '#e8e0d6'
       }).then(function(canvas) {
-        // Restore UI
+        // Restore UI and map view
         hideEls.forEach(function(el) { el.style.visibility = ''; });
         map.setView(origCenter, origZoom, { animate: false });
         resolve(canvas.toDataURL('image/jpeg', 0.85));
@@ -3345,7 +3651,7 @@ function captureMapReal() {
         map.setView(origCenter, origZoom, { animate: false });
         resolve(null);
       });
-    }, 1500); // wait for tiles to render
+    }, 2000);
   });
 }
 
@@ -3876,15 +4182,15 @@ async function generatePDF(mode) {
         if (mat) totalBags += Math.ceil(cf / mat.bagCuFt);
         totalCuYd += cf / 27;
       });
-      var badgeText = totalBags + ' Bags Total (' + (Math.round(totalCuYd * 10) / 10) + ' cu yd)';
-      var badgeW = doc.getTextWidth(badgeText) + 16;
-      var badgeH = 16;
-      doc.setFillColor.apply(doc, cAccent);
-      doc.roundedRect(margin, y - 2, badgeW, badgeH, 3, 3, 'F');
+      var badgeText = totalBags + ' BAGS TOTAL  (' + (Math.round(totalCuYd * 10) / 10) + ' cu yd)';
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
+      doc.setFontSize(10);
+      var badgeW = doc.getTextWidth(badgeText) + 24;
+      var badgeH = 22;
+      doc.setFillColor.apply(doc, cDark);
+      doc.roundedRect(margin, y - 2, badgeW, badgeH, 4, 4, 'F');
       doc.setTextColor.apply(doc, cWhite);
-      doc.text(badgeText, margin + 8, y + 8);
+      doc.text(badgeText, margin + 12, y + 12);
       y += badgeH + 10;
     }
     y += 8;
@@ -3964,12 +4270,28 @@ async function generatePDF(mode) {
     y += 16;
   }
 
-  if (pdfMaterialsTotal > 0) totalLine('Materials', '$' + pdfMaterialsTotal.toLocaleString());
-  if (hasFence && pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
-  if (pdfRemoval > 0) totalLine('Old fence removal', '$' + Math.round(pdfRemoval).toLocaleString());
-  if (pdfPermit > 0) totalLine('Permit fee', '$150');
-  if (pdfStain > 0) totalLine('Stain / seal', '$' + Math.round(pdfStain).toLocaleString());
-  if (customTotal > 0) totalLine('Custom items', '$' + Math.round(customTotal).toLocaleString());
+  if (isCustomerMode) {
+    // Customer mode: clean summary — no cost breakdown, just category totals that add up
+    if (pdfMaterialsTotal > 0) {
+      var matLabel = (laborCost > 0) ? 'Materials & Installation' : 'Materials';
+      var matVal = pdfMaterialsTotal + laborCost;
+      totalLine(matLabel, '$' + Math.round(matVal).toLocaleString());
+    }
+    if (hasFence && pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
+    if (pdfRemoval > 0) totalLine('Old fence removal', '$' + Math.round(pdfRemoval).toLocaleString());
+    if (pdfPermit > 0) totalLine('Permit fee', '$150');
+    if (pdfStain > 0) totalLine('Stain / seal', '$' + Math.round(pdfStain).toLocaleString());
+    if (customTotal > 0) totalLine('Custom items', '$' + Math.round(customTotal).toLocaleString());
+    if (markupAmt > 0) totalLine('Service fee', '$' + markupAmt.toLocaleString());
+  } else {
+    // Contractor mode: full breakdown
+    if (pdfMaterialsTotal > 0) totalLine('Materials', '$' + pdfMaterialsTotal.toLocaleString());
+    if (hasFence && pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
+    if (pdfRemoval > 0) totalLine('Old fence removal', '$' + Math.round(pdfRemoval).toLocaleString());
+    if (pdfPermit > 0) totalLine('Permit fee', '$150');
+    if (pdfStain > 0) totalLine('Stain / seal', '$' + Math.round(pdfStain).toLocaleString());
+    if (customTotal > 0) totalLine('Custom items', '$' + Math.round(customTotal).toLocaleString());
+  }
 
   // Divider line
   y += 2;
@@ -3982,7 +4304,6 @@ async function generatePDF(mode) {
   if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
     if (laborCost > 0) totalLine('Labor (' + laborPerFt + '/ft)', '$' + laborCost.toLocaleString());
     if (markupAmt > 0) totalLine('Markup (' + markupPct + '%)', '$' + markupAmt.toLocaleString());
-    // Heavy divider
     doc.setDrawColor.apply(doc, cDark);
     doc.setLineWidth(1.5);
     doc.line(innerMargin, y, innerRight, y);
@@ -4701,6 +5022,7 @@ if (initMat && document.getElementById('mulch-bag-price')) {
 }
 
 recalculate();
+var _hadSharedURL = window.location.search.indexOf('e=') >= 0;
 loadFromURL();
 updateEmptyMapState();
 
@@ -4719,8 +5041,8 @@ if (fencePoints.length === 0) {
 }
 updateEstimateCounterDisplay();
 
-// Auto-restore unsaved work
-if (fencePoints.length === 0) {
+// Auto-restore unsaved work (skip if shared URL was loaded)
+if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL) {
   try {
     var autosave = JSON.parse(localStorage.getItem('fc_autosave'));
     if (autosave && autosave.fencePoints && autosave.fencePoints.length > 0) {
@@ -4768,7 +5090,7 @@ function resetEstimateAndClearAutosave() {
 }
 
 // First visit: load demo estimate so visitors see the product immediately
-if (fencePoints.length === 0 && !localStorage.getItem('fc_visited')) {
+if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL && !localStorage.getItem('fc_visited')) {
   localStorage.setItem('fc_visited', '1');
   loadDemo(1);
   // Show "Try it yourself" banner after demo loads
@@ -4781,7 +5103,7 @@ if (fencePoints.length === 0 && !localStorage.getItem('fc_visited')) {
       '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#999;cursor:pointer;font-size:18px">&times;</button>';
     document.body.appendChild(banner);
   }, 2000);
-} else if (fencePoints.length === 0) {
+} else if (fencePoints.length === 0 && !_hadSharedURL) {
   hintFirstVisit();
   showQuickStart();
 }

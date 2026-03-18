@@ -1,4 +1,4 @@
-var CACHE_NAME = 'fencetrace-v7';
+var CACHE_NAME = 'fencetrace-v15';
 var STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -37,33 +37,19 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  var url = new URL(e.request.url);
-
-  // Network-first for API calls and cross-origin
-  if (url.pathname.startsWith('/api') || url.hostname !== self.location.hostname) {
-    e.respondWith(
-      fetch(e.request).catch(function() {
-        return caches.match(e.request);
-      })
-    );
-    return;
-  }
-
-  // Stale-while-revalidate for static assets
-  // Serve cached version immediately, fetch fresh in background
+  // Network-first for everything — use cache only when offline
   e.respondWith(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.match(e.request).then(function(cached) {
-        var fetchPromise = fetch(e.request).then(function(response) {
-          if (response.ok) {
-            cache.put(e.request, response.clone());
-          }
-          return response;
-        }).catch(function() {
-          return cached;
+    fetch(e.request).then(function(response) {
+      // Cache successful responses for offline use
+      if (response.ok) {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) {
+          cache.put(e.request, clone);
         });
-        return cached || fetchPromise;
-      });
+      }
+      return response;
+    }).catch(function() {
+      return caches.match(e.request);
     })
   );
 });
