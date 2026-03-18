@@ -1,6 +1,19 @@
 const db = require('./lib/dynamo');
 const crypto = require('crypto');
 
+// Normalize email to prevent trial abuse via +alias and dot tricks
+// e.g. "User+test@Gmail.com" → "user@gmail.com"
+function normalizeEmail(email) {
+  const [local, domain] = email.toLowerCase().split('@');
+  if (!domain) return email.toLowerCase();
+  // Strip +suffix aliases (works for Gmail, Outlook, most providers)
+  const base = local.split('+')[0];
+  // Strip dots for Gmail (dots are ignored by Gmail)
+  const gmailDomains = ['gmail.com', 'googlemail.com'];
+  const cleaned = gmailDomains.includes(domain) ? base.replace(/\./g, '') : base;
+  return cleaned + '@' + domain;
+}
+
 module.exports.postConfirmation = async (event) => {
   const { sub, email } = event.request.userAttributes;
   const companyName = event.request.userAttributes['custom:companyName'] || 'My Company';
@@ -39,7 +52,15 @@ module.exports.postConfirmation = async (event) => {
 
   // No invite — create new company
   const companyId = crypto.randomUUID();
-  const trialEnds = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+  const normalized = normalizeEmail(email);
+
+  // Check if this email (normalized) has already used a trial
+  const existingTrial = await db.get('TRIAL', normalized);
+  const trialUsed = !!existingTrial;
+
+  const trialEnds = trialUsed
+    ? new Date(0).toISOString()  // Expired immediately — no second trial
+    : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
   // Create company
   await db.put({
@@ -54,10 +75,21 @@ module.exports.postConfirmation = async (event) => {
     logoKey: '',
     stripeCustomerId: '',
     subscriptionId: '',
-    subscriptionStatus: 'trialing',
+    subscriptionStatus: trialUsed ? 'expired' : 'trialing',
     trialEndsAt: trialEnds,
     createdAt: now
   });
+
+  // Record trial usage (persists forever — one trial per normalized email)
+  if (!trialUsed) {
+    await db.put({
+      PK: 'TRIAL',
+      SK: normalized,
+      email,
+      companyId,
+      createdAt: now
+    });
+  }
 
   // Create user as owner
   await db.put({
@@ -73,3 +105,6 @@ module.exports.postConfirmation = async (event) => {
 
   return event;
 };
+
+// Exported for testing
+module.exports.normalizeEmail = normalizeEmail;

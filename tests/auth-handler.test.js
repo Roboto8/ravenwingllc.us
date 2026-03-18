@@ -70,12 +70,13 @@ describe('auth handler - postConfirmation', () => {
     expect(result).toBe(event);
   });
 
-  test('calls db.put twice (company + user)', async () => {
+  test('calls db operations for trial check + company + trial record + user', async () => {
     const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
     const send = DynamoDBDocumentClient.from().send;
 
     await postConfirmation(makeEvent());
-    expect(send).toHaveBeenCalledTimes(2);
+    // get (trial check) + put (company) + put (trial record) + put (user) = 4
+    expect(send).toHaveBeenCalledTimes(4);
   });
 
   test('creates company record with correct fields', async () => {
@@ -100,12 +101,13 @@ describe('auth handler - postConfirmation', () => {
 
     await postConfirmation(makeEvent());
 
-    const secondCallArg = PutCommand.mock.calls[1][0];
-    expect(secondCallArg.Item.SK).toMatch(/^USER#user-sub-123$/);
-    expect(secondCallArg.Item.GSI1PK).toBe('USER#user-sub-123');
-    expect(secondCallArg.Item.GSI1SK).toMatch(/^COMPANY#/);
-    expect(secondCallArg.Item.email).toBe('test@example.com');
-    expect(secondCallArg.Item.role).toBe('owner');
+    // PutCommand calls: [0] company, [1] trial record, [2] user
+    const userCallArg = PutCommand.mock.calls[2][0];
+    expect(userCallArg.Item.SK).toMatch(/^USER#user-sub-123$/);
+    expect(userCallArg.Item.GSI1PK).toBe('USER#user-sub-123');
+    expect(userCallArg.Item.GSI1SK).toMatch(/^COMPANY#/);
+    expect(userCallArg.Item.email).toBe('test@example.com');
+    expect(userCallArg.Item.role).toBe('owner');
   });
 
   test('uses default company name when not provided', async () => {
@@ -137,9 +139,10 @@ describe('auth handler - postConfirmation', () => {
 
     await postConfirmation(makeEvent());
 
+    // PutCommand calls: [0] company, [1] trial record, [2] user
     const companyPK = PutCommand.mock.calls[0][0].Item.PK;
-    const userPK = PutCommand.mock.calls[1][0].Item.PK;
-    const userGSI1SK = PutCommand.mock.calls[1][0].Item.GSI1SK;
+    const userPK = PutCommand.mock.calls[2][0].Item.PK;
+    const userGSI1SK = PutCommand.mock.calls[2][0].Item.GSI1SK;
 
     expect(companyPK).toBe(userPK);
     expect(companyPK).toBe(userGSI1SK);
@@ -185,9 +188,98 @@ describe('auth handler - postConfirmation', () => {
     const event = makeEvent({ 'custom:inviteToken': 'bad-token' });
     await postConfirmation(event);
 
-    // Should create company + user = 2 puts after the failed GSI query
-    expect(PutCommand).toHaveBeenCalledTimes(2);
+    // Should create company + trial record + user = 3 puts after the failed GSI query + trial check
+    expect(PutCommand).toHaveBeenCalledTimes(3);
     const firstPut = PutCommand.mock.calls[0][0];
     expect(firstPut.Item.SK).toBe('PROFILE'); // company record
+  });
+
+  test('blocks second trial for same normalized email', async () => {
+    const { PutCommand, GetCommand, DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+    const send = DynamoDBDocumentClient.from().send;
+
+    // Trial check returns existing record (trial already used)
+    send.mockResolvedValueOnce({ Item: { PK: 'TRIAL', SK: 'test@example.com', companyId: 'old-comp' } });
+    // Remaining calls succeed
+    send.mockResolvedValue({});
+
+    await postConfirmation(makeEvent());
+
+    // Company should be created with expired status
+    const companyPut = PutCommand.mock.calls[0][0];
+    expect(companyPut.Item.subscriptionStatus).toBe('expired');
+    expect(new Date(companyPut.Item.trialEndsAt).getTime()).toBe(0);
+  });
+
+  test('blocks trial for +alias email variants', async () => {
+    const { PutCommand, DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+    const send = DynamoDBDocumentClient.from().send;
+
+    // Trial check returns existing record (user+1@example.com normalizes to user@example.com)
+    send.mockResolvedValueOnce({ Item: { PK: 'TRIAL', SK: 'user@example.com' } });
+    send.mockResolvedValue({});
+
+    await postConfirmation(makeEvent({ email: 'user+sneaky@example.com' }));
+
+    const companyPut = PutCommand.mock.calls[0][0];
+    expect(companyPut.Item.subscriptionStatus).toBe('expired');
+  });
+
+  test('writes trial record on first signup', async () => {
+    const { PutCommand } = require('@aws-sdk/lib-dynamodb');
+
+    await postConfirmation(makeEvent());
+
+    // PutCommand calls: [0] company, [1] trial record, [2] user
+    const trialPut = PutCommand.mock.calls[1][0];
+    expect(trialPut.Item.PK).toBe('TRIAL');
+    expect(trialPut.Item.SK).toBe('test@example.com');
+    expect(trialPut.Item.email).toBe('test@example.com');
+  });
+
+  test('does not write trial record when trial already used', async () => {
+    const { PutCommand, DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+    const send = DynamoDBDocumentClient.from().send;
+
+    // Trial already used
+    send.mockResolvedValueOnce({ Item: { PK: 'TRIAL', SK: 'test@example.com' } });
+    send.mockResolvedValue({});
+
+    await postConfirmation(makeEvent());
+
+    // Only 2 puts: company + user (no trial record)
+    expect(PutCommand).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('normalizeEmail', () => {
+  const { normalizeEmail } = require('../handlers/auth');
+
+  test('lowercases email', () => {
+    expect(normalizeEmail('User@Example.COM')).toBe('user@example.com');
+  });
+
+  test('strips +alias', () => {
+    expect(normalizeEmail('user+test@example.com')).toBe('user@example.com');
+  });
+
+  test('strips dots for Gmail', () => {
+    expect(normalizeEmail('u.s.e.r@gmail.com')).toBe('user@gmail.com');
+  });
+
+  test('strips dots for googlemail.com', () => {
+    expect(normalizeEmail('u.s.e.r@googlemail.com')).toBe('user@googlemail.com');
+  });
+
+  test('keeps dots for non-Gmail providers', () => {
+    expect(normalizeEmail('first.last@outlook.com')).toBe('first.last@outlook.com');
+  });
+
+  test('handles +alias AND dots for Gmail', () => {
+    expect(normalizeEmail('f.i.r.s.t+promo@gmail.com')).toBe('first@gmail.com');
+  });
+
+  test('handles email without domain gracefully', () => {
+    expect(normalizeEmail('nodomain')).toBe('nodomain');
   });
 });
