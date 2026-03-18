@@ -2,6 +2,7 @@ const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
 const crypto = require('crypto');
+const { checkPermission } = require('./roles');
 
 // List team members
 module.exports.list = async (event) => {
@@ -32,8 +33,10 @@ module.exports.list = async (event) => {
 module.exports.invite = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'team.invite')) return res.forbidden('No permission to invite members');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const email = (body.email || '').trim().toLowerCase();
   if (!email || !email.includes('@')) return res.bad('Valid email required');
 
@@ -63,6 +66,7 @@ module.exports.invite = async (event) => {
 module.exports.revoke = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'team.invite')) return res.forbidden('No permission to manage invites');
 
   const token = event.pathParameters.token;
   await db.remove('COMPANY#' + companyId, 'INVITE#' + token);
@@ -74,6 +78,7 @@ module.exports.revoke = async (event) => {
 module.exports.remove = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'team.remove')) return res.forbidden('No permission to remove members');
 
   const memberEmail = decodeURIComponent(event.pathParameters.email);
 

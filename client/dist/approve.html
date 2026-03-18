@@ -322,6 +322,10 @@
 <script src="js/api.js"></script>
 <script>
 (function() {
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
 
@@ -331,7 +335,7 @@
   }
 
   // Determine API base URL from current location or config
-  const apiUrl = window.FENCETRACE_API_URL || window.location.origin;
+  const apiUrl = 'https://wkst09rgl3.execute-api.us-east-1.amazonaws.com';
   API.configure(apiUrl);
 
   let estimateData = null;
@@ -379,7 +383,7 @@
     if (est.gates && est.gates.length > 0) {
       document.getElementById('gates-card').style.display = 'block';
       document.getElementById('gates-list').innerHTML = est.gates.map(function(g) {
-        return '<div class="detail-row"><span class="label">' + (g.type || 'Gate') + '</span><span class="value">$' + (g.price || 0) + '</span></div>';
+        return '<div class="detail-row"><span class="label">' + escapeHtml(g.type || 'Gate') + '</span><span class="value">$' + escapeHtml(String(g.price || 0)) + '</span></div>';
       }).join('');
     }
 
@@ -390,7 +394,7 @@
       if (activeAddons.length > 0) {
         document.getElementById('addons-card').style.display = 'block';
         document.getElementById('addons-list').innerHTML = activeAddons.map(function(k) {
-          return '<div class="detail-row"><span class="label">' + (addonLabels[k] || k) + '</span><span class="value">Included</span></div>';
+          return '<div class="detail-row"><span class="label">' + escapeHtml(addonLabels[k] || k) + '</span><span class="value">Included</span></div>';
         }).join('');
       }
     }
@@ -399,10 +403,10 @@
     if (est.bom && est.bom.length > 0) {
       document.getElementById('bom-card').style.display = 'block';
       document.getElementById('bom-body').innerHTML = est.bom.map(function(item) {
-        var name = item.name || item.item || item.description || '-';
-        var qty = item.qty || item.quantity || 0;
-        var cost = item.cost || item.total || item.unitCost || 0;
-        return '<tr><td>' + name + '</td><td>' + qty + '</td><td>$' + Number(cost).toLocaleString() + '</td></tr>';
+        var name = escapeHtml(item.name || item.item || item.description || '-');
+        var qty = escapeHtml(String(item.qty || item.quantity || 0));
+        var cost = Number(item.cost || item.total || item.unitCost || 0).toLocaleString();
+        return '<tr><td>' + name + '</td><td>' + qty + '</td><td>$' + cost + '</td></tr>';
       }).join('');
     }
 

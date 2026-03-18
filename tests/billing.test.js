@@ -11,6 +11,11 @@ jest.mock('../handlers/lib/auth', () => ({
   getCompanyId: jest.fn()
 }));
 
+jest.mock('../handlers/roles', () => ({
+  checkPermission: jest.fn().mockResolvedValue(true),
+  ALL_PERMISSIONS: []
+}));
+
 // Mock stripe
 const mockStripe = {
   customers: {
@@ -162,7 +167,7 @@ describe('billing handler', () => {
       });
 
       const result = await billing.portal({
-        body: JSON.stringify({ returnUrl: 'https://myapp.com/settings' })
+        body: JSON.stringify({ returnUrl: 'https://fencetrace.com/settings' })
       });
       const body = JSON.parse(result.body);
 
@@ -171,7 +176,7 @@ describe('billing handler', () => {
       expect(mockStripe.billingPortal.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
           customer: 'cus_existing',
-          return_url: 'https://myapp.com/settings'
+          return_url: 'https://fencetrace.com/settings'
         })
       );
     });
@@ -586,17 +591,30 @@ describe('billing handler', () => {
 
   // ===== CHECKOUT - sanitizeReturnUrl additional =====
   describe('checkout - sanitizeReturnUrl edge cases', () => {
-    test('accepts https URLs', async () => {
+    test('accepts allowed https URLs', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyWithStripe);
       mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
 
       await billing.checkout({
-        body: JSON.stringify({ returnUrl: 'https://my-domain.com/dashboard' })
+        body: JSON.stringify({ returnUrl: 'https://fencetrace.com/dashboard' })
       });
 
       const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
-      expect(sessionArg.success_url).toContain('https://my-domain.com/dashboard');
+      expect(sessionArg.success_url).toContain('https://fencetrace.com/dashboard');
+    });
+
+    test('rejects unknown https URLs (open redirect prevention)', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ returnUrl: 'https://evil.com/phish' })
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.success_url).not.toContain('evil.com');
     });
 
     test('handles null returnUrl', async () => {

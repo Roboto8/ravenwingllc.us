@@ -64,7 +64,8 @@ module.exports.create = async (event) => {
   const hasPermission = await checkPermission(event, companyId, 'team.roles');
   if (!hasPermission) return res.forbidden('No permission to manage roles');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const name = (body.name || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!name || name.length < 2) return res.bad('Role name required (2+ chars, alphanumeric)');
   if (name === 'owner' || name === 'member') return res.bad('Cannot create built-in role name');
@@ -95,7 +96,8 @@ module.exports.update = async (event) => {
   const name = event.pathParameters.name;
   if (name === 'owner') return res.bad('Cannot edit owner role');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const updates = {};
 
   if (body.permissions) {
@@ -147,7 +149,8 @@ module.exports.assign = async (event) => {
   const hasPermission = await checkPermission(event, companyId, 'team.roles');
   if (!hasPermission) return res.forbidden('No permission to manage roles');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const email = (body.email || '').trim().toLowerCase();
   const role = (body.role || '').trim().toLowerCase();
 

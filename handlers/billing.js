@@ -1,6 +1,7 @@
 const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
+const { checkPermission } = require('./roles');
 
 let stripe;
 function getStripe() {
@@ -16,7 +17,8 @@ const RATE_LIMIT_MS = 10000; // 10 seconds
 const ALLOWED_ORIGINS = [
   'http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com',
   'http://ravenwing-frontend.s3-website-us-east-1.amazonaws.com',
-  'https://' // any CloudFront or custom domain with HTTPS
+  'https://fencetrace.com',
+  'https://www.fencetrace.com'
 ];
 const DEFAULT_RETURN = 'http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com/';
 
@@ -36,6 +38,7 @@ function sanitizeReturnUrl(url) {
 module.exports.checkout = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'billing.manage')) return res.forbidden('No permission to manage billing');
 
   // Rate limit: prevent same company from spamming checkout
   const now = Date.now();
@@ -53,7 +56,8 @@ module.exports.checkout = async (event) => {
   }
 
   const s = getStripe();
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const returnUrl = sanitizeReturnUrl(body.returnUrl);
 
   // Determine price based on tier
@@ -102,11 +106,13 @@ module.exports.checkout = async (event) => {
 module.exports.portal = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'billing.manage')) return res.forbidden('No permission to manage billing');
 
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!company || !company.stripeCustomerId) return res.bad('No billing account');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const returnUrl = sanitizeReturnUrl(body.returnUrl);
 
   const s = getStripe();
@@ -170,6 +176,7 @@ module.exports.status = async (event) => {
 module.exports.exportData = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'export.data')) return res.forbidden('No permission to export data');
 
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!company) return res.notFound();

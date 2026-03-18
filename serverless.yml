@@ -58,11 +58,16 @@ provider:
     STRIPE_PRICE_SOLO: ${ssm:fencecalc.${sls:stage}.stripe-price-solo, ''}
     STRIPE_PRICE_PRO: ${ssm:fencecalc.${sls:stage}.stripe-price-pro, ''}
     STRIPE_PRICE_TEAM: ${ssm:fencecalc.${sls:stage}.stripe-price-team, ''}
+    FORWARD_TO_EMAIL: ${ssm:fencecalc.${sls:stage}.forward-to-email, 'portertoddc@gmail.com'}
+    EMAIL_BUCKET: fencetrace-email-us-east-1
 
   httpApi:
     cors:
       allowedOrigins:
-        - '*'
+        - 'https://fencetrace.com'
+        - 'https://www.fencetrace.com'
+        - 'http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com'
+        - 'http://ravenwing-frontend.s3-website-us-east-1.amazonaws.com'
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -105,7 +110,9 @@ provider:
         - Effect: Allow
           Action:
             - ses:SendRawEmail
-          Resource: '*'
+          Resource:
+            - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/fencetrace.com'
+            - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*.fencetrace.com'
 
 functions:
   postConfirmation:
@@ -439,9 +446,9 @@ resources:
           - email
         Policies:
           PasswordPolicy:
-            MinimumLength: 8
+            MinimumLength: 10
             RequireLowercase: true
-            RequireUppercase: false
+            RequireUppercase: true
             RequireNumbers: true
             RequireSymbols: false
         Schema:
@@ -468,6 +475,15 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:custom.assetsBucket}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+        BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: AES256
 
   Outputs:
     UserPoolId:

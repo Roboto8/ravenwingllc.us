@@ -21,7 +21,8 @@ module.exports.markRead = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
 
   if (body.all) {
     // Mark all as read

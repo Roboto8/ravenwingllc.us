@@ -12,6 +12,11 @@ jest.mock('../handlers/lib/auth', () => ({
   getCompanyId: jest.fn()
 }));
 
+jest.mock('../handlers/roles', () => ({
+  checkPermission: jest.fn().mockResolvedValue(true),
+  ALL_PERMISSIONS: []
+}));
+
 const db = require('../handlers/lib/dynamo');
 const auth = require('../handlers/lib/auth');
 const team = require('../handlers/team');

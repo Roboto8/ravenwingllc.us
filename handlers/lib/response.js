@@ -1,4 +1,11 @@
 module.exports = {
+  parseBody(event) {
+    try {
+      return JSON.parse(event.body || '{}');
+    } catch (e) {
+      return null;
+    }
+  },
   ok(body) {
     return { statusCode: 200, body: JSON.stringify(body) };
   },

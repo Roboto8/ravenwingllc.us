@@ -2,10 +2,12 @@ const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
 const crypto = require('crypto');
+const { checkPermission } = require('./roles');
 
 module.exports.list = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
 
   const limit = parseInt(event.queryStringParameters?.limit || '20');
   const lastKey = event.queryStringParameters?.cursor;
@@ -21,12 +23,16 @@ module.exports.list = async (event) => {
 module.exports.create = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.create')) return res.forbidden('No permission');
 
   // Check subscription
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!canCreate(company)) return res.forbidden('Trial expired. Please subscribe.');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
+  const valErr = validateInput(body);
+  if (valErr) return res.bad(valErr);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -69,6 +75,7 @@ module.exports.create = async (event) => {
 module.exports.get = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
   const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -81,13 +88,17 @@ module.exports.get = async (event) => {
 module.exports.update = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.edit')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
   const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
   const est = items.find(i => i.id === id);
   if (!est) return res.notFound();
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
+  const valErr = validateInput(body);
+  if (valErr) return res.bad(valErr);
   const allowed = [
     'customerName', 'customerPhone', 'customerAddress', 'customerEmail',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
@@ -110,6 +121,7 @@ module.exports.update = async (event) => {
 module.exports.remove = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
   const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -128,6 +140,7 @@ module.exports.remove = async (event) => {
 module.exports.purge = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
   const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -142,6 +155,7 @@ module.exports.purge = async (event) => {
 module.exports.restore = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
   const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -159,6 +173,7 @@ module.exports.restore = async (event) => {
 module.exports.trash = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
 
   const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
   const deleted = items.filter(i => i.status === 'deleted');
@@ -171,6 +186,36 @@ module.exports.trash = async (event) => {
 function stripKeys(item) {
   const { PK, SK, GSI1PK, GSI1SK, ...rest } = item;
   return rest;
+}
+
+// Input validation limits
+const MAX_STRING = 500;
+const MAX_ARRAY = 1000;
+const MAX_BOM = 500;
+
+function validateInput(body) {
+  const stringFields = ['customerName', 'customerPhone', 'customerAddress', 'customerEmail', 'fenceType', 'mulchMaterial', 'mulchDelivery'];
+  for (const f of stringFields) {
+    if (body[f] && typeof body[f] === 'string' && body[f].length > MAX_STRING) {
+      return f + ' exceeds maximum length';
+    }
+  }
+  if (body.fencePoints && Array.isArray(body.fencePoints) && body.fencePoints.length > MAX_ARRAY) {
+    return 'Too many fence points (max ' + MAX_ARRAY + ')';
+  }
+  if (body.gates && Array.isArray(body.gates) && body.gates.length > 100) {
+    return 'Too many gates (max 100)';
+  }
+  if (body.bom && Array.isArray(body.bom) && body.bom.length > MAX_BOM) {
+    return 'Too many BOM items (max ' + MAX_BOM + ')';
+  }
+  if (body.mulchAreas && Array.isArray(body.mulchAreas) && body.mulchAreas.length > 100) {
+    return 'Too many mulch areas (max 100)';
+  }
+  if (body.photos && Array.isArray(body.photos) && body.photos.length > 50) {
+    return 'Too many photos (max 50)';
+  }
+  return null;
 }
 
 function canCreate(company) {

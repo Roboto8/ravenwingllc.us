@@ -1,6 +1,7 @@
 const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
+const { checkPermission } = require('./roles');
 
 module.exports.get = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
@@ -29,8 +30,10 @@ module.exports.get = async (event) => {
 module.exports.update = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden('No company found');
+  if (!await checkPermission(event, companyId, 'company.edit')) return res.forbidden('No permission to edit company');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'region', 'pricebook', 'language'];
   const updates = {};
 

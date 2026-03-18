@@ -49,7 +49,18 @@ module.exports = {
       Limit: limit,
       ScanIndexForward: false
     };
-    if (lastKey) params.ExclusiveStartKey = JSON.parse(Buffer.from(lastKey, 'base64').toString());
+    if (lastKey) {
+      try {
+        const decoded = JSON.parse(Buffer.from(lastKey, 'base64').toString());
+        // Validate cursor PK matches the query partition to prevent cross-tenant enumeration
+        if (decoded.PK && decoded.PK !== pk) {
+          throw new Error('Invalid cursor');
+        }
+        params.ExclusiveStartKey = decoded;
+      } catch (e) {
+        // Invalid or tampered cursor — ignore and start from beginning
+      }
+    }
 
     const { Items, LastEvaluatedKey } = await ddb.send(new QueryCommand(params));
     return {

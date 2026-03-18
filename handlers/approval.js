@@ -2,11 +2,13 @@ const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
 const crypto = require('crypto');
+const { checkPermission } = require('./roles');
 
 // POST /api/estimates/{id}/share — generate share token, set approvalStatus to 'sent'
 module.exports.share = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'estimates.edit')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
   const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -88,7 +90,8 @@ module.exports.respond = async (event) => {
   const token = event.pathParameters.token;
   if (!token) return res.bad('Missing token');
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   const action = body.action;
   const message = body.message || '';
 
