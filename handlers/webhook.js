@@ -36,6 +36,7 @@ module.exports.handler = async (event) => {
 
   const data = stripeEvent.data.object;
 
+  try {
   switch (stripeEvent.type) {
     case 'checkout.session.completed': {
       const customerId = data.customer;
@@ -159,6 +160,10 @@ module.exports.handler = async (event) => {
       }
       break;
     }
+  }
+  } catch (err) {
+    console.error('Webhook DB error for event ' + stripeEvent.type + ':', err.message);
+    return { statusCode: 500, body: 'Internal error' };
   }
 
   return { statusCode: 200, body: 'ok' };

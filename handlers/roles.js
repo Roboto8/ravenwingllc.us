@@ -33,7 +33,7 @@ const DEFAULT_MEMBER_ROLE = {
 };
 
 // List all roles for the company
-module.exports.list = async (event) => {
+module.exports.list = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -53,10 +53,10 @@ module.exports.list = async (event) => {
   });
 
   return res.ok({ roles, allPermissions: ALL_PERMISSIONS });
-};
+});
 
 // Create a new role
-module.exports.create = async (event) => {
+module.exports.create = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -83,10 +83,10 @@ module.exports.create = async (event) => {
   });
 
   return res.created({ name, color, permissions, builtIn: false });
-};
+});
 
 // Update a role
-module.exports.update = async (event) => {
+module.exports.update = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -116,10 +116,10 @@ module.exports.update = async (event) => {
   }
 
   return res.ok({ name, ...updates });
-};
+});
 
 // Delete a role
-module.exports.remove = async (event) => {
+module.exports.remove = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -139,10 +139,10 @@ module.exports.remove = async (event) => {
 
   await db.remove('COMPANY#' + companyId, 'ROLE#' + name);
   return res.ok({ deleted: true });
-};
+});
 
 // Assign a role to a member
-module.exports.assign = async (event) => {
+module.exports.assign = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -164,7 +164,7 @@ module.exports.assign = async (event) => {
 
   await db.update(member.PK, member.SK, { role });
   return res.ok({ email, role });
-};
+});
 
 // Check if the current user has a specific permission
 async function checkPermission(event, companyId, permission) {

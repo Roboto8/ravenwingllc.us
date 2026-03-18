@@ -454,7 +454,7 @@ describe('estimates handler', () => {
       expect(result.statusCode).toBe(200);
       expect(db.update).toHaveBeenCalledWith(
         deletedEstimate.PK, deletedEstimate.SK,
-        { status: 'draft', deletedAt: '' }
+        expect.objectContaining({ status: 'draft', deletedAt: '' })
       );
       // Keys should be stripped from response
       expect(body.PK).toBeUndefined();

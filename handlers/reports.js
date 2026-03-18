@@ -2,7 +2,7 @@ const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
 const res = require('./lib/response');
 
-module.exports.dashboard = async (event) => {
+module.exports.dashboard = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
@@ -76,7 +76,7 @@ module.exports.dashboard = async (event) => {
     estimatesByMonth,
     topMaterials
   });
-};
+});
 
 function getCutoff(period) {
   const now = new Date();
