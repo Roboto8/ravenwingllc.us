@@ -409,25 +409,34 @@ describe('Main App - Screen Sizes', () => {
 
   // ---- Modal fits within viewport ----
   describe('modals fit viewport', () => {
-    test.each(Object.entries(DEVICES))('%s - modal max-width respects viewport', async (name, { width, height }) => {
+    test.each(Object.entries(DEVICES))('%s - modal rendered width within viewport', async (name, { width, height }) => {
       const page = await browser.newPage();
       await page.setViewport({ width, height });
       await page.goto(INDEX_URL, { waitUntil: 'domcontentloaded', timeout: 10000 });
       await delay(300);
 
+      // Make a modal visible to test its actual rendered width
       const modalFits = await page.evaluate(() => {
+        const vw = document.documentElement.clientWidth;
         const modals = document.querySelectorAll('.modal');
         for (const modal of modals) {
-          const style = getComputedStyle(modal);
-          const maxW = parseFloat(style.maxWidth);
-          if (!isNaN(maxW) && maxW > document.documentElement.clientWidth) {
-            return false;
+          // Temporarily make visible to measure
+          const overlay = modal.closest('.modal-overlay');
+          const prevDisplay = overlay ? overlay.style.display : '';
+          if (overlay) overlay.style.display = 'flex';
+
+          const rect = modal.getBoundingClientRect();
+          if (overlay) overlay.style.display = prevDisplay;
+
+          // If rendered, check it fits
+          if (rect.width > 0 && rect.width > vw) {
+            return { fits: false, modalWidth: rect.width, viewportWidth: vw };
           }
         }
-        return true;
+        return { fits: true };
       });
 
-      expect(modalFits).toBe(true);
+      expect(modalFits.fits).toBe(true);
       await page.close();
     }, 15000);
   });

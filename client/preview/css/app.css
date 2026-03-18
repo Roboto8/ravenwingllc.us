@@ -1037,7 +1037,7 @@ body.twa-mode .modal-overlay {
   border-radius: 10px;
   padding: 32px 28px;
   width: 100%;
-  max-width: 400px;
+  max-width: min(400px, calc(100vw - 40px));
   max-height: none;
   box-shadow: 0 8px 40px rgba(0,0,0,0.2);
   margin: auto 0;
@@ -1489,6 +1489,12 @@ body.twa-mode .modal-overlay {
   .layer-btn { padding: 8px 12px; min-height: var(--min-touch); font-size: 0.85rem; }
 
   .search-bar { top: 10px; left: 10px; right: 10px; }
+}
+
+/* Landscape mobile: reduce panel height so map stays usable */
+@media (max-width: 900px) and (orientation: landscape) {
+  .estimate-panel { height: 35vh; }
+  .estimate-panel.collapsed { height: 48px; }
 }
 
 /* Small phones (iPhone SE, Galaxy S series) */
