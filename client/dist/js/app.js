@@ -522,8 +522,7 @@ function removeDroneOverlay() {
 }
 
 function onMapClick(e) {
-  // Subscription gate — block drawing after trial ends
-  if (typeof requireSubscription === 'function' && !requireSubscription('create estimates')) return;
+  // Drawing is always free — save/share/PDF are gated
 
   // Warn if zoomed too far out for accurate placement
   if (map.getZoom() < 16 && (currentTool === 'draw' || currentTool === 'gate')) {
@@ -2192,7 +2191,6 @@ function initMulchDragHandlers() {
   map.on('mousedown', function(e) {
     if (currentTool !== 'mulch' || (e.originalEvent && e.originalEvent.shiftKey)) return;
     if (e.originalEvent && e.originalEvent.button !== 0) return;
-    if (typeof requireSubscription === 'function' && !requireSubscription('create estimates')) return;
 
     mulchDragStart = e.latlng;
     map.dragging.disable();
@@ -4192,8 +4190,21 @@ if (fencePoints.length === 0) {
 }
 updateEstimateCounterDisplay();
 
-// Show first-visit hint after a delay (if no shared estimate loaded)
-if (fencePoints.length === 0) {
+// First visit: load demo estimate so visitors see the product immediately
+if (fencePoints.length === 0 && !localStorage.getItem('fc_visited')) {
+  localStorage.setItem('fc_visited', '1');
+  loadDemo(1);
+  // Show "Try it yourself" banner after demo loads
+  setTimeout(function() {
+    var banner = document.createElement('div');
+    banner.id = 'demo-banner';
+    banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--text,#2c2417);color:#fff;padding:12px 20px;border-radius:12px;font-family:var(--font,Inter,sans-serif);font-size:0.9rem;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+    banner.innerHTML = '<span>This is a sample estimate</span>' +
+      '<button onclick="resetEstimate(); document.getElementById(\'demo-banner\').remove()" style="background:#c0622e;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;white-space:nowrap">Try It Yourself</button>' +
+      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#999;cursor:pointer;font-size:18px">&times;</button>';
+    document.body.appendChild(banner);
+  }, 2000);
+} else if (fencePoints.length === 0) {
   hintFirstVisit();
   showQuickStart();
 }

@@ -7,7 +7,7 @@ var I18N = {
   en: {
     // -- Nav --
     nav_brand: 'FenceTrace',
-    nav_tagline: 'Satellite fence estimates',
+    nav_tagline: 'Estimate in 60 seconds',
     btn_new: 'New',
     btn_save: 'Save',
     btn_my_estimates: 'My Estimates',
@@ -279,7 +279,7 @@ var I18N = {
     drone_remove: 'Remove Photo',
 
     // -- Map empty state --
-    empty_map: 'Click the map to start drawing a fence',
+    empty_map: 'Search an address or tap the map to start',
 
     // -- Toast messages --
     toast_section_started: 'Section {n} started — click the map to draw',
@@ -369,7 +369,7 @@ var I18N = {
   es: {
     // -- Nav --
     nav_brand: 'FenceTrace',
-    nav_tagline: 'Estimaciones de cercas por satelite',
+    nav_tagline: 'Estimacion en 60 segundos',
     btn_new: 'Nuevo',
     btn_save: 'Guardar',
     btn_my_estimates: 'Mis Estimaciones',
@@ -641,7 +641,7 @@ var I18N = {
     drone_remove: 'Quitar Foto',
 
     // -- Map empty state --
-    empty_map: 'Haz clic en el mapa para comenzar a dibujar una cerca',
+    empty_map: 'Busca una direccion o toca el mapa para comenzar',
 
     // -- Toast messages --
     toast_section_started: 'Seccion {n} iniciada — haz clic en el mapa para dibujar',
