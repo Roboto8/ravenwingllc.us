@@ -347,7 +347,8 @@ function decodeEstimate(encoded) {
  * Calculate custom items total.
  */
 function customItemsTotal(items) {
-  return items.reduce((sum, i) => sum + (i.qty * i.unitCost), 0);
+  if (!items || !items.length) return 0;
+  return items.reduce((sum, i) => sum + ((i.qty || 0) * (i.unitCost || 0)), 0);
 }
 
 // === Mulch Data ===

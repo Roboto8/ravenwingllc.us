@@ -167,21 +167,45 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   position: relative;
 }
 
+.search-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.search-toggle:hover { color: var(--text); }
+
 .search-bar {
   position: absolute;
   top: 14px;
   left: 14px;
-  right: 14px;
   z-index: 800;
   display: flex;
   align-items: center;
   gap: 8px;
   background: var(--surface);
   border: 1.5px solid var(--border);
+  transition: all 0.2s ease;
   border-radius: var(--radius);
   padding: 8px 12px;
   box-shadow: var(--shadow-md);
 }
+
+.search-bar.collapsed {
+  right: auto;
+  width: 44px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.search-bar.collapsed input,
+.search-bar.collapsed .search-btn { display: none; }
+
+.search-bar:not(.collapsed) .search-toggle svg { display: none; }
 
 .search-bar svg { color: var(--text-muted); flex-shrink: 0; }
 

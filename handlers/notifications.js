@@ -25,13 +25,18 @@ module.exports.markRead = res.wrap(async (event) => {
   if (!body) return res.bad('Invalid JSON');
 
   if (body.all) {
-    // Mark all as read
-    const { items } = await db.query('COMPANY#' + companyId, 'NOTIF#', 50);
-    const unread = items.filter(n => !n.read);
-    for (const n of unread) {
+    // Mark all as read (paginate to get all notifications)
+    let allUnread = [];
+    let cursor = null;
+    do {
+      const { items, nextKey } = await db.query('COMPANY#' + companyId, 'NOTIF#', 50, cursor);
+      allUnread = allUnread.concat(items.filter(n => !n.read));
+      cursor = nextKey;
+    } while (cursor);
+    for (const n of allUnread) {
       await db.update(n.PK, n.SK, { read: true });
     }
-    return res.ok({ marked: unread.length });
+    return res.ok({ marked: allUnread.length });
   }
 
   if (body.ids && Array.isArray(body.ids)) {

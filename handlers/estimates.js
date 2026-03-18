@@ -29,6 +29,15 @@ module.exports.create = res.wrap(async (event) => {
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!canCreate(company)) return res.forbidden('Trial expired. Please subscribe.');
 
+  // Enforce Solo tier estimate limit (20)
+  if (company.tier === 'solo') {
+    const { items } = await db.query('COMPANY#' + companyId, 'EST#', 21);
+    const active = items.filter(i => i.status !== 'deleted');
+    if (active.length >= 20) {
+      return res.forbidden('Solo plan limit reached (20 estimates). Upgrade to Pro for unlimited.');
+    }
+  }
+
   const body = res.parseBody(event);
   if (!body) return res.bad('Invalid JSON');
   const valErr = validateInput(body);
@@ -129,10 +138,11 @@ module.exports.remove = res.wrap(async (event) => {
   const est = items.find(i => i.id === id);
   if (!est) return res.notFound();
 
-  // Soft delete — move to trash instead of permanent delete
+  // Soft delete — move to trash with 90-day TTL for auto-purge
   await db.update(est.PK, est.SK, {
     status: 'deleted',
-    deletedAt: new Date().toISOString()
+    deletedAt: new Date().toISOString(),
+    expiresAt: Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60)
   });
   return res.ok({ deleted: true });
 });
@@ -165,19 +175,27 @@ module.exports.restore = res.wrap(async (event) => {
 
   await db.update(est.PK, est.SK, {
     status: 'draft',
-    deletedAt: ''
+    deletedAt: '',
+    expiresAt: 0
   });
   return res.ok(stripKeys(est));
 });
 
-// List deleted estimates (trash)
+// List deleted estimates (trash) - paginate to get all
 module.exports.trash = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
 
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const deleted = items.filter(i => i.status === 'deleted');
+  let allItems = [];
+  let cursor = null;
+  do {
+    const { items, nextKey } = await db.query('COMPANY#' + companyId, 'EST#', 200, cursor);
+    allItems = allItems.concat(items);
+    cursor = nextKey;
+  } while (cursor);
+
+  const deleted = allItems.filter(i => i.status === 'deleted');
 
   return res.ok({
     estimates: deleted.map(stripKeys)

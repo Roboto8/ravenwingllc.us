@@ -218,14 +218,14 @@ describe('encodeEstimate / decodeEstimate - edge cases', () => {
 });
 
 describe('customItemsTotal - edge cases', () => {
-  test('missing qty field produces NaN (no input validation)', () => {
+  test('missing qty field defaults to 0', () => {
     const total = customItemsTotal([{ unitCost: 10 }]);
-    expect(total).toBeNaN();
+    expect(total).toBe(0);
   });
 
-  test('missing unitCost field produces NaN (no input validation)', () => {
+  test('missing unitCost field defaults to 0', () => {
     const total = customItemsTotal([{ qty: 5 }]);
-    expect(total).toBeNaN();
+    expect(total).toBe(0);
   });
 
   test('handles large arrays', () => {
@@ -233,9 +233,9 @@ describe('customItemsTotal - edge cases', () => {
     expect(customItemsTotal(items)).toBe(1000);
   });
 
-  test('throws for null/undefined input (no input validation)', () => {
-    expect(() => customItemsTotal(null)).toThrow();
-    expect(() => customItemsTotal(undefined)).toThrow();
+  test('returns 0 for null/undefined input', () => {
+    expect(customItemsTotal(null)).toBe(0);
+    expect(customItemsTotal(undefined)).toBe(0);
   });
 });
 

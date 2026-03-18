@@ -15,7 +15,7 @@ const ALLOWED_ORIGINS = [
   'https://fencetrace.com',
   'https://www.fencetrace.com'
 ];
-const DEFAULT_RETURN = 'http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com/';
+const DEFAULT_RETURN = process.env.DEFAULT_RETURN_URL || 'http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com/';
 
 function sanitizeReturnUrl(url) {
   if (!url || typeof url !== 'string') return DEFAULT_RETURN;
@@ -41,6 +41,13 @@ module.exports.checkout = res.wrap(async (event) => {
     return res.tooMany('Please wait before starting another checkout');
   }
   _checkoutTimestamps[companyId] = now;
+
+  // Clean up stale rate limit entries to prevent memory leak in warm Lambda
+  for (const key in _checkoutTimestamps) {
+    if (now - _checkoutTimestamps[key] > RATE_LIMIT_MS * 6) {
+      delete _checkoutTimestamps[key];
+    }
+  }
 
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!company) return res.notFound();

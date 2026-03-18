@@ -261,6 +261,41 @@ function saveCustomPricing() {
   localStorage.setItem('fc_pricing', JSON.stringify(customPricing));
 }
 
+// === Unit System (metric toggle) ===
+let useMetric = localStorage.getItem('fc_metric') === 'true';
+
+function toggleMetric() {
+  useMetric = !useMetric;
+  localStorage.setItem('fc_metric', useMetric);
+  var btn = document.getElementById('unit-toggle');
+  if (btn) btn.textContent = useMetric ? 'm' : 'ft';
+  if (map) {
+    document.querySelectorAll('.leaflet-control-scale-line').forEach(function(el) { el.remove(); });
+    L.control.scale({ imperial: !useMetric, metric: useMetric, position: 'bottomleft', maxWidth: 150 }).addTo(map);
+  }
+  refreshLabels();
+  recalculate();
+}
+
+function fmtLen(feet) {
+  if (useMetric) return Math.round(feet * 0.3048) + ' m';
+  return feet + ' ft';
+}
+function fmtLenVal(feet) { return useMetric ? Math.round(feet * 0.3048) : feet; }
+function fmtLenUnit() { return useMetric ? 'm' : 'ft'; }
+function fmtArea(sqft) {
+  if (useMetric) return (sqft * 0.092903).toFixed(0) + ' m²';
+  return sqft.toLocaleString() + ' sq ft';
+}
+function fmtHeight(ft) {
+  if (useMetric) return Math.round(ft * 0.3048 * 10) / 10 + ' m';
+  return ft + ' ft';
+}
+function fmtCuYd(cuyd) {
+  if (useMetric) return (cuyd * 0.764555).toFixed(1) + ' m³';
+  return cuyd + ' cu yd';
+}
+
 function getPrice(fenceType, height, key, fallback) {
   const path = fenceType + '.' + height + '.' + key;
   if (customPricing[path] !== undefined) return customPricing[path];
@@ -299,8 +334,8 @@ function initMap() {
 
   // Scale bar — shows real-world distance on the map
   L.control.scale({
-    imperial: true,
-    metric: false,
+    imperial: !useMetric,
+    metric: useMetric,
     position: 'bottomleft',
     maxWidth: 150
   }).addTo(map);
@@ -633,7 +668,7 @@ function createSegmentLabel(p1, p2, segIndex) {
     icon: L.divIcon({
       className: 'segment-label',
       html: '<div class="seg-label seg-clickable" data-seg="' + segIndex + '">' +
-        '<span onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</span>' +
+        '<span onclick="editSegmentLength(' + segIndex + ', event)">' + fmtLen(feet) + '</span>' +
         '<button class="seg-delete" onclick="event.stopPropagation(); deleteSegment(' + segIndex + ')" title="Remove segment">&times;</button>' +
       '</div>',
       iconSize: [60, 16],
@@ -1292,7 +1327,9 @@ function updateFootage() {
   // Save current section before aggregating
   saveActiveSection();
   var totalFeet = getTotalFootageAllSections();
-  document.getElementById('total-feet').textContent = totalFeet.toLocaleString();
+  document.getElementById('total-feet').textContent = fmtLenVal(totalFeet).toLocaleString();
+  var unitLabel = document.getElementById('total-feet-unit');
+  if (unitLabel) unitLabel.textContent = fmtLenUnit();
   updateSectionTabs();
   return totalFeet;
 }
@@ -3197,6 +3234,7 @@ function searchAddress() {
         const lon = parseFloat(data[0].lon);
         map.setView([lat, lon], 19);
         document.getElementById('cust-address').value = query;
+        document.getElementById('search-bar').classList.add('collapsed');
       } else {
         showToast(t('toast_addr_not_found'));
       }
@@ -4596,9 +4634,30 @@ function loadDemo(scenario) {
   }
 }
 
-// === Screenshot Prevention ===
-// Block PrintScreen and common screenshot shortcuts
+// === Keyboard Shortcuts ===
 document.addEventListener('keydown', function(e) {
+  // Escape: close modals, drawers, overflow menu
+  if (e.key === 'Escape') {
+    var modal = document.querySelector('.modal-overlay[style*="flex"]');
+    if (modal) { modal.style.display = 'none'; return; }
+    var drawer = document.querySelector('.drawer-overlay');
+    if (drawer) { drawer.click(); return; }
+    var overflow = document.querySelector('.nav-overflow.open');
+    if (overflow) { overflow.classList.remove('open'); return; }
+  }
+  // Delete/Backspace: remove last fence point (when not in an input)
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !e.target.closest('input, textarea, select, [contenteditable]')) {
+    if (typeof fencePoints !== 'undefined' && fencePoints.length > 0) {
+      e.preventDefault();
+      if (typeof undoLastPoint === 'function') undoLastPoint();
+    }
+  }
+  // Ctrl+Z: undo last fence point
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !e.target.closest('input, textarea, select')) {
+    e.preventDefault();
+    if (typeof undoLastPoint === 'function') undoLastPoint();
+  }
+  // Screenshot Prevention
   if (e.key === 'PrintScreen') {
     e.preventDefault();
     showToast(t('toast_screenshot_disabled'));

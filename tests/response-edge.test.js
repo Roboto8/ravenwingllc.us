@@ -84,6 +84,22 @@ describe('response helpers - edge cases', () => {
       expect(result.statusCode).toBe(code);
     });
   });
+
+  describe('security headers', () => {
+    test('ok response includes security headers', () => {
+      const result = res.ok({ test: true });
+      expect(result.headers['X-Content-Type-Options']).toBe('nosniff');
+      expect(result.headers['X-Frame-Options']).toBe('DENY');
+      expect(result.headers['Strict-Transport-Security']).toContain('max-age=');
+      expect(result.headers['Content-Type']).toBe('application/json');
+    });
+
+    test('error responses include security headers', () => {
+      const result = res.bad('error');
+      expect(result.headers['X-Content-Type-Options']).toBe('nosniff');
+      expect(result.headers['X-Frame-Options']).toBe('DENY');
+    });
+  });
 });
 
 describe('auth lib - edge cases', () => {
