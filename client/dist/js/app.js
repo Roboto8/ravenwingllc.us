@@ -335,7 +335,7 @@ function initMap() {
     maxZoom: 22,
     maxNativeZoom: 21,
     subdomains: '0123',
-    attribution: 'Imagery &copy; Google'
+    attribution: 'Imagery &copy; <a href="https://www.google.com/intl/en_us/help/terms_maps/" target="_blank">Google</a>'
   });
 
   // ESRI satellite — fallback / alternative
@@ -457,9 +457,11 @@ function handleDroneUpload(input) {
 var droneCorners = [];
 
 function makeDroneAdjustable(bounds) {
-  // Remove old corners
   droneCorners.forEach(function(m) { map.removeLayer(m); });
   droneCorners = [];
+
+  var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  var handleSize = isMobile ? 20 : 14;
 
   var corners = [
     bounds.getSouthWest(),
@@ -469,26 +471,72 @@ function makeDroneAdjustable(bounds) {
   ];
 
   corners.forEach(function(latlng, idx) {
-    var marker = L.marker(latlng, {
-      draggable: true,
-      icon: L.divIcon({
-        className: 'drone-handle',
-        html: '<div style="width:14px;height:14px;background:#c0622e;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:move"></div>',
-        iconSize: [14, 14],
-        iconAnchor: [7, 7]
-      })
+    var marker = L.circleMarker(latlng, {
+      radius: handleSize / 2,
+      color: '#c0622e',
+      fillColor: '#c0622e',
+      fillOpacity: 1,
+      weight: 2,
+      interactive: true,
+      bubblingMouseEvents: false
     }).addTo(map);
 
-    marker.on('drag', function() {
-      updateDroneFromCorners();
-    });
-    marker.on('dragend', function() {
-      updateDroneFromCorners();
-      markUnsaved();
-    });
+    if (marker.getElement) {
+      var el = marker.getElement();
+      if (el) el.style.cursor = 'nwse-resize';
+    }
+
+    // Use bindDrag for touch+mouse support
+    if (typeof bindDrag === 'function') {
+      bindDrag(marker,
+        function() {},
+        function(ll) {
+          marker.setLatLng(ll);
+          updateDroneFromCorners();
+        },
+        function() { markUnsaved(); }
+      );
+    } else {
+      marker.on('mousedown', function(e) {
+        map.dragging.disable();
+        var onMove = function(ev) { marker.setLatLng(ev.latlng); updateDroneFromCorners(); };
+        var onUp = function() { map.off('mousemove', onMove); map.off('mouseup', onUp); map.dragging.enable(); markUnsaved(); };
+        map.on('mousemove', onMove);
+        map.on('mouseup', onUp);
+        L.DomEvent.stopPropagation(e);
+      });
+    }
 
     droneCorners.push(marker);
   });
+
+  // Make the overlay draggable only when NOT in draw/gate/mulch mode
+  // Clicks pass through to the map for drawing tools
+  droneOverlay.options.interactive = true;
+  droneOverlay.options.bubblingMouseEvents = true; // let clicks bubble to map
+
+  if (typeof bindDrag === 'function') {
+    bindDrag(droneOverlay,
+      function(ll) {
+        // Only allow drag if not in a drawing tool
+        if (currentTool === 'draw' || currentTool === 'gate' || currentTool === 'mulch') return null;
+        return {
+          startLat: ll.lat, startLng: ll.lng,
+          origCorners: droneCorners.map(function(m) { var l = m.getLatLng(); return { lat: l.lat, lng: l.lng }; })
+        };
+      },
+      function(ll, ctx) {
+        if (!ctx) return;
+        var dLat = ll.lat - ctx.startLat;
+        var dLng = ll.lng - ctx.startLng;
+        ctx.origCorners.forEach(function(c, i) {
+          droneCorners[i].setLatLng([c.lat + dLat, c.lng + dLng]);
+        });
+        updateDroneFromCorners();
+      },
+      function() { markUnsaved(); }
+    );
+  }
 }
 
 function updateDroneFromCorners() {
@@ -3508,7 +3556,11 @@ async function generatePDF() {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(140, 130, 118);
-  doc.text('This estimate is valid for 30 days. Actual costs may vary based on site conditions.', margin, y);
+  doc.text('This estimate is for reference only and is valid for 30 days. FenceTrace and RavenWing LLC are not responsible for material shortages,', margin, y);
+  y += 4;
+  doc.text('cost overruns, or construction outcomes. Prices are approximate and may vary by supplier and location.', margin, y);
+  y += 4;
+  doc.text('Always verify measurements on-site before purchasing materials.', margin, y);
   y += 12;
 
   if (typeof activeEstimatePhotos !== 'undefined' && activeEstimatePhotos.length > 0) {

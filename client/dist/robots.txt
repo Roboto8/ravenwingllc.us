@@ -2,6 +2,9 @@ User-agent: *
 Allow: /
 Allow: /landing.html
 Allow: /approve.html
+Allow: /terms.html
+Allow: /privacy.html
+Allow: /refund.html
 
 Disallow: /js/
 Disallow: /css/

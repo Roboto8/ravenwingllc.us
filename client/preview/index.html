@@ -226,17 +226,14 @@
         </button>
       </div>
       <input type="file" id="drone-input" accept="image/*" style="display:none" onchange="handleDroneUpload(this)">
-      <div id="drone-banner" style="display:none;position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:1001;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:12px 16px;font-size:0.82rem;max-width:340px;text-align:center;line-height:1.4">
-        <p style="font-weight:700;margin-bottom:6px;color:var(--accent)" data-i18n="drone_title">Drone Photo Overlay</p>
-        <p style="margin-bottom:8px;color:var(--text-mid)" data-i18n="drone_desc" data-i18n-attr="innerHTML">Drag the <b>orange corners</b> to align the photo with the property. Use the slider to adjust transparency.</p>
-        <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:0.75rem;white-space:nowrap;color:var(--text-muted)" data-i18n="drone_see_through">See-through</span>
+      <div id="drone-banner" style="display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--surface);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25);padding:10px 16px;font-size:0.82rem;max-width:360px;width:calc(100% - 32px)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:0.75rem;white-space:nowrap;color:var(--text-muted)">Opacity</span>
           <input type="range" id="drone-opacity" min="10" max="100" value="70" oninput="setDroneOpacity(this.value)" style="flex:1">
-        </label>
-        <div style="display:flex;gap:6px;justify-content:center">
-          <button class="btn btn-sm" onclick="closeDroneBanner()" data-i18n="drone_got_it">Got it</button>
-          <button class="btn btn-sm btn-outline" style="color:var(--red);border-color:var(--red)" onclick="removeDroneOverlay()" data-i18n="drone_remove">Remove Photo</button>
+          <button class="btn btn-sm" onclick="closeDroneBanner()" style="padding:4px 10px">OK</button>
+          <button class="btn btn-sm btn-outline" style="color:var(--red);border-color:var(--red);padding:4px 10px" onclick="removeDroneOverlay()">Remove</button>
         </div>
+        <p style="margin-top:6px;font-size:0.72rem;color:var(--text-muted);text-align:center">Drag the photo to move. Drag orange corners to resize.</p>
       </div>
       <div class="section-tabs" id="section-tabs" style="display:none"></div>
       <div class="map-toolbar">
@@ -558,7 +555,7 @@
         </div>
 
         <div class="panel-footer">
-          &copy; 2026 RavenWing LLC &middot; <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a>
+          &copy; 2026 RavenWing LLC &middot; <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="refund.html">Refund Policy</a>
         </div>
 
       </div>
@@ -2121,6 +2118,15 @@
       });
     })();
   </script>
+
+  <!-- Cookie/Storage Consent -->
+  <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:10000;background:var(--text,#2c2417);color:#ddd;padding:12px 20px;font-size:0.8rem;font-family:var(--font,Inter,sans-serif)">
+    <div style="max-width:800px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="flex:1;min-width:200px">We use local storage to save your preferences and keep you logged in. No tracking cookies. <a href="privacy.html" style="color:var(--accent,#c0622e)">Privacy Policy</a></span>
+      <button onclick="localStorage.setItem('fc_cookie_ok','1');document.getElementById('cookie-banner').style.display='none'" style="background:var(--accent,#c0622e);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;white-space:nowrap">Got it</button>
+    </div>
+  </div>
+  <script>if(!localStorage.getItem('fc_cookie_ok'))document.getElementById('cookie-banner').style.display='block';</script>
 
 </body>
 </html>

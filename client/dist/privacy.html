@@ -221,7 +221,7 @@
 
   <nav class="site-nav">
     <div class="nav-inner">
-      <a href="landing.html" class="brand">Fence<span class="calc">Calc</span></a>
+      <a href="landing.html" class="brand">Fence<span class="calc">Trace</span></a>
       <div class="nav-links">
         <a href="landing.html">Home</a>
         <a href="index.html">App</a>
@@ -234,7 +234,7 @@
 
   <main class="legal-content">
     <h1>Privacy Policy</h1>
-    <p class="legal-date">Last updated: March 16, 2026</p>
+    <p class="legal-date">Last updated: March 18, 2026</p>
 
     <p>This Privacy Policy describes how RavenWing LLC ("Company," "we," "us," or "our") collects, uses, processes, stores, shares, and protects personal information and other data when you access or use FenceTrace (the "Service"). This Privacy Policy applies to all users of the Service, regardless of geographic location, and governs all data processing activities performed by RavenWing LLC in connection with the Service.</p>
     <p>By accessing or using the Service, you acknowledge that you have read, understood, and agree to the data practices described in this Privacy Policy. This Privacy Policy is incorporated into and forms part of our <a href="terms.html">Terms of Service</a>. If you do not agree with these practices, you must not access or use the Service.</p>
@@ -269,7 +269,7 @@
     <p>When you create a FenceTrace account, we collect the following personal information:</p>
     <ul>
       <li>Email address (required; used as your primary account identifier and for account-related communications)</li>
-      <li>Password (required; stored only in securely hashed and salted form using bcrypt; we never store, log, transmit, or have access to your plaintext password)</li>
+      <li>Password (required; authentication is handled by AWS Cognito, a managed identity service that stores credentials securely using industry-standard hashing; we never store, log, transmit, or have access to your plaintext password)</li>
       <li>Full name (optional; if provided during registration or in account settings)</li>
       <li>Company or business name (optional; if provided during registration or in account settings)</li>
       <li>Business phone number (optional; if provided in account settings)</li>
@@ -305,6 +305,15 @@
       <li>Estimate creation timestamps, modification timestamps, and version history</li>
       <li>Markup percentages, tax rates, discount amounts, and other financial parameters you configure</li>
     </ul>
+
+    <h3>1.3a Photographs and Images</h3>
+    <p>When you upload photographs or images to the Service in connection with your estimates and projects, we store them in Amazon Web Services S3 (Simple Storage Service). Photographs are associated with your Account and the specific estimate or project you attach them to. We collect:</p>
+    <ul>
+      <li>The photograph file itself (JPEG, PNG, or other image formats)</li>
+      <li>File metadata (file name, file size, upload timestamp)</li>
+      <li>The estimate or project the photograph is associated with</li>
+    </ul>
+    <p>Photographs are stored encrypted at rest in AWS S3 and are accessible only to you through your authenticated Account. You are solely responsible for the content of any photographs you upload, including ensuring you have the legal right to capture and use the imagery.</p>
 
     <h3>1.4 Usage and Analytics Data</h3>
     <p>We automatically collect certain information about how you interact with the Service to help us understand usage patterns, improve the user experience, and maintain the Service:</p>
@@ -439,6 +448,12 @@
           <td>Payment card details (collected directly by Stripe), billing address, email address, subscription plan details, and transaction amounts</td>
         </tr>
         <tr>
+          <td>Authentication</td>
+          <td>Amazon Web Services (AWS Cognito)</td>
+          <td>User identity management, authentication, account registration, password reset, and session token issuance</td>
+          <td>Email address, hashed password, authentication tokens, and session metadata. AWS Cognito acts as a data processor on our behalf.</td>
+        </tr>
+        <tr>
           <td>Satellite &amp; Aerial Imagery / Map Tiles</td>
           <td>Esri (ArcGIS World Imagery) and OpenStreetMap contributors</td>
           <td>Rendering satellite imagery, aerial photography, and base map tiles for fence line drawing, property visualization, and measurement</td>
@@ -456,6 +471,12 @@
           <td>Rendering the Inter typeface used throughout the Service's user interface and generated documents</td>
           <td>IP address and browser user-agent string (collected by Google when font files are loaded from Google's CDN). No other personal information is shared.</td>
         </tr>
+        <tr>
+          <td>Analytics (planned)</td>
+          <td>Google LLC (Google Analytics)</td>
+          <td>Understanding usage patterns, page views, feature adoption, and user engagement to improve the Service</td>
+          <td>IP address (anonymized), browser type, device type, pages visited, session duration, and referral source. Google Analytics may be added in the future; if implemented, we will use IP anonymization and will not enable advertising features. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</td>
+        </tr>
       </tbody>
     </table>
 
@@ -466,7 +487,7 @@
       <li><a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe Privacy Policy</a> | <a href="https://stripe.com/guides/general-data-protection-regulation" target="_blank" rel="noopener">Stripe GDPR Guide</a></li>
       <li><a href="https://www.esri.com/en-us/privacy/overview" target="_blank" rel="noopener">Esri Privacy Policy</a></li>
       <li><a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">OpenStreetMap Foundation Privacy Policy</a></li>
-      <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a></li>
+      <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> (Fonts and Analytics)</li>
     </ul>
 
     <h2 id="sharing">6. Data Sharing</h2>
@@ -634,7 +655,7 @@
     <p>You have the right to request that we delete your personal information, subject to certain exceptions. We may retain information where deletion would conflict with our legal obligations (such as tax record-keeping requirements), where the data is necessary to resolve pending disputes, or where retention is otherwise permitted by applicable law. To request deletion of your Account and all associated data, contact us at <a href="mailto:support@fencetrace.com">support@fencetrace.com</a>. Deletion requests will be processed within thirty (30) business days.</p>
 
     <h3>10.4 Right to Data Portability</h3>
-    <p>You have the right to request a copy of your data in a structured, commonly used, machine-readable format. This includes your estimate data, project data, customer data you have entered, and Account information. You may request your data in JSON, CSV, or PDF format. We will provide the requested data within thirty (30) days of your verified request.</p>
+    <p>You have the right to request a copy of your data in a structured, commonly used, machine-readable format. This includes your estimate data, project data, customer data you have entered, and Account information. You may request your data in JSON, CSV, or PDF format. The Service provides an "Export My Data" feature that allows you to download your data directly from your Account settings. You may also submit a data export request to <a href="mailto:support@fencetrace.com">support@fencetrace.com</a>, and we will provide the requested data within thirty (30) days of your verified request.</p>
 
     <h3>10.5 Right to Opt Out</h3>
     <p>You may opt out of:</p>
@@ -740,7 +761,7 @@
     <p>We do not control third-party cookies and are not responsible for their content, duration, or data collection practices.</p>
 
     <h3>11.4 Local Storage and Session Storage</h3>
-    <p>In addition to cookies, the Service may use your browser's local storage and session storage APIs to store application state, cached data, and user preferences locally on your device. Data stored in local storage persists until explicitly cleared by you or by the application. Data stored in session storage is automatically cleared when you close your browser tab.</p>
+    <p>In addition to cookies, the Service uses your browser's local storage and session storage APIs to store authentication tokens (issued by AWS Cognito), application state, cached data, and user preferences locally on your device. Authentication tokens stored in local storage are required for the Service to maintain your logged-in session. Data stored in local storage persists until explicitly cleared by you or by the application. Data stored in session storage is automatically cleared when you close your browser tab.</p>
 
     <h3>11.5 Managing Cookies</h3>
     <p>You can control and manage cookies through your browser settings. Most modern browsers allow you to view, block, or delete cookies for specific websites. However, please note that blocking or deleting strictly necessary cookies (such as <code>fc_session</code> and <code>fc_csrf</code>) will prevent the Service from functioning correctly, and you may be unable to log in or use the Service.</p>
@@ -897,7 +918,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <div>
-        <div class="footer-brand">Fence<span class="calc">Calc</span></div>
+        <div class="footer-brand">Fence<span class="calc">Trace</span></div>
         <div class="footer-copy">&copy; 2026 RavenWing LLC. All rights reserved.</div>
       </div>
       <div class="footer-links">
