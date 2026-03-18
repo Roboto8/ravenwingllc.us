@@ -15,14 +15,15 @@
   "license": "MIT",
   "author": "RavenWing LLC",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.600.0",
-    "@aws-sdk/client-s3": "^3.1010.0",
-    "@aws-sdk/lib-dynamodb": "^3.600.0",
-    "@aws-sdk/s3-request-presigner": "^3.1010.0",
-    "@bubblewrap/core": "^1.24.1",
     "stripe": "^17.0.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/client-s3": "^3.1010.0",
+    "@aws-sdk/client-ses": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.1010.0",
+    "@bubblewrap/core": "^1.24.1",
     "jest": "^29.7.0",
     "serverless-finch": "^4.0.4"
   }
