@@ -397,6 +397,117 @@ describe('estimates handler', () => {
     });
   });
 
+  // ===== PURGE =====
+  describe('purge', () => {
+    test('permanently deletes estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.remove.mockResolvedValue({});
+
+      const result = await estimates.purge({
+        pathParameters: { id: 'est-123' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.purged).toBe(true);
+      expect(db.remove).toHaveBeenCalledWith(mockEstimate.PK, mockEstimate.SK);
+    });
+
+    test('returns 404 when estimate not found', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [] });
+
+      const result = await estimates.purge({
+        pathParameters: { id: 'nonexistent' }
+      });
+      expect(result.statusCode).toBe(404);
+    });
+
+    test('returns 403 when no auth', async () => {
+      auth.getCompanyId.mockResolvedValue(null);
+      const result = await estimates.purge({
+        pathParameters: { id: 'est-123' }
+      });
+      expect(result.statusCode).toBe(403);
+    });
+  });
+
+  // ===== RESTORE =====
+  describe('restore', () => {
+    test('restores deleted estimate to draft', async () => {
+      const deletedEstimate = { ...mockEstimate, status: 'deleted', deletedAt: '2025-06-01T00:00:00.000Z' };
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [deletedEstimate] });
+      db.update.mockResolvedValue({ ...deletedEstimate, status: 'draft', deletedAt: '' });
+
+      const result = await estimates.restore({
+        pathParameters: { id: 'est-123' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(db.update).toHaveBeenCalledWith(
+        deletedEstimate.PK, deletedEstimate.SK,
+        { status: 'draft', deletedAt: '' }
+      );
+      // Keys should be stripped from response
+      expect(body.PK).toBeUndefined();
+    });
+
+    test('returns 404 when estimate not found', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [] });
+
+      const result = await estimates.restore({
+        pathParameters: { id: 'nonexistent' }
+      });
+      expect(result.statusCode).toBe(404);
+    });
+
+    test('returns 403 when no auth', async () => {
+      auth.getCompanyId.mockResolvedValue(null);
+      const result = await estimates.restore({
+        pathParameters: { id: 'est-123' }
+      });
+      expect(result.statusCode).toBe(403);
+    });
+  });
+
+  // ===== TRASH =====
+  describe('trash', () => {
+    test('returns only deleted estimates', async () => {
+      const deletedEst = { ...mockEstimate, id: 'est-del', status: 'deleted' };
+      const activeEst = { ...mockEstimate, id: 'est-act', status: 'draft' };
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [deletedEst, activeEst] });
+
+      const result = await estimates.trash({});
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.estimates).toHaveLength(1);
+      expect(body.estimates[0].id).toBe('est-del');
+      expect(body.estimates[0].PK).toBeUndefined(); // keys stripped
+    });
+
+    test('returns empty array when no deleted estimates', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+
+      const result = await estimates.trash({});
+      const body = JSON.parse(result.body);
+
+      expect(body.estimates).toHaveLength(0);
+    });
+
+    test('returns 403 when no auth', async () => {
+      auth.getCompanyId.mockResolvedValue(null);
+      const result = await estimates.trash({});
+      expect(result.statusCode).toBe(403);
+    });
+  });
+
   // ===== canCreate (trial gating) =====
   describe('trial gating (canCreate)', () => {
     test.each([

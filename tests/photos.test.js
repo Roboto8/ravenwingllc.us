@@ -81,6 +81,76 @@ describe('photos handler', () => {
       });
       expect(result.statusCode).toBe(403);
     });
+
+    test('rejects non-image content types', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+
+      const badTypes = ['application/pdf', 'text/html', 'application/javascript', 'application/x-executable', 'video/mp4'];
+      for (const ct of badTypes) {
+        const result = await photos.getUploadUrl({
+          pathParameters: { id: 'est-1' },
+          body: JSON.stringify({ filename: 'bad.exe', contentType: ct })
+        });
+        expect(result.statusCode).toBe(400);
+      }
+    });
+
+    test('accepts all allowed image types', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+
+      const goodTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+      for (const ct of goodTypes) {
+        const result = await photos.getUploadUrl({
+          pathParameters: { id: 'est-1' },
+          body: JSON.stringify({ filename: 'photo.jpg', contentType: ct })
+        });
+        expect(result.statusCode).toBe(200);
+      }
+    });
+
+    test('rejects when photo limit reached', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const fullEstimate = { ...mockEstimate, photos: Array(20).fill({ key: 'k', filename: 'f' }) };
+      db.query.mockResolvedValue({ items: [fullEstimate] });
+
+      const result = await photos.getUploadUrl({
+        pathParameters: { id: 'est-1' },
+        body: JSON.stringify({ filename: 'one-more.jpg', contentType: 'image/jpeg' })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Maximum');
+    });
+
+    test('sanitizes dangerous filenames', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+
+      const result = await photos.getUploadUrl({
+        pathParameters: { id: 'est-1' },
+        body: JSON.stringify({ filename: '../../../etc/passwd', contentType: 'image/jpeg' })
+      });
+      const body = JSON.parse(result.body);
+      expect(result.statusCode).toBe(200);
+      expect(body.key).not.toContain('..');
+      // Filename portion (after last /) should not contain path separators
+      var filename = body.key.split('/').pop();
+      expect(filename).not.toContain('/');
+      expect(filename).not.toContain('\\');
+    });
+
+    test('returns maxSize in response', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.query.mockResolvedValue({ items: [mockEstimate] });
+
+      const result = await photos.getUploadUrl({
+        pathParameters: { id: 'est-1' },
+        body: JSON.stringify({ filename: 'pic.jpg', contentType: 'image/jpeg' })
+      });
+      const body = JSON.parse(result.body);
+      expect(body.maxSize).toBe(10 * 1024 * 1024);
+    });
   });
 
   describe('deletePhoto', () => {

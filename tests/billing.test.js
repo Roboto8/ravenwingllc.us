@@ -25,6 +25,9 @@ const mockStripe = {
     sessions: {
       create: jest.fn()
     }
+  },
+  subscriptions: {
+    retrieve: jest.fn()
   }
 };
 
@@ -273,6 +276,201 @@ describe('billing handler', () => {
       db.get.mockResolvedValue(undefined);
 
       const result = await billing.status({});
+      expect(result.statusCode).toBe(404);
+    });
+
+    test('returns billing info from Stripe when subscriptionId is present and active', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo';
+      process.env.STRIPE_PRICE_TEAM = 'price_team';
+
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'active',
+        subscriptionId: 'sub_123',
+        trialEndsAt: '2025-01-01T00:00:00.000Z',
+        tier: 'pro'
+      });
+
+      mockStripe.subscriptions.retrieve.mockResolvedValue({
+        current_period_end: 1735689600, // 2025-01-01
+        items: {
+          data: [{
+            price: { id: 'price_pro', unit_amount: 4900 }
+          }]
+        }
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.nextBillingDate).toBeDefined();
+      expect(body.planAmount).toBe(49);
+      expect(body.tier).toBe('pro');
+    });
+
+    test('detects solo tier from Stripe price', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo';
+
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'active',
+        subscriptionId: 'sub_123',
+        trialEndsAt: '2025-01-01T00:00:00.000Z'
+      });
+
+      mockStripe.subscriptions.retrieve.mockResolvedValue({
+        current_period_end: 1735689600,
+        items: {
+          data: [{ price: { id: 'price_solo', unit_amount: 2900 } }]
+        }
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+      expect(body.tier).toBe('solo');
+    });
+
+    test('detects team tier from Stripe price', async () => {
+      process.env.STRIPE_PRICE_TEAM = 'price_team';
+
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'active',
+        subscriptionId: 'sub_456',
+        trialEndsAt: '2025-01-01T00:00:00.000Z'
+      });
+
+      mockStripe.subscriptions.retrieve.mockResolvedValue({
+        current_period_end: 1735689600,
+        items: {
+          data: [{ price: { id: 'price_team', unit_amount: 9900 } }]
+        }
+      });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+      expect(body.tier).toBe('team');
+    });
+
+    test('continues without billing info when Stripe call fails', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'active',
+        subscriptionId: 'sub_bad',
+        trialEndsAt: '2025-01-01T00:00:00.000Z'
+      });
+
+      mockStripe.subscriptions.retrieve.mockRejectedValue(new Error('Stripe down'));
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.nextBillingDate).toBeNull();
+      expect(body.planAmount).toBeNull();
+    });
+  });
+
+  // ===== CHECKOUT - sanitizeReturnUrl edge cases =====
+  describe('checkout - sanitizeReturnUrl', () => {
+    test('rejects invalid URL and uses default', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
+
+      await billing.checkout({
+        body: JSON.stringify({ returnUrl: 'not-a-valid-url' })
+      });
+
+      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(sessionArg.success_url).toContain('ravenwingllc-frontend-dev');
+    });
+
+    test('returns 400 when no price configured', async () => {
+      delete process.env.STRIPE_PRICE_ID;
+      delete process.env.STRIPE_PRICE_PRO;
+      delete process.env.STRIPE_PRICE_SOLO;
+      delete process.env.STRIPE_PRICE_TEAM;
+
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+
+      const result = await billing.checkout({
+        body: JSON.stringify({ tier: 'solo' })
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('No price configured');
+    });
+  });
+
+  // ===== EXPORT DATA =====
+  describe('exportData', () => {
+    test('exports all company estimates', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        name: 'Test Co',
+        email: 'test@co.com',
+        phone: '555-0000',
+        address: '123 Main St'
+      });
+      db.query.mockResolvedValue({
+        items: [
+          { PK: 'COMPANY#comp-1', SK: 'EST#1', GSI1PK: 'x', GSI1SK: 'y', id: 'est-1', customerName: 'Alice' },
+          { PK: 'COMPANY#comp-1', SK: 'EST#2', GSI1PK: 'x', GSI1SK: 'y', id: 'est-2', customerName: 'Bob' }
+        ],
+        nextKey: null
+      });
+
+      const result = await billing.exportData({});
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.company.name).toBe('Test Co');
+      expect(body.estimates).toHaveLength(2);
+      expect(body.estimates[0].id).toBe('est-1');
+      expect(body.estimates[0].PK).toBeUndefined(); // keys stripped
+      expect(body.totalEstimates).toBe(2);
+      expect(body.exportDate).toBeDefined();
+    });
+
+    test('handles paginated query results', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        name: 'Test Co',
+        email: 'test@co.com',
+        phone: '555-0000',
+        address: '123 Main St'
+      });
+      db.query
+        .mockResolvedValueOnce({
+          items: [{ PK: 'COMPANY#comp-1', SK: 'EST#1', GSI1PK: 'x', GSI1SK: 'y', id: 'est-1' }],
+          nextKey: 'cursor1'
+        })
+        .mockResolvedValueOnce({
+          items: [{ PK: 'COMPANY#comp-1', SK: 'EST#2', GSI1PK: 'x', GSI1SK: 'y', id: 'est-2' }],
+          nextKey: null
+        });
+
+      const result = await billing.exportData({});
+      const body = JSON.parse(result.body);
+
+      expect(body.totalEstimates).toBe(2);
+      expect(db.query).toHaveBeenCalledTimes(2);
+    });
+
+    test('returns 403 when no auth', async () => {
+      auth.getCompanyId.mockResolvedValue(null);
+      const result = await billing.exportData({});
+      expect(result.statusCode).toBe(403);
+    });
+
+    test('returns 404 when company not found', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(undefined);
+
+      const result = await billing.exportData({});
       expect(result.statusCode).toBe(404);
     });
   });

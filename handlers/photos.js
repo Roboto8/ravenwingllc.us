@@ -8,6 +8,25 @@ const crypto = require('crypto');
 const s3 = new S3Client({});
 const BUCKET = process.env.ASSETS_BUCKET;
 
+// Allowed image types only — no executables, scripts, HTML
+const ALLOWED_TYPES = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/heic': '.heic',
+  'image/heif': '.heif'
+};
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_PHOTOS_PER_ESTIMATE = 20;
+
+function sanitizeFilename(name) {
+  // Strip path components, keep only the filename, remove dangerous characters
+  return name
+    .replace(/^.*[\\\/]/, '') // strip path
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // only safe chars
+    .substring(0, 100); // limit length
+}
+
 module.exports.getUploadUrl = async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
@@ -24,17 +43,33 @@ module.exports.getUploadUrl = async (event) => {
     return res.bad('filename and contentType are required');
   }
 
-  const key = companyId + '/' + estId + '/' + crypto.randomUUID() + '-' + body.filename;
+  // Validate content type
+  if (!ALLOWED_TYPES[body.contentType]) {
+    return res.bad('File type not allowed. Accepted: JPEG, PNG, WebP, HEIC');
+  }
+
+  // Check photo count limit
+  if (est.photos && est.photos.length >= MAX_PHOTOS_PER_ESTIMATE) {
+    return res.bad('Maximum ' + MAX_PHOTOS_PER_ESTIMATE + ' photos per estimate');
+  }
+
+  const safeName = sanitizeFilename(body.filename);
+  const key = companyId + '/' + estId + '/' + crypto.randomUUID() + '-' + safeName;
 
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
-    ContentType: body.contentType
+    ContentType: body.contentType,
+    ContentDisposition: 'attachment', // prevent browser execution
+    ContentLength: MAX_FILE_SIZE
   });
 
-  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+  const uploadUrl = await getSignedUrl(s3, command, {
+    expiresIn: 300,
+    unhoistableHeaders: new Set(['content-length'])
+  });
 
-  return res.ok({ uploadUrl, key });
+  return res.ok({ uploadUrl, key, maxSize: MAX_FILE_SIZE });
 };
 
 module.exports.deletePhoto = async (event) => {
