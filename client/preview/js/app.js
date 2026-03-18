@@ -366,8 +366,9 @@ function initMap() {
     else if (zoom >= 16) { accuracy = t('accuracy_fair'); color = '#d4870e'; }
     else { accuracy = t('accuracy_low'); color = '#b93a2a'; }
 
-    div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + feetPerPixel.toFixed(1) + ' ft/px';
-    div.title = 'Zoom ' + zoom + ' — each pixel ≈ ' + feetPerPixel.toFixed(1) + ' feet. Zoom in for more precise placement.';
+    var pxLabel = useMetric ? (metersPerPixel.toFixed(1) + ' m/px') : (feetPerPixel.toFixed(1) + ' ft/px');
+    div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + pxLabel;
+    div.title = 'Zoom ' + zoom + ' — each pixel ≈ ' + pxLabel + '. Zoom in for more precise placement.';
   }
 
   // Detect TWA / standalone mode and add padding for "Not Secure" bar
@@ -3022,11 +3023,11 @@ function renderMulchAreas() {
     html += '<div class="bom-row">' +
       '<div class="bom-name">Area ' + (idx + 1) + '</div>' +
       '<div class="bom-fields">' +
-        '<label class="bom-field"><span class="bom-field-label">Sq ft</span>' +
-          '<span style="font-size:0.85rem;padding:4px 0;min-width:50px;text-align:right">' + area.areaSqFt.toLocaleString() + '</span>' +
+        '<label class="bom-field"><span class="bom-field-label">' + (useMetric ? 'm²' : 'Sq ft') + '</span>' +
+          '<span style="font-size:0.85rem;padding:4px 0;min-width:50px;text-align:right">' + (useMetric ? Math.round(area.areaSqFt * 0.092903).toLocaleString() : area.areaSqFt.toLocaleString()) + '</span>' +
         '</label>' +
-        '<label class="bom-field"><span class="bom-field-label">' + (selectedMulchDelivery === 'bags' ? 'Bags' : 'Cu yd') + '</span>' +
-          '<span style="font-size:0.85rem;padding:4px 0;min-width:40px;text-align:right">' + (selectedMulchDelivery === 'bags' ? bags : cuYd) + '</span>' +
+        '<label class="bom-field"><span class="bom-field-label">' + (selectedMulchDelivery === 'bags' ? 'Bags' : (useMetric ? 'm³' : 'Cu yd')) + '</span>' +
+          '<span style="font-size:0.85rem;padding:4px 0;min-width:40px;text-align:right">' + (selectedMulchDelivery === 'bags' ? bags : (useMetric ? (cuYd * 0.764555).toFixed(1) : cuYd)) + '</span>' +
         '</label>' +
         '<span class="bom-cost">$' + Math.round(cost).toLocaleString() + '</span>' +
         '<button onclick="removeMulchArea(' + idx + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">&times;</button>' +
@@ -3038,15 +3039,15 @@ function renderMulchAreas() {
   // Update summary
   if (summary) {
     summary.style.display = mulchAreas.length > 0 ? 'block' : 'none';
-    document.getElementById('mulch-total-sqft').textContent = totalSqFt.toLocaleString() + ' sq ft';
+    document.getElementById('mulch-total-sqft').textContent = fmtArea(totalSqFt);
     if (selectedMulchDelivery === 'bags') {
       document.getElementById('mulch-total-qty-label').textContent = 'Total bags';
       document.getElementById('mulch-total-qty').textContent = totalBags.toLocaleString();
     } else {
       document.getElementById('mulch-total-qty-label').textContent = 'Total bulk';
-      document.getElementById('mulch-total-qty').textContent = totalCuYd + ' cu yd';
+      document.getElementById('mulch-total-qty').textContent = fmtCuYd(totalCuYd);
     }
-    document.getElementById('mulch-total-cuyd').textContent = Math.round(totalCuYd * 10) / 10 + ' cu yd';
+    document.getElementById('mulch-total-cuyd').textContent = fmtCuYd(Math.round(totalCuYd * 10) / 10);
   }
 
   // Update map labels
@@ -3866,7 +3867,7 @@ function captureMapFallback() {
           var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(p1.lat*Math.PI/180)*Math.cos(p2.lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
           var segFeet = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 3.28084);
 
-          var text = segFeet + ' ft';
+          var text = fmtLen(segFeet);
           ctx.font = 'bold 11px sans-serif';
           var tw = ctx.measureText(text).width;
           ctx.fillStyle = 'rgba(44, 36, 23, 0.85)';
@@ -5127,6 +5128,10 @@ function updateEmptyMapState() {
 initMap();
 initDoubleClick();
 initSections();
+
+// Set initial unit toggle button
+var unitBtn = document.getElementById('unit-toggle');
+if (unitBtn) unitBtn.textContent = useMetric ? 'm' : 'ft';
 
 // Set initial mulch price fields
 var initMat = MULCH[selectedMulchMaterial];

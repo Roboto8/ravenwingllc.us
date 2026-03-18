@@ -192,6 +192,7 @@
       </div>
       <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavOverflow()" aria-label="Menu">&#8801;</button>
       <div class="nav-overflow" id="nav-overflow">
+        <button id="unit-toggle" onclick="toggleMetric()" title="Toggle metric/imperial" style="padding:4px 8px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;cursor:pointer;font-weight:600">ft</button>
         <select id="lang-select" class="lang-select" onchange="setLang(this.value); if(typeof Auth!=='undefined'&&Auth.isLoggedIn()){API.updateCompany({language:this.value}).catch(function(){})}" title="Language" style="padding:4px 6px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;cursor:pointer;min-width:auto">
           <option value="en">EN</option>
           <option value="es">ES</option>
@@ -279,7 +280,7 @@
         <div class="footage-display">
           <span class="footage-label" data-i18n="footage_label">Total</span>
           <span class="footage-value" id="total-feet">0</span>
-          <span class="footage-unit" data-i18n="footage_unit">ft</span>
+          <span class="footage-unit" id="total-feet-unit" data-i18n="footage_unit">ft</span>
         </div>
       </div>
     </div>

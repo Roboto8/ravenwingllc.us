@@ -261,6 +261,48 @@ function saveCustomPricing() {
   localStorage.setItem('fc_pricing', JSON.stringify(customPricing));
 }
 
+// === Unit System (metric toggle) ===
+let useMetric = localStorage.getItem('fc_metric') === 'true';
+
+function toggleMetric() {
+  useMetric = !useMetric;
+  localStorage.setItem('fc_metric', useMetric);
+  var btn = document.getElementById('unit-toggle');
+  if (btn) btn.textContent = useMetric ? 'm' : 'ft';
+  // Update map scale bar
+  if (map) {
+    document.querySelectorAll('.leaflet-control-scale-line').forEach(function(el) { el.remove(); });
+    L.control.scale({ imperial: !useMetric, metric: useMetric, position: 'bottomleft', maxWidth: 150 }).addTo(map);
+  }
+  refreshLabels();
+  recalculate();
+}
+
+// Convert feet to display unit
+function fmtLen(feet) {
+  if (useMetric) return Math.round(feet * 0.3048) + ' m';
+  return feet + ' ft';
+}
+function fmtLenVal(feet) {
+  return useMetric ? Math.round(feet * 0.3048) : feet;
+}
+function fmtLenUnit() { return useMetric ? 'm' : 'ft'; }
+// Convert sq ft to display unit
+function fmtArea(sqft) {
+  if (useMetric) return (sqft * 0.092903).toFixed(0) + ' m²';
+  return sqft.toLocaleString() + ' sq ft';
+}
+// Convert height (fence heights stay in ft internally)
+function fmtHeight(ft) {
+  if (useMetric) return Math.round(ft * 0.3048 * 10) / 10 + ' m';
+  return ft + ' ft';
+}
+// Cu yd to m³
+function fmtCuYd(cuyd) {
+  if (useMetric) return (cuyd * 0.764555).toFixed(1) + ' m³';
+  return cuyd + ' cu yd';
+}
+
 function getPrice(fenceType, height, key, fallback) {
   const path = fenceType + '.' + height + '.' + key;
   if (customPricing[path] !== undefined) return customPricing[path];
@@ -299,8 +341,8 @@ function initMap() {
 
   // Scale bar — shows real-world distance on the map
   L.control.scale({
-    imperial: true,
-    metric: false,
+    imperial: !useMetric,
+    metric: useMetric,
     position: 'bottomleft',
     maxWidth: 150
   }).addTo(map);
@@ -331,8 +373,9 @@ function initMap() {
     else if (zoom >= 16) { accuracy = t('accuracy_fair'); color = '#d4870e'; }
     else { accuracy = t('accuracy_low'); color = '#b93a2a'; }
 
-    div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + feetPerPixel.toFixed(1) + ' ft/px';
-    div.title = 'Zoom ' + zoom + ' — each pixel ≈ ' + feetPerPixel.toFixed(1) + ' feet. Zoom in for more precise placement.';
+    var pxLabel = useMetric ? (metersPerPixel.toFixed(1) + ' m/px') : (feetPerPixel.toFixed(1) + ' ft/px');
+    div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + pxLabel;
+    div.title = 'Zoom ' + zoom + ' — each pixel ≈ ' + pxLabel + '. Zoom in for more precise placement.';
   }
 
   // Detect TWA / standalone mode and add padding for "Not Secure" bar
@@ -633,7 +676,7 @@ function createSegmentLabel(p1, p2, segIndex) {
     icon: L.divIcon({
       className: 'segment-label',
       html: '<div class="seg-label seg-clickable" data-seg="' + segIndex + '">' +
-        '<span onclick="editSegmentLength(' + segIndex + ', event)">' + feet + ' ft</span>' +
+        '<span onclick="editSegmentLength(' + segIndex + ', event)">' + fmtLen(feet) + '</span>' +
         '<button class="seg-delete" onclick="event.stopPropagation(); deleteSegment(' + segIndex + ')" title="Remove segment">&times;</button>' +
       '</div>',
       iconSize: [60, 16],
@@ -1292,7 +1335,9 @@ function updateFootage() {
   // Save current section before aggregating
   saveActiveSection();
   var totalFeet = getTotalFootageAllSections();
-  document.getElementById('total-feet').textContent = totalFeet.toLocaleString();
+  document.getElementById('total-feet').textContent = fmtLenVal(totalFeet).toLocaleString();
+  var unitLabel = document.getElementById('total-feet-unit');
+  if (unitLabel) unitLabel.textContent = fmtLenUnit();
   updateSectionTabs();
   return totalFeet;
 }
@@ -2341,9 +2386,15 @@ function selectMulchMaterial(type, btn) {
 function updateMulchBagPrice(value) {
   var price = parseFloat(value);
   if (isNaN(price) || price < 0) return;
-  // Override the material's bag cost via custom pricing
   customPricing['mulch.' + selectedMulchMaterial + '.bagCost'] = price;
-  customPricing['mulch.' + selectedMulchMaterial + '.bulkCuYdCost'] = Math.round(price * 27 / (MULCH[selectedMulchMaterial]?.bagCuFt || 2) * 0.7); // bulk is ~30% cheaper
+  saveCustomPricing();
+  recalculate();
+}
+
+function updateMulchBulkPrice(value) {
+  var price = parseFloat(value);
+  if (isNaN(price) || price < 0) return;
+  customPricing['mulch.' + selectedMulchMaterial + '.bulkCuYdCost'] = price;
   saveCustomPricing();
   recalculate();
 }
@@ -2979,11 +3030,11 @@ function renderMulchAreas() {
     html += '<div class="bom-row">' +
       '<div class="bom-name">Area ' + (idx + 1) + '</div>' +
       '<div class="bom-fields">' +
-        '<label class="bom-field"><span class="bom-field-label">Sq ft</span>' +
-          '<span style="font-size:0.85rem;padding:4px 0;min-width:50px;text-align:right">' + area.areaSqFt.toLocaleString() + '</span>' +
+        '<label class="bom-field"><span class="bom-field-label">' + (useMetric ? 'm²' : 'Sq ft') + '</span>' +
+          '<span style="font-size:0.85rem;padding:4px 0;min-width:50px;text-align:right">' + (useMetric ? Math.round(area.areaSqFt * 0.092903).toLocaleString() : area.areaSqFt.toLocaleString()) + '</span>' +
         '</label>' +
-        '<label class="bom-field"><span class="bom-field-label">' + (selectedMulchDelivery === 'bags' ? 'Bags' : 'Cu yd') + '</span>' +
-          '<span style="font-size:0.85rem;padding:4px 0;min-width:40px;text-align:right">' + (selectedMulchDelivery === 'bags' ? bags : cuYd) + '</span>' +
+        '<label class="bom-field"><span class="bom-field-label">' + (selectedMulchDelivery === 'bags' ? 'Bags' : (useMetric ? 'm³' : 'Cu yd')) + '</span>' +
+          '<span style="font-size:0.85rem;padding:4px 0;min-width:40px;text-align:right">' + (selectedMulchDelivery === 'bags' ? bags : (useMetric ? (cuYd * 0.764555).toFixed(1) : cuYd)) + '</span>' +
         '</label>' +
         '<span class="bom-cost">$' + Math.round(cost).toLocaleString() + '</span>' +
         '<button onclick="removeMulchArea(' + idx + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">&times;</button>' +
@@ -2995,15 +3046,15 @@ function renderMulchAreas() {
   // Update summary
   if (summary) {
     summary.style.display = mulchAreas.length > 0 ? 'block' : 'none';
-    document.getElementById('mulch-total-sqft').textContent = totalSqFt.toLocaleString() + ' sq ft';
+    document.getElementById('mulch-total-sqft').textContent = fmtArea(totalSqFt);
     if (selectedMulchDelivery === 'bags') {
       document.getElementById('mulch-total-qty-label').textContent = 'Total bags';
       document.getElementById('mulch-total-qty').textContent = totalBags.toLocaleString();
     } else {
       document.getElementById('mulch-total-qty-label').textContent = 'Total bulk';
-      document.getElementById('mulch-total-qty').textContent = totalCuYd + ' cu yd';
+      document.getElementById('mulch-total-qty').textContent = fmtCuYd(totalCuYd);
     }
-    document.getElementById('mulch-total-cuyd').textContent = Math.round(totalCuYd * 10) / 10 + ' cu yd';
+    document.getElementById('mulch-total-cuyd').textContent = fmtCuYd(Math.round(totalCuYd * 10) / 10);
   }
 
   // Update map labels
@@ -3171,6 +3222,14 @@ function recalculate() {
 }
 
 // === Address Search ===
+function toggleSearch() {
+  var bar = document.getElementById('search-bar');
+  bar.classList.toggle('collapsed');
+  if (!bar.classList.contains('collapsed')) {
+    document.getElementById('address-input').focus();
+  }
+}
+
 function searchAddress() {
   const query = document.getElementById('address-input').value.trim();
   if (!query) return;
@@ -3183,6 +3242,7 @@ function searchAddress() {
         const lon = parseFloat(data[0].lon);
         map.setView([lat, lon], 19);
         document.getElementById('cust-address').value = query;
+        document.getElementById('search-bar').classList.add('collapsed');
       } else {
         showToast(t('toast_addr_not_found'));
       }
@@ -3814,7 +3874,7 @@ function captureMapFallback() {
           var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(p1.lat*Math.PI/180)*Math.cos(p2.lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
           var segFeet = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 3.28084);
 
-          var text = segFeet + ' ft';
+          var text = fmtLen(segFeet);
           ctx.font = 'bold 11px sans-serif';
           var tw = ctx.measureText(text).width;
           ctx.fillStyle = 'rgba(44, 36, 23, 0.85)';
@@ -4582,9 +4642,30 @@ function loadDemo(scenario) {
   }
 }
 
-// === Screenshot Prevention ===
-// Block PrintScreen and common screenshot shortcuts
+// === Keyboard Shortcuts ===
 document.addEventListener('keydown', function(e) {
+  // Escape: close modals, drawers, overflow menu
+  if (e.key === 'Escape') {
+    var modal = document.querySelector('.modal-overlay[style*="flex"]');
+    if (modal) { modal.style.display = 'none'; return; }
+    var drawer = document.querySelector('.drawer-overlay');
+    if (drawer) { drawer.click(); return; }
+    var overflow = document.querySelector('.nav-overflow.open');
+    if (overflow) { overflow.classList.remove('open'); return; }
+  }
+  // Delete/Backspace: remove last fence point (when not in an input)
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !e.target.closest('input, textarea, select, [contenteditable]')) {
+    if (typeof fencePoints !== 'undefined' && fencePoints.length > 0) {
+      e.preventDefault();
+      if (typeof undoLastPoint === 'function') undoLastPoint();
+    }
+  }
+  // Ctrl+Z: undo last fence point
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !e.target.closest('input, textarea, select')) {
+    e.preventDefault();
+    if (typeof undoLastPoint === 'function') undoLastPoint();
+  }
+  // Screenshot Prevention
   if (e.key === 'PrintScreen') {
     e.preventDefault();
     showToast(t('toast_screenshot_disabled'));
@@ -5054,6 +5135,10 @@ function updateEmptyMapState() {
 initMap();
 initDoubleClick();
 initSections();
+
+// Set initial unit toggle button
+var unitBtn = document.getElementById('unit-toggle');
+if (unitBtn) unitBtn.textContent = useMetric ? 'm' : 'ft';
 
 // Set initial mulch price fields
 var initMat = MULCH[selectedMulchMaterial];
