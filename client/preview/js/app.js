@@ -2873,10 +2873,21 @@ function hideMulchDoneBtn() {
   if (btn) btn.remove();
 }
 
+// Sort points by angle from centroid so the polygon never criss-crosses
+function sortPointsByAngle(pts) {
+  if (pts.length < 3) return pts;
+  var cx = 0, cy = 0;
+  pts.forEach(function(p) { cx += p.lat; cy += p.lng; });
+  cx /= pts.length; cy /= pts.length;
+  return pts.slice().sort(function(a, b) {
+    return Math.atan2(a.lat - cx, a.lng - cy) - Math.atan2(b.lat - cx, b.lng - cy);
+  });
+}
+
 function redrawActiveMulchPolygon() {
   if (activeMulchPolygon) { map.removeLayer(activeMulchPolygon); activeMulchPolygon = null; }
   if (activeMulchPoints.length >= 3) {
-    activeMulchPolygon = L.polygon(activeMulchPoints, {
+    activeMulchPolygon = L.polygon(sortPointsByAngle(activeMulchPoints), {
       color: '#2d8a4e', fillColor: '#2d8a4e', fillOpacity: 0.2, weight: 2, dashArray: '6,4'
     }).addTo(map);
   }
@@ -2888,7 +2899,7 @@ function closeMulchArea() {
     showToast('Need at least 3 points to create an area');
     return;
   }
-  var pts = activeMulchPoints.map(function(p) { return { lat: p.lat, lng: p.lng }; });
+  var pts = sortPointsByAngle(activeMulchPoints.map(function(p) { return { lat: p.lat, lng: p.lng }; }));
 
   // Clean up active polygon preview
   if (activeMulchPolygon) map.removeLayer(activeMulchPolygon);

@@ -111,6 +111,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .map-toolbar { padding: 6px 8px; gap: 4px; }
   .tool-btn { padding: 8px 10px; font-size: 0.78rem; min-height: 36px; }
   .drone-banner, #drone-banner { max-width: 280px; font-size: 0.78rem; }
+  .map-empty-state { bottom: auto; top: 50%; transform: translate(-50%, -50%); }
 }
 
 .nav-left {
@@ -194,9 +195,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  padding: 0;
+  padding: 8px;
+  min-width: var(--min-touch);
+  min-height: var(--min-touch);
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 .search-toggle:hover { color: var(--text); }
@@ -219,10 +223,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 .search-bar.collapsed {
   right: auto;
-  width: 44px;
-  padding: 8px 12px;
+  width: auto;
+  padding: 0;
   border-radius: 8px;
   cursor: pointer;
+  overflow: hidden;
 }
 .search-bar.collapsed input,
 .search-bar.collapsed .search-btn { display: none; }
@@ -801,10 +806,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .fence-vertex {
   width: 22px !important;
   height: 22px !important;
-  background: #c0622e;
+  background: #ff6b1a;
   border: 3px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.5);
   cursor: grab;
   z-index: 500 !important;
   touch-action: none;
@@ -1737,7 +1742,7 @@ body.twa-mode .modal-overlay {
 /* === Empty Map State === */
 .map-empty-state {
   position: absolute;
-  bottom: 60px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 500;
