@@ -902,7 +902,7 @@ function createAngleLabel(point, angle) {
       className: 'angle-label',
       html: '<div class="angle-tag">' + angle + '&deg;</div>',
       iconSize: [36, 18],
-      iconAnchor: [18, -6]
+      iconAnchor: [18, -16]
     }),
     interactive: false
   }).addTo(map);
@@ -937,16 +937,19 @@ function addFencePoint(latlng) {
     setTimeout(function() { wasDragged = false; }, 100);
   });
 
-  // Tap/click to show delete option
-  marker.on('click', function(e) {
-    if (wasDragged) return;
-    var ptIdx = fenceMarkers.indexOf(marker);
-    if (ptIdx < 0) return;
-    L.popup({ closeButton: true, className: 'fence-delete-popup', offset: [0, -15] })
-      .setLatLng(marker.getLatLng())
-      .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Point ' + (ptIdx + 1) + '</b><br><button onclick="deleteFencePoint(' + ptIdx + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b93a2a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete Point</button></div>')
-      .openOn(map);
-  });
+  // Tap/click to show delete option — delay binding so placement click doesn't trigger
+  setTimeout(function() {
+    marker.on('click', function(e) {
+      if (wasDragged) return;
+      if (currentTool === 'draw' && !fenceClosed) return; // don't show popup while actively drawing
+      var ptIdx = fenceMarkers.indexOf(marker);
+      if (ptIdx < 0) return;
+      L.popup({ closeButton: true, className: 'fence-delete-popup', offset: [0, -15] })
+        .setLatLng(marker.getLatLng())
+        .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Point ' + (ptIdx + 1) + '</b><br><button onclick="deleteFencePoint(' + ptIdx + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b93a2a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete Point</button></div>')
+        .openOn(map);
+    });
+  }, 500);
 
   fenceMarkers.push(marker);
 
@@ -3503,6 +3506,7 @@ document.addEventListener('click', function(e) {
 // === Share / Approval Workflow ===
 // Share interactive map view — for teammates/collaboration
 function shareView() {
+  try {
   const data = {
     p: fencePoints.map(p => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6]),
     g: gates.map(g => ({ t: g.type, lt: Math.round(g.latlng.lat * 1e6) / 1e6, ln: Math.round(g.latlng.lng * 1e6) / 1e6 })),
@@ -3530,7 +3534,14 @@ function shareView() {
     vz: map.getZoom()
   };
 
-  const encoded = btoa(JSON.stringify(data));
+  var jsonStr = JSON.stringify(data);
+  // Handle Unicode characters that btoa can't encode
+  var encoded;
+  try {
+    encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+  } catch (e) {
+    encoded = btoa(jsonStr);
+  }
   var url = window.location.origin + window.location.pathname + '?e=' + encoded;
   // If URL is too long (>2000 chars), warn user to save first
   if (url.length > 8000) {
@@ -3539,6 +3550,10 @@ function shareView() {
   }
 
   nativeShareOrDialog('Fence Estimate', url);
+  } catch (e) {
+    console.error('Share failed:', e);
+    showToast('Could not share: ' + e.message);
+  }
 }
 
 function copyToClipboard(text) {
@@ -3662,7 +3677,9 @@ function loadFromURL() {
   if (!encoded) return;
 
   try {
-    const data = JSON.parse(atob(encoded));
+    var decoded;
+    try { decoded = decodeURIComponent(escape(atob(encoded))); } catch (e) { decoded = atob(encoded); }
+    const data = JSON.parse(decoded);
 
     // Set customer info
     if (data.n) document.getElementById('cust-name').value = data.n;
@@ -5209,6 +5226,11 @@ function hintAfterEstimate() {
   if (val !== '$0') {
     var actions = document.querySelector('.panel-actions');
     if (actions) showHint('first_estimate', t('hint_first_estimate'), actions, 'above');
+    // Show export hint after a delay
+    setTimeout(function() {
+      var exportBtn = document.querySelector('.bom-toggle[title="Export materials"]') || document.querySelector('.bom-toggle[onclick*="toggleExportMenu"]');
+      if (exportBtn) showHint('export_materials', 'Send your material list to a supplier — CSV, clipboard, or email', exportBtn, 'left');
+    }, 10000);
   }
 }
 
