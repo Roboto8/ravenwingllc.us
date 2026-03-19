@@ -1737,9 +1737,9 @@ body.twa-mode .modal-overlay {
 /* === Empty Map State === */
 .map-empty-state {
   position: absolute;
-  top: 50%;
+  bottom: 60px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   z-index: 500;
   text-align: center;
   pointer-events: none;
@@ -1747,19 +1747,16 @@ body.twa-mode .modal-overlay {
 }
 .map-empty-state-text {
   font-family: var(--font);
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--surface);
-  background: rgba(44, 36, 23, 0.7);
-  padding: 14px 24px;
-  border-radius: var(--radius);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 16px;
+  border-radius: 20px;
   white-space: nowrap;
 }
 .map-empty-arrow {
-  margin-top: 10px;
-  display: inline-block;
-  animation: map-empty-bounce 1.5s ease-in-out infinite;
+  display: none;
 }
 .map-empty-arrow svg {
   color: rgba(255,255,255,0.7);
@@ -1926,16 +1923,28 @@ body.twa-mode .modal-overlay {
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  padding: 8px 10px;
+  margin: 0 -10px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  transition: background 0.15s;
 }
 .section-title.collapsible:hover {
-  color: var(--text-mid);
+  color: var(--text);
+  background: var(--border);
+}
+.section-title.collapsible:not(.collapsed) {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .section-chevron {
   display: inline-block;
   font-size: 0.7rem;
   transition: transform 0.2s ease;
-  margin-right: 4px;
-  color: var(--text-muted);
+  margin-right: 6px;
+  color: inherit;
 }
 .section-title.collapsible.collapsed .section-chevron {
   transform: rotate(0deg);
@@ -1954,4 +1963,34 @@ body.twa-mode .modal-overlay {
   opacity: 0;
   margin: 0;
   padding: 0;
+}
+
+/* Export menu dropdown */
+.export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  min-width: 160px;
+  padding: 4px 0;
+}
+.export-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.export-menu button:hover {
+  background: var(--accent-light);
+  color: var(--accent);
 }
