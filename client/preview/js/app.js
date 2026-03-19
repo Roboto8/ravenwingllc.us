@@ -59,7 +59,8 @@ function addNewSection() {
     curveMode: false,
     fenceType: selectedFence.type,
     fencePrice: selectedFence.price,
-    fenceHeight: selectedHeight
+    fenceHeight: selectedHeight,
+    notes: ''
   };
   sections.push(newSection);
   activeSectionIdx = sections.length - 1;
@@ -87,6 +88,8 @@ function saveActiveSection() {
   s.fenceType = selectedFence.type;
   s.fencePrice = selectedFence.price;
   s.fenceHeight = selectedHeight;
+  var notesEl = document.getElementById('section-notes');
+  if (notesEl) s.notes = notesEl.value;
 }
 
 function loadActiveSection() {
@@ -122,6 +125,10 @@ function loadActiveSection() {
 
   var btn = document.getElementById('curve-btn');
   if (btn) btn.classList.toggle('active', curveMode);
+
+  // Restore notes
+  var notesEl = document.getElementById('section-notes');
+  if (notesEl) notesEl.value = s.notes || '';
 }
 
 function ensureSection(idx) {
@@ -896,17 +903,20 @@ function redrawSegmentLabels() {
 }
 
 function getCornerAngle(p1, p2, p3) {
-  // Bearing from p2 to p1
-  var dLng1 = (p1.lng - p2.lng) * Math.PI / 180;
-  var dLat1 = (p1.lat - p2.lat) * Math.PI / 180;
-  var bearing1 = Math.atan2(dLng1, dLat1) * 180 / Math.PI;
+  // Use proper geodetic bearing accounting for latitude compression
+  function bearing(from, to) {
+    var lat1 = from.lat * Math.PI / 180;
+    var lat2 = to.lat * Math.PI / 180;
+    var dLng = (to.lng - from.lng) * Math.PI / 180;
+    var y = Math.sin(dLng) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return Math.atan2(y, x) * 180 / Math.PI;
+  }
 
-  // Bearing from p2 to p3
-  var dLng2 = (p3.lng - p2.lng) * Math.PI / 180;
-  var dLat2 = (p3.lat - p2.lat) * Math.PI / 180;
-  var bearing2 = Math.atan2(dLng2, dLat2) * 180 / Math.PI;
+  var b1 = bearing(p2, p1);
+  var b2 = bearing(p2, p3);
 
-  var angle = Math.abs(bearing2 - bearing1);
+  var angle = Math.abs(b2 - b1);
   if (angle > 180) angle = 360 - angle;
 
   return Math.round(angle);
@@ -3504,7 +3514,8 @@ function recalculate() {
         return {
           points: s.points.map(function(p) { return { lat: p.lat, lng: p.lng }; }),
           closed: s.closed, curveMode: s.curveMode,
-          fenceType: s.fenceType, fencePrice: s.fencePrice, fenceHeight: s.fenceHeight
+          fenceType: s.fenceType, fencePrice: s.fencePrice, fenceHeight: s.fenceHeight,
+          notes: s.notes || ''
         };
       }),
       activeSectionIdx: activeSectionIdx,
@@ -4665,6 +4676,27 @@ async function generatePDF(mode) {
     doc.addImage(mapImage, 'JPEG', margin, y, imgW, imgH);
     doc.rect(margin, y, imgW, imgH);
     y += imgH + 16;
+  }
+
+  // ══════════════════════════════════════════
+  // 3b. SITE NOTES
+  // ══════════════════════════════════════════
+  saveActiveSection();
+  var allNotes = sections.filter(function(s) { return s.notes && s.notes.trim(); });
+  if (allNotes.length > 0 && !isCustomerMode) {
+    checkPage(60);
+    sectionTitle('Site Notes');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor.apply(doc, cText);
+    allNotes.forEach(function(s, i) {
+      var label = sections.length > 1 ? 'Section ' + (sections.indexOf(s) + 1) + ': ' : '';
+      var lines = doc.splitTextToSize(label + s.notes.trim(), contentW);
+      checkPage(lines.length * 12 + 8);
+      doc.text(lines, margin, y);
+      y += lines.length * 12 + 4;
+    });
+    y += 8;
   }
 
   // ══════════════════════════════════════════
