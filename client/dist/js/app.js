@@ -287,6 +287,15 @@ function fmtArea(sqft) {
   if (useMetric) return (sqft * 0.092903).toFixed(0) + ' m²';
   return sqft.toLocaleString() + ' sq ft';
 }
+
+function refreshLabels() {
+  // Redraw fence segment labels
+  redrawSegmentLabels();
+  // Redraw mulch area labels
+  if (mulchAreas.length > 0) renderMulchAreas();
+  // Update footage display
+  updateFootage();
+}
 function fmtHeight(ft) {
   if (useMetric) return Math.round(ft * 0.3048 * 10) / 10 + ' m';
   return ft + ' ft';
@@ -1050,6 +1059,133 @@ function showMergePrompt(otherIdx, whichEnd) {
   setTimeout(function() { dismissMerge(); }, 10000);
 }
 
+// Close Gap — scan all sections for nearby endpoints and offer to connect them
+function findGaps() {
+  saveActiveSection();
+  if (sections.length < 2) { showToast('Need at least 2 fence sections to find gaps'); return; }
+
+  var gaps = [];
+  var maxGapMeters = 30; // ~100 feet max gap to detect
+
+  for (var i = 0; i < sections.length; i++) {
+    var si = sections[i];
+    if (si.points.length < 2 || si.closed) continue;
+
+    for (var j = i + 1; j < sections.length; j++) {
+      var sj = sections[j];
+      if (sj.points.length < 2 || sj.closed) continue;
+
+      // Check all 4 endpoint pairs
+      var endpoints = [
+        { a: si.points[si.points.length - 1], b: sj.points[0], ai: i, ae: 'end', bi: j, be: 'start' },
+        { a: si.points[si.points.length - 1], b: sj.points[sj.points.length - 1], ai: i, ae: 'end', bi: j, be: 'end' },
+        { a: si.points[0], b: sj.points[0], ai: i, ae: 'start', bi: j, be: 'start' },
+        { a: si.points[0], b: sj.points[sj.points.length - 1], ai: i, ae: 'start', bi: j, be: 'end' }
+      ];
+
+      endpoints.forEach(function(ep) {
+        var pa = L.latLng(ep.a.lat, ep.a.lng);
+        var pb = L.latLng(ep.b.lat, ep.b.lng);
+        var dist = pa.distanceTo(pb);
+        if (dist > 0.5 && dist < maxGapMeters) {
+          gaps.push({
+            dist: dist,
+            feet: Math.round(dist * 3.28084),
+            midLat: (ep.a.lat + ep.b.lat) / 2,
+            midLng: (ep.a.lng + ep.b.lng) / 2,
+            a: ep.a, b: ep.b,
+            ai: ep.ai, ae: ep.ae, bi: ep.bi, be: ep.be
+          });
+        }
+      });
+    }
+  }
+
+  if (gaps.length === 0) {
+    showToast('No gaps found between sections');
+    return;
+  }
+
+  // Sort by distance, show the closest gap
+  gaps.sort(function(a, b) { return a.dist - b.dist; });
+  var gap = gaps[0];
+
+  // Draw a dashed line showing the gap
+  if (window._gapLine) map.removeLayer(window._gapLine);
+  window._gapLine = L.polyline([[gap.a.lat, gap.a.lng], [gap.b.lat, gap.b.lng]], {
+    color: '#ff3333', weight: 3, dashArray: '6,6', opacity: 0.8
+  }).addTo(map);
+
+  // Show popup at the midpoint
+  L.popup({ closeButton: true, className: 'gap-popup' })
+    .setLatLng([gap.midLat, gap.midLng])
+    .setContent(
+      '<div style="text-align:center;padding:4px">' +
+        '<b style="font-size:13px">' + gap.feet + ' ft gap</b><br>' +
+        '<span style="font-size:11px;color:#666">Between Section ' + (gap.ai + 1) + ' and Section ' + (gap.bi + 1) + '</span><br>' +
+        '<button onclick="closeGap(' + JSON.stringify(gap).replace(/"/g, '&quot;') + ')" ' +
+          'style="margin-top:8px;padding:8px 16px;background:#ff6b1a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Close Gap</button>' +
+      '</div>'
+    )
+    .on('remove', function() {
+      if (window._gapLine) { map.removeLayer(window._gapLine); window._gapLine = null; }
+    })
+    .openOn(map);
+
+  // Center on the gap
+  map.setView([gap.midLat, gap.midLng], Math.max(map.getZoom(), 19), { animate: true });
+}
+
+function closeGap(gap) {
+  map.closePopup();
+  if (window._gapLine) { map.removeLayer(window._gapLine); window._gapLine = null; }
+
+  saveActiveSection();
+
+  // Extend section A's endpoint to meet section B's endpoint
+  var secA = sections[gap.ai];
+  var targetPoint = L.latLng(gap.b.lat, gap.b.lng);
+
+  // Switch to section A
+  switchSection(gap.ai);
+
+  // Add the connecting point
+  if (gap.ae === 'end') {
+    addFencePoint(targetPoint);
+  } else {
+    // Prepend — insert at beginning
+    fencePoints.unshift(targetPoint);
+    var marker = L.marker(targetPoint, {
+      draggable: true,
+      icon: L.divIcon({ className: 'fence-vertex', iconSize: [22, 22], iconAnchor: [11, 11] })
+    }).addTo(map);
+    fenceMarkers.unshift(marker);
+    rebindMarkerDrags();
+    redrawFenceLine();
+    redrawSegmentLabels();
+  }
+
+  recalculate();
+  markUnsaved();
+  showToast('Gap closed — ' + gap.feet + ' ft connected');
+
+  // Check for more gaps
+  setTimeout(function() {
+    saveActiveSection();
+    // Quick check if more gaps exist
+    var moreGaps = false;
+    for (var i = 0; i < sections.length && !moreGaps; i++) {
+      for (var j = i + 1; j < sections.length && !moreGaps; j++) {
+        if (sections[i].points.length < 2 || sections[j].points.length < 2) continue;
+        var ends = [sections[i].points[sections[i].points.length - 1], sections[j].points[0]];
+        var d = L.latLng(ends[0].lat, ends[0].lng).distanceTo(L.latLng(ends[1].lat, ends[1].lng));
+        if (d > 0.5 && d < 30) moreGaps = true;
+      }
+    }
+    if (moreGaps) showToast('More gaps detected — tap Close Gap again');
+  }, 500);
+}
+
 function dismissMerge() {
   mergeTarget = null;
   var toast = document.getElementById('merge-toast');
@@ -1172,12 +1308,19 @@ function redrawFenceLine() {
   const pts = curveMode && fencePoints.length >= 3 ? getSplinePoints(fencePoints, fenceClosed) : raw;
 
   if (pts.length > 1) {
-    fenceLine = L.polyline(pts, {
-      color: '#c0622e',
-      weight: 4,
-      opacity: 0.9,
-      dashArray: fenceClosed ? null : '8, 8'
+    // White outline for contrast on any background
+    if (window._fenceLineOutline) map.removeLayer(window._fenceLineOutline);
+    window._fenceLineOutline = L.polyline(pts, {
+      color: '#fff', weight: 8, opacity: 0.5,
+      dashArray: fenceClosed ? null : '10, 8', interactive: false
     }).addTo(map);
+
+    fenceLine = L.polyline(pts, {
+      color: '#ff6b1a', weight: 4, opacity: 1,
+      dashArray: fenceClosed ? null : '10, 8'
+    }).addTo(map);
+  } else {
+    if (window._fenceLineOutline) { map.removeLayer(window._fenceLineOutline); window._fenceLineOutline = null; }
   }
 }
 
@@ -2812,7 +2955,7 @@ function mergeOverlappingAreas(newPoints) {
 
 function getMulchLabelHtml(areaSqFt, points) {
   var mat = MULCH[selectedMulchMaterial];
-  if (!mat) return '<div class="mulch-label">' + areaSqFt.toLocaleString() + ' sq ft</div>';
+  if (!mat) return '<div class="mulch-label">' + fmtArea(areaSqFt) + '</div>';
 
   var cubicFeet = (areaSqFt * selectedMulchDepth) / 12;
   var line2 = '';
@@ -2821,7 +2964,7 @@ function getMulchLabelHtml(areaSqFt, points) {
     line2 = bags + ' bags';
   } else {
     var cuYd = Math.ceil(cubicFeet / 27 * 10) / 10;
-    line2 = cuYd + ' cu yd';
+    line2 = useMetric ? (Math.round(cuYd * 0.7646 * 10) / 10) + ' m³' : cuYd + ' cu yd';
   }
 
   // If 4 points (rectangle), show dimensions
@@ -2836,10 +2979,10 @@ function getMulchLabelHtml(areaSqFt, points) {
     dLng = (points[2].lng - points[1].lng) * Math.PI / 180;
     a1 = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(points[1].lat*Math.PI/180)*Math.cos(points[2].lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
     var side2 = Math.round(R * 2 * Math.atan2(Math.sqrt(a1), Math.sqrt(1-a1)) * 3.28084);
-    dims = '<span style="font-size:10px;opacity:0.7">' + side1 + '×' + side2 + ' ft</span><br>';
+    dims = '<span style="font-size:10px;opacity:0.7">' + fmtLen(side1) + '×' + fmtLen(side2) + '</span><br>';
   }
 
-  return '<div class="mulch-label">' + dims + areaSqFt.toLocaleString() + ' sq ft<br><span style="font-size:10px;opacity:0.8">' + line2 + '</span></div>';
+  return '<div class="mulch-label">' + dims + fmtArea(areaSqFt) + '<br><span style="font-size:10px;opacity:0.8">' + line2 + '</span></div>';
 }
 
 function finalizeMulchArea(points) {
@@ -2856,7 +2999,7 @@ function finalizeMulchArea(points) {
 
   // Create the polygon — interactive for drag-to-move
   var polygon = L.polygon(points, {
-    color: '#2d8a4e', fillColor: '#2d8a4e', fillOpacity: 0.25, weight: 2,
+    color: '#00e64d', fillColor: '#00e64d', fillOpacity: 0.2, weight: 3,
     interactive: true, bubblingMouseEvents: false
   }).addTo(map);
   polygon.getElement && polygon.getElement() && (polygon.getElement().style.cursor = 'move');
