@@ -2,6 +2,7 @@ node_modules
 .serverless
 .claude
 *.zip
+coverage/
 android/output/app/build/
 android/output/.gradle/
 android/node_modules/

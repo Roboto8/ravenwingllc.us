@@ -203,6 +203,15 @@ functions:
           authorizer:
             name: cognitoAuthorizer
 
+  purgeEstimate:
+    handler: handlers/estimates.purge
+    events:
+      - httpApi:
+          path: /api/estimates/{id}/purge
+          method: DELETE
+          authorizer:
+            name: cognitoAuthorizer
+
   shareEstimate:
     handler: handlers/approval.share
     events:
