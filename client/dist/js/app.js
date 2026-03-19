@@ -902,7 +902,7 @@ function createAngleLabel(point, angle) {
       className: 'angle-label',
       html: '<div class="angle-tag">' + angle + '&deg;</div>',
       iconSize: [36, 18],
-      iconAnchor: [18, -16]
+      iconAnchor: [18, 30]
     }),
     interactive: false
   }).addTo(map);
