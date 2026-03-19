@@ -1,29 +1,57 @@
 // === API Client ===
 const API = {
   baseUrl: '', // Set after deploy
+  _refreshPromise: null, // Mutex for token refresh
 
   configure(url) {
     this.baseUrl = url.replace(/\/$/, '');
   },
 
+  // Retry with exponential backoff for transient failures
+  async _fetchWithRetry(url, opts, retries = 2) {
+    for (var attempt = 0; attempt <= retries; attempt++) {
+      try {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+        var resp = await fetch(url, { ...opts, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return resp;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (attempt === retries) throw err;
+        // Exponential backoff: 500ms, 1500ms
+        await new Promise(function(r) { setTimeout(r, 500 * Math.pow(3, attempt)); });
+      }
+    }
+  },
+
+  // Deduplicated token refresh — all concurrent 401s share one refresh call
+  async _refreshOnce() {
+    if (this._refreshPromise) return this._refreshPromise;
+    this._refreshPromise = Auth.refresh().finally(() => { this._refreshPromise = null; });
+    return this._refreshPromise;
+  },
+
   async _fetch(path, opts = {}) {
-    const headers = {
+    var headers = {
       'Content-Type': 'application/json',
       ...Auth.getAuthHeader()
     };
 
-    const resp = await fetch(this.baseUrl + path, { ...opts, headers });
-    const data = await resp.json();
+    var resp = await this._fetchWithRetry(this.baseUrl + path, { ...opts, headers });
+    var data = await resp.json();
 
     if (resp.status === 401) {
       try {
-        await Auth.refresh();
+        await this._refreshOnce();
         headers.Authorization = 'Bearer ' + Auth.tokens.idToken;
-        const retry = await fetch(this.baseUrl + path, { ...opts, headers });
-        return retry.json();
+        var retry = await this._fetchWithRetry(this.baseUrl + path, { ...opts, headers });
+        var retryData = await retry.json();
+        if (!retry.ok) throw new Error(retryData.error || 'Request failed');
+        return retryData;
       } catch (e) {
         Auth.logout();
-        showAuthUI();
+        if (typeof showAuthUI === 'function') showAuthUI();
         throw new Error('Session expired');
       }
     }
@@ -38,7 +66,7 @@ const API = {
 
   // Estimates
   listEstimates(cursor) {
-    const q = cursor ? '?cursor=' + cursor : '';
+    var q = cursor ? '?cursor=' + cursor : '';
     return this._fetch('/api/estimates' + q);
   },
   createEstimate(data) { return this._fetch('/api/estimates', { method: 'POST', body: JSON.stringify(data) }); },
@@ -49,17 +77,22 @@ const API = {
   restoreEstimate(id) { return this._fetch('/api/estimates/' + id + '/restore', { method: 'POST' }); },
   shareEstimate(id) { return this._fetch('/api/estimates/' + id + '/share', { method: 'POST' }); },
 
-  // Public (no auth) — approval workflow
-  getPublicEstimate(token) {
-    return fetch(this.baseUrl + '/api/public/estimate/' + token)
-      .then(r => r.json()).then(d => { if (d.error) throw new Error(d.error); return d; });
+  // Public (no auth) — approval workflow (with retry for customer-facing reliability)
+  async getPublicEstimate(token) {
+    var resp = await this._fetchWithRetry(this.baseUrl + '/api/public/estimate/' + token, {});
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    return data;
   },
-  respondEstimate(token, action, message) {
-    return fetch(this.baseUrl + '/api/public/estimate/' + token + '/respond', {
+  async respondEstimate(token, action, message) {
+    var resp = await this._fetchWithRetry(this.baseUrl + '/api/public/estimate/' + token + '/respond', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, message: message || '' })
-    }).then(r => r.json()).then(d => { if (d.error) throw new Error(d.error); return d; });
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    return data;
   },
 
   // Photos
@@ -94,14 +127,14 @@ const API = {
 
   // Reports
   getReports(period) {
-    const q = period ? '?period=' + period : '';
+    var q = period ? '?period=' + period : '';
     return this._fetch('/api/reports/dashboard' + q);
   },
 
   // Notifications
   getNotifications() { return this._fetch('/api/notifications'); },
   markNotificationsRead(ids) {
-    const body = ids ? { ids } : { all: true };
+    var body = ids ? { ids } : { all: true };
     return this._fetch('/api/notifications/read', { method: 'POST', body: JSON.stringify(body) });
   }
 };

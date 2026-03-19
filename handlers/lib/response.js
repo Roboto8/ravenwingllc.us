@@ -40,7 +40,7 @@ module.exports = {
         return await handler(event);
       } catch (err) {
         console.error('Handler error:', err.message);
-        return { statusCode: 500, body: JSON.stringify({ error: 'Internal error' }) };
+        return { statusCode: 500, headers: SECURITY_HEADERS, body: JSON.stringify({ error: 'Internal error' }) };
       }
     };
   }

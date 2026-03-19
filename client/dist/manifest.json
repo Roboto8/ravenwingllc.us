@@ -3,11 +3,27 @@
   "short_name": "FenceTrace",
   "description": "Draw fence lines on satellite imagery and generate professional estimates in seconds.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f5f0eb",
   "theme_color": "#c0622e",
   "orientation": "any",
   "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "New Estimate",
+      "short_name": "New",
+      "url": "/?action=new",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Estimates",
+      "short_name": "Estimates",
+      "url": "/?action=list",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "icon-192.png",

@@ -865,6 +865,26 @@
     // === Hide loading screen ===
     document.getElementById('loading-screen').style.display = 'none';
 
+    // === Offline detection ===
+    function updateOnlineStatus() {
+      var banner = document.getElementById('offline-banner');
+      if (!navigator.onLine) {
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'offline-banner';
+          banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#b93a2a;color:#fff;text-align:center;padding:8px 16px;font-size:0.85rem;font-weight:600;z-index:99998;font-family:var(--font)';
+          banner.textContent = 'You are offline — changes will not be saved until connection is restored';
+          document.body.appendChild(banner);
+        }
+      } else if (banner) {
+        banner.remove();
+        showToast('Back online');
+      }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
     // === Onboarding ===
     let onboardStep = 1;
 
@@ -2001,13 +2021,20 @@
 
         try {
           showToast('Uploading ' + file.name + '...');
-          var resp = await API.getPhotoUploadUrl(activeEstimateId, file.name, file.type);
+
+          // Compress image client-side to reduce upload size and S3 storage
+          var uploadFile = file;
+          if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp') {
+            try { uploadFile = await compressImage(file, 1920, 0.82); } catch (e) { /* use original on failure */ }
+          }
+
+          var resp = await API.getPhotoUploadUrl(activeEstimateId, file.name, uploadFile.type || file.type);
 
           // PUT the file directly to S3 using the presigned URL
           var uploadResp = await fetch(resp.uploadUrl, {
             method: 'PUT',
-            headers: { 'Content-Type': file.type },
-            body: file
+            headers: { 'Content-Type': uploadFile.type || file.type },
+            body: uploadFile
           });
           if (!uploadResp.ok) throw new Error('Upload failed');
 
@@ -2036,6 +2063,31 @@
       } catch (e) {
         showToast('Failed to delete photo: ' + e.message);
       }
+    }
+
+    // Compress image client-side before upload (max dimension, JPEG quality)
+    function compressImage(file, maxDim, quality) {
+      return new Promise(function(resolve, reject) {
+        var img = new Image();
+        img.onload = function() {
+          var w = img.width, h = img.height;
+          if (w <= maxDim && h <= maxDim && file.size < 1024 * 1024) {
+            resolve(file); // Already small enough
+            return;
+          }
+          var scale = Math.min(maxDim / w, maxDim / h, 1);
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(w * scale);
+          canvas.height = Math.round(h * scale);
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(function(blob) {
+            if (blob) resolve(blob); else reject(new Error('Compression failed'));
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
     }
 
     // === Reports Dashboard ===
