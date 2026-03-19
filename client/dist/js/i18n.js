@@ -135,6 +135,7 @@ var I18N = {
     summary_terrain: 'Terrain',
     summary_custom: 'Custom items',
     summary_total: 'Total',
+    estimate_disclaimer: 'Measurements are satellite-based estimates. Verify on-site before final bid.',
 
     // -- Panel actions --
     btn_share: 'Share Estimate',
@@ -498,6 +499,7 @@ var I18N = {
     summary_terrain: 'Terreno',
     summary_custom: 'Items personalizados',
     summary_total: 'Total',
+    estimate_disclaimer: 'Las medidas son estimaciones satelitales. Verifique en el sitio antes de la oferta final.',
 
     // -- Panel actions --
     btn_share: 'Compartir Estimacion',
