@@ -215,8 +215,15 @@ function validateInput(body) {
   }
   const numericFields = ['fencePrice', 'fenceHeight', 'terrainMultiplier', 'totalFeet', 'totalCost', 'materialsCost', 'mulchDepth'];
   for (const f of numericFields) {
-    if (body[f] !== undefined && typeof body[f] !== 'number') return f + ' must be a number';
-    if (typeof body[f] === 'number' && !isFinite(body[f])) return f + ' must be a finite number';
+    if (body[f] !== undefined) {
+      // Coerce numeric strings (e.g. "$2,500" from older clients)
+      if (typeof body[f] === 'string') {
+        const parsed = parseFloat(body[f].replace(/[^0-9.\-]/g, ''));
+        if (isNaN(parsed)) return f + ' must be a number';
+        body[f] = parsed;
+      }
+      if (typeof body[f] !== 'number' || !isFinite(body[f])) return f + ' must be a number';
+    }
   }
   const arrayFields = ['fencePoints', 'gates', 'bom', 'sections', 'mulchAreas', 'photos'];
   for (const f of arrayFields) {
