@@ -81,7 +81,7 @@
 
   <!-- Auth Modal -->
   <div class="modal-overlay" id="auth-modal" style="display:none" onclick="if(event.target===this)hideAuthUI()">
-    <div class="modal" style="position:relative">
+    <div class="modal" style="position:relative" onclick="event.stopPropagation()">
       <button class="auth-close" id="auth-close" onclick="hideAuthUI()">&times;</button>
       <h2 class="modal-title">Fence<span class="accent">Trace</span></h2>
       <p class="auth-gate-msg" id="auth-gate-msg" style="display:none"></p>
