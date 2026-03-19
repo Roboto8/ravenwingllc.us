@@ -7,6 +7,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn(),
   remove: jest.fn(),
   query: jest.fn(),
+  findById: jest.fn(),
   queryGSI: jest.fn()
 }));
 
@@ -43,7 +44,7 @@ describe('estimates handler - edge cases', () => {
   describe('update - field filtering', () => {
     test('silently ignores PK/SK/GSI fields in updates', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
 
       await estimates.update({
@@ -67,7 +68,7 @@ describe('estimates handler - edge cases', () => {
 
     test('silently ignores id and createdAt in updates', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
 
       await estimates.update({
@@ -87,7 +88,7 @@ describe('estimates handler - edge cases', () => {
 
     test('allows updating mulch fields', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
 
       await estimates.update({
@@ -109,7 +110,7 @@ describe('estimates handler - edge cases', () => {
 
     test('allows updating approvalStatus and shareToken', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
 
       await estimates.update({
@@ -129,7 +130,7 @@ describe('estimates handler - edge cases', () => {
 
     test('updatedAt is a valid ISO string', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
 
       await estimates.update({
@@ -235,7 +236,7 @@ describe('estimates handler - edge cases', () => {
   describe('remove - deletedAt', () => {
     test('sets deletedAt as ISO timestamp', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue({});
 
       const before = new Date().toISOString();
@@ -254,7 +255,7 @@ describe('estimates handler - edge cases', () => {
     test('returns the estimate data in response', async () => {
       const deletedEst = { ...mockEstimate, status: 'deleted', deletedAt: '2025-06-01' };
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [deletedEst] });
+      db.findById.mockResolvedValue(deletedEst);
       db.update.mockResolvedValue({});
 
       const result = await estimates.restore({ pathParameters: { id: 'est-123' } });

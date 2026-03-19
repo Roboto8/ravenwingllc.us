@@ -69,6 +69,25 @@ module.exports = {
     };
   },
 
+  async findById(pk, skPrefix, id) {
+    let lastKey = null;
+    do {
+      const params = {
+        TableName: TABLE,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: { ':pk': pk, ':sk': skPrefix },
+        Limit: 100,
+        ScanIndexForward: false
+      };
+      if (lastKey) params.ExclusiveStartKey = lastKey;
+      const { Items, LastEvaluatedKey } = await ddb.send(new QueryCommand(params));
+      const match = (Items || []).find(i => i.id === id);
+      if (match) return match;
+      lastKey = LastEvaluatedKey;
+    } while (lastKey);
+    return null;
+  },
+
   async queryGSI(gsi1pk) {
     const { Items } = await ddb.send(new QueryCommand({
       TableName: TABLE,

@@ -6,6 +6,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   put: jest.fn(),
   update: jest.fn(),
   query: jest.fn(),
+  findById: jest.fn(),
   queryGSI: jest.fn()
 }));
 

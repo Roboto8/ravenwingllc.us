@@ -7,6 +7,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn(),
   remove: jest.fn(),
   query: jest.fn(),
+  findById: jest.fn(),
   queryGSI: jest.fn()
 }));
 
@@ -37,7 +38,7 @@ describe('approval handler - edge cases', () => {
   describe('share - initializes approvalHistory when missing', () => {
     test('sets approvalHistory on first share', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [{ ...mockEstimate }] });
+      db.findById.mockResolvedValue({ ...mockEstimate });
       db.update.mockResolvedValue({});
 
       await approval.share({
@@ -53,9 +54,7 @@ describe('approval handler - edge cases', () => {
     test('does not overwrite existing approvalHistory', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const history = [{ action: 'sent', timestamp: '2026-01-01' }];
-      db.query.mockResolvedValue({
-        items: [{ ...mockEstimate, approvalHistory: history }]
-      });
+      db.findById.mockResolvedValue({ ...mockEstimate, approvalHistory: history });
       db.update.mockResolvedValue({});
 
       await approval.share({
@@ -245,7 +244,7 @@ describe('approval handler - edge cases', () => {
   describe('share - sets GSI keys for public access', () => {
     test('sets GSI1PK with SHARE# prefix', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [{ ...mockEstimate }] });
+      db.findById.mockResolvedValue({ ...mockEstimate });
       db.update.mockResolvedValue({});
 
       await approval.share({

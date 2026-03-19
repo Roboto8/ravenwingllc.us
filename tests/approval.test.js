@@ -4,6 +4,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn(),
   remove: jest.fn(),
   query: jest.fn(),
+  findById: jest.fn(),
   queryGSI: jest.fn()
 }));
 
@@ -34,7 +35,7 @@ describe('approval handler', () => {
   describe('share', () => {
     test('generates share token and sets status to sent', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue({});
 
       const result = await approval.share({
@@ -58,7 +59,7 @@ describe('approval handler', () => {
 
     test('reuses existing share token', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [{ ...mockEstimate, shareToken: 'existing-token' }] });
+      db.findById.mockResolvedValue({ ...mockEstimate, shareToken: 'existing-token' });
       db.update.mockResolvedValue({});
 
       const result = await approval.share({
@@ -72,7 +73,7 @@ describe('approval handler', () => {
 
     test('returns 404 for missing estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await approval.share({ pathParameters: { id: 'nope' }, headers: {} });
       expect(result.statusCode).toBe(404);
@@ -87,9 +88,7 @@ describe('approval handler', () => {
     test('does not reinitialize approvalHistory when already present', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const existingHistory = [{ action: 'sent', timestamp: '2026-01-01T00:00:00Z' }];
-      db.query.mockResolvedValue({
-        items: [{ ...mockEstimate, approvalHistory: existingHistory }]
-      });
+      db.findById.mockResolvedValue({ ...mockEstimate, approvalHistory: existingHistory });
       db.update.mockResolvedValue({});
 
       await approval.share({
@@ -103,7 +102,7 @@ describe('approval handler', () => {
 
     test('uses Origin header fallback', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue({});
 
       const result = await approval.share({
@@ -117,7 +116,7 @@ describe('approval handler', () => {
 
     test('works with no origin header', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue({});
 
       const result = await approval.share({

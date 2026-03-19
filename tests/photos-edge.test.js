@@ -17,6 +17,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn(),
   remove: jest.fn(),
   query: jest.fn(),
+  findById: jest.fn(),
   queryGSI: jest.fn()
 }));
 
@@ -40,7 +41,7 @@ describe('photos handler - security edge cases', () => {
   describe('getUploadUrl - filename sanitization', () => {
     test('sanitizes Windows-style path traversal', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -55,7 +56,7 @@ describe('photos handler - security edge cases', () => {
 
     test('sanitizes filenames with spaces and special chars', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -70,7 +71,7 @@ describe('photos handler - security edge cases', () => {
 
     test('truncates very long filenames to 100 chars', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const longName = 'a'.repeat(200) + '.jpg';
       const result = await photos.getUploadUrl({
@@ -91,7 +92,7 @@ describe('photos handler - security edge cases', () => {
 
     test('key format is companyId/estId/uuid-filename', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -107,7 +108,7 @@ describe('photos handler - security edge cases', () => {
     test('allows upload at 19 photos (under limit)', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const est19 = { ...mockEstimate, photos: Array(19).fill({ key: 'k' }) };
-      db.query.mockResolvedValue({ items: [est19] });
+      db.findById.mockResolvedValue(est19);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -119,7 +120,7 @@ describe('photos handler - security edge cases', () => {
     test('rejects upload at exactly 20 photos', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const est20 = { ...mockEstimate, photos: Array(20).fill({ key: 'k' }) };
-      db.query.mockResolvedValue({ items: [est20] });
+      db.findById.mockResolvedValue(est20);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -131,7 +132,7 @@ describe('photos handler - security edge cases', () => {
     test('allows upload when photos is undefined', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const estNoPhotos = { ...mockEstimate, photos: undefined };
-      db.query.mockResolvedValue({ items: [estNoPhotos] });
+      db.findById.mockResolvedValue(estNoPhotos);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -144,7 +145,7 @@ describe('photos handler - security edge cases', () => {
   describe('deletePhoto - key validation', () => {
     test('rejects key from different estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.deletePhoto({
         pathParameters: { id: 'est-1', key: 'comp-1/est-OTHER/abc-yard.jpg' }
@@ -154,7 +155,7 @@ describe('photos handler - security edge cases', () => {
 
     test('rejects key with path traversal in company prefix', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.deletePhoto({
         pathParameters: { id: 'est-1', key: 'comp-1/../comp-2/est-1/hack.jpg' }
@@ -172,7 +173,7 @@ describe('photos handler - security edge cases', () => {
           { key: 'comp-1/est-1/def-two.jpg', filename: 'two.jpg' }
         ]
       };
-      db.query.mockResolvedValue({ items: [estWith2] });
+      db.findById.mockResolvedValue(estWith2);
       db.update.mockResolvedValue({});
 
       const result = await photos.deletePhoto({
@@ -187,9 +188,7 @@ describe('photos handler - security edge cases', () => {
 
     test('sets updatedAt when deleting photo', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({
-        items: [{ ...mockEstimate, photos: [{ key: 'comp-1/est-1/a.jpg' }] }]
-      });
+      db.findById.mockResolvedValue({ ...mockEstimate, photos: [{ key: 'comp-1/est-1/a.jpg' }] });
       db.update.mockResolvedValue({});
 
       const before = new Date().toISOString();

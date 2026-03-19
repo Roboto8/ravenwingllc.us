@@ -25,28 +25,32 @@ module.exports.postConfirmation = async (event) => {
     const items = await db.queryGSI('INVITE#' + inviteToken);
     if (items.length > 0 && items[0].status === 'pending') {
       const invite = items[0];
-      const companyId = invite.GSI1SK.replace('COMPANY#', '');
 
-      // Create user under existing company
-      await db.put({
-        PK: 'COMPANY#' + companyId,
-        SK: 'USER#' + sub,
-        GSI1PK: 'USER#' + sub,
-        GSI1SK: 'COMPANY#' + companyId,
-        email,
-        name: '',
-        role: 'member',
-        createdAt: now
-      });
+      // Verify the signup email matches the invited email — if not, fall through to create own company
+      if (!invite.email || invite.email.toLowerCase() === email.toLowerCase()) {
+        const companyId = invite.GSI1SK.replace('COMPANY#', '');
 
-      // Mark invite as used
-      await db.update(invite.PK, invite.SK, {
-        status: 'accepted',
-        acceptedBy: sub,
-        acceptedAt: now
-      });
+        // Create user under existing company
+        await db.put({
+          PK: 'COMPANY#' + companyId,
+          SK: 'USER#' + sub,
+          GSI1PK: 'USER#' + sub,
+          GSI1SK: 'COMPANY#' + companyId,
+          email,
+          name: '',
+          role: 'member',
+          createdAt: now
+        });
 
-      return event;
+        // Mark invite as used
+        await db.update(invite.PK, invite.SK, {
+          status: 'accepted',
+          acceptedBy: sub,
+          acceptedAt: now
+        });
+
+        return event;
+      }
     }
   }
 

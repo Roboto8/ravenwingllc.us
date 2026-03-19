@@ -11,8 +11,7 @@ module.exports.share = res.wrap(async (event) => {
   if (!await checkPermission(event, companyId, 'estimates.edit')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === id);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', id);
   if (!est) return res.notFound();
 
   // Reuse existing token if already shared, or generate a new one

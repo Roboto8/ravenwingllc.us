@@ -4,6 +4,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn(),
   remove: jest.fn(),
   query: jest.fn(),
+  findById: jest.fn(),
   queryGSI: jest.fn()
 }));
 
@@ -237,7 +238,7 @@ describe('estimates handler', () => {
   describe('get', () => {
     test('returns estimate by id', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await estimates.get({
         pathParameters: { id: 'est-123' }
@@ -251,7 +252,7 @@ describe('estimates handler', () => {
 
     test('returns 404 when estimate not found', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await estimates.get({
         pathParameters: { id: 'nonexistent' }
@@ -272,7 +273,7 @@ describe('estimates handler', () => {
   describe('update', () => {
     test('updates allowed fields', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue({ ...mockEstimate, customerName: 'Updated Name' });
 
       const result = await estimates.update({
@@ -287,7 +288,7 @@ describe('estimates handler', () => {
 
     test('returns 404 when estimate not found', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await estimates.update({
         pathParameters: { id: 'nonexistent' },
@@ -298,7 +299,7 @@ describe('estimates handler', () => {
 
     test('sets updatedAt on update', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
 
       await estimates.update({
@@ -313,7 +314,7 @@ describe('estimates handler', () => {
 
     test('allows updating droneOverlay', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       const overlay = { bounds: [[37.5, -77.4], [37.6, -77.3]] };
       db.update.mockResolvedValue({ ...mockEstimate, droneOverlay: overlay });
 
@@ -331,7 +332,7 @@ describe('estimates handler', () => {
 
     test('allows updating fence data', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
 
       await estimates.update({
@@ -367,7 +368,7 @@ describe('estimates handler', () => {
   describe('remove', () => {
     test('soft deletes estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue({ ...mockEstimate, status: 'deleted' });
 
       const result = await estimates.remove({
@@ -385,7 +386,7 @@ describe('estimates handler', () => {
 
     test('returns 404 when estimate not found', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await estimates.remove({
         pathParameters: { id: 'nonexistent' }
@@ -406,7 +407,7 @@ describe('estimates handler', () => {
   describe('purge', () => {
     test('permanently deletes estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
       db.remove.mockResolvedValue({});
 
       const result = await estimates.purge({
@@ -421,7 +422,7 @@ describe('estimates handler', () => {
 
     test('returns 404 when estimate not found', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await estimates.purge({
         pathParameters: { id: 'nonexistent' }
@@ -443,7 +444,7 @@ describe('estimates handler', () => {
     test('restores deleted estimate to draft', async () => {
       const deletedEstimate = { ...mockEstimate, status: 'deleted', deletedAt: '2025-06-01T00:00:00.000Z' };
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [deletedEstimate] });
+      db.findById.mockResolvedValue(deletedEstimate);
       db.update.mockResolvedValue({ ...deletedEstimate, status: 'draft', deletedAt: '' });
 
       const result = await estimates.restore({
@@ -462,7 +463,7 @@ describe('estimates handler', () => {
 
     test('returns 404 when estimate not found', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await estimates.restore({
         pathParameters: { id: 'nonexistent' }
@@ -498,7 +499,7 @@ describe('estimates handler', () => {
 
     test('returns empty array when no deleted estimates', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.query.mockResolvedValue({ items: [mockEstimate], nextKey: null });
 
       const result = await estimates.trash({});
       const body = JSON.parse(result.body);

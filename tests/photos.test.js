@@ -14,6 +14,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn(),
   remove: jest.fn(),
   query: jest.fn(),
+  findById: jest.fn(),
   queryGSI: jest.fn()
 }));
 
@@ -37,7 +38,7 @@ describe('photos handler', () => {
   describe('getUploadUrl', () => {
     test('returns presigned URL and key', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -53,7 +54,7 @@ describe('photos handler', () => {
 
     test('returns 404 for missing estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'nope' },
@@ -64,7 +65,7 @@ describe('photos handler', () => {
 
     test('returns 400 for missing filename', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -84,7 +85,7 @@ describe('photos handler', () => {
 
     test('rejects non-image content types', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const badTypes = ['application/pdf', 'text/html', 'application/javascript', 'application/x-executable', 'video/mp4'];
       for (const ct of badTypes) {
@@ -98,7 +99,7 @@ describe('photos handler', () => {
 
     test('accepts all allowed image types', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const goodTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
       for (const ct of goodTypes) {
@@ -113,7 +114,7 @@ describe('photos handler', () => {
     test('rejects when photo limit reached', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const fullEstimate = { ...mockEstimate, photos: Array(20).fill({ key: 'k', filename: 'f' }) };
-      db.query.mockResolvedValue({ items: [fullEstimate] });
+      db.findById.mockResolvedValue(fullEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -125,7 +126,7 @@ describe('photos handler', () => {
 
     test('sanitizes dangerous filenames', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -142,7 +143,7 @@ describe('photos handler', () => {
 
     test('returns maxSize in response', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -160,7 +161,7 @@ describe('photos handler', () => {
         ...mockEstimate,
         photos: [{ key: 'comp-1/est-1/abc-yard.jpg', filename: 'yard.jpg' }]
       };
-      db.query.mockResolvedValue({ items: [estWithPhoto] });
+      db.findById.mockResolvedValue(estWithPhoto);
       db.update.mockResolvedValue({});
 
       const result = await photos.deletePhoto({
@@ -178,7 +179,7 @@ describe('photos handler', () => {
 
     test('rejects photo key from wrong company', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.deletePhoto({
         pathParameters: { id: 'est-1', key: 'comp-OTHER/est-1/hack.jpg' }
@@ -188,7 +189,7 @@ describe('photos handler', () => {
 
     test('returns 404 for missing estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [] });
+      db.findById.mockResolvedValue(null);
 
       const result = await photos.deletePhoto({
         pathParameters: { id: 'nope', key: 'comp-1/nope/a.jpg' }
@@ -208,7 +209,7 @@ describe('photos handler', () => {
   describe('getUploadUrl - edge cases', () => {
     test('handles missing body gracefully', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -219,7 +220,7 @@ describe('photos handler', () => {
 
     test('handles missing contentType', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate] });
+      db.findById.mockResolvedValue(mockEstimate);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -231,7 +232,7 @@ describe('photos handler', () => {
     test('handles null photos array on estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const estNoPhotos = { ...mockEstimate, photos: null };
-      db.query.mockResolvedValue({ items: [estNoPhotos] });
+      db.findById.mockResolvedValue(estNoPhotos);
 
       const result = await photos.getUploadUrl({
         pathParameters: { id: 'est-1' },
@@ -245,7 +246,7 @@ describe('photos handler', () => {
     test('handles estimate with null photos array', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       const estNoPhotos = { ...mockEstimate, photos: null };
-      db.query.mockResolvedValue({ items: [estNoPhotos] });
+      db.findById.mockResolvedValue(estNoPhotos);
       db.update.mockResolvedValue({});
 
       const result = await photos.deletePhoto({

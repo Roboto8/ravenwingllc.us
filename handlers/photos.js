@@ -34,8 +34,7 @@ module.exports.getUploadUrl = async (event) => {
   const estId = event.pathParameters.id;
 
   // Verify the estimate exists and belongs to this company
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === estId);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', estId);
   if (!est) return res.notFound();
 
   const body = JSON.parse(event.body || '{}');
@@ -80,12 +79,12 @@ module.exports.deletePhoto = async (event) => {
   const photoKey = decodeURIComponent(event.pathParameters.key);
 
   // Verify the estimate exists and belongs to this company
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === estId);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', estId);
   if (!est) return res.notFound();
 
-  // Verify the key belongs to this company/estimate
-  if (!photoKey.startsWith(companyId + '/' + estId + '/')) {
+  // Verify the key belongs to this company/estimate (exact segment match)
+  const keyParts = photoKey.split('/');
+  if (keyParts.length < 3 || keyParts[0] !== companyId || keyParts[1] !== estId) {
     return res.forbidden('Photo does not belong to this estimate');
   }
 

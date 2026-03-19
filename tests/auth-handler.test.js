@@ -152,13 +152,13 @@ describe('auth handler - postConfirmation', () => {
     const { PutCommand, UpdateCommand, QueryCommand, DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
     const send = DynamoDBDocumentClient.from().send;
 
-    // Mock GSI query to return a pending invite
+    // Mock GSI query to return a pending invite (email must match signup email)
     send.mockResolvedValueOnce({ Items: [{
       PK: 'COMPANY#existing-comp',
       SK: 'INVITE#valid-token',
       GSI1PK: 'INVITE#valid-token',
       GSI1SK: 'COMPANY#existing-comp',
-      email: 'invited@test.com',
+      email: 'test@example.com',
       status: 'pending'
     }]});
     // Mock the put (user creation) and update (mark invite used)
@@ -174,6 +174,34 @@ describe('auth handler - postConfirmation', () => {
     const putCall = PutCommand.mock.calls[0][0];
     expect(putCall.Item.role).toBe('member');
     expect(putCall.Item.PK).toBe('COMPANY#existing-comp');
+  });
+
+  test('rejects invite when signup email does not match invited email', async () => {
+    const { PutCommand, DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+    const send = DynamoDBDocumentClient.from().send;
+
+    // Mock GSI query returns a pending invite for a different email
+    send.mockResolvedValueOnce({ Items: [{
+      PK: 'COMPANY#existing-comp',
+      SK: 'INVITE#valid-token',
+      GSI1PK: 'INVITE#valid-token',
+      GSI1SK: 'COMPANY#existing-comp',
+      email: 'someone-else@test.com',
+      status: 'pending'
+    }]});
+    // Falls through to new company creation: get (trial check) + put x3
+    send.mockResolvedValueOnce({}); // trial check returns no item
+    send.mockResolvedValue({});     // remaining puts
+
+    const event = makeEvent({ 'custom:inviteToken': 'valid-token' });
+    const result = await postConfirmation(event);
+
+    expect(result).toBe(event);
+    // queryGSI (1) + get trial (1) + put company (1) + put trial (1) + put user (1) = 5
+    expect(send).toHaveBeenCalledTimes(5);
+    const firstPut = PutCommand.mock.calls[0][0];
+    expect(firstPut.Item.SK).toBe('PROFILE'); // new company, not member join
+    expect(firstPut.Item.PK).not.toBe('COMPANY#existing-comp');
   });
 
   test('creates new company when inviteToken is invalid', async () => {

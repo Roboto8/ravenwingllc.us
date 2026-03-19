@@ -88,8 +88,7 @@ module.exports.get = res.wrap(async (event) => {
   if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === id);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', id);
 
   if (!est) return res.notFound();
   return res.ok(stripKeys(est));
@@ -101,8 +100,7 @@ module.exports.update = res.wrap(async (event) => {
   if (!await checkPermission(event, companyId, 'estimates.edit')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === id);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', id);
   if (!est) return res.notFound();
 
   const body = res.parseBody(event);
@@ -134,8 +132,7 @@ module.exports.remove = res.wrap(async (event) => {
   if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === id);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', id);
   if (!est) return res.notFound();
 
   // Soft delete — move to trash with 90-day TTL for auto-purge
@@ -154,8 +151,7 @@ module.exports.purge = res.wrap(async (event) => {
   if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === id);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', id);
   if (!est) return res.notFound();
 
   await db.remove(est.PK, est.SK);
@@ -169,8 +165,7 @@ module.exports.restore = res.wrap(async (event) => {
   if (!await checkPermission(event, companyId, 'estimates.delete')) return res.forbidden('No permission');
 
   const id = event.pathParameters.id;
-  const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-  const est = items.find(i => i.id === id);
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', id);
   if (!est) return res.notFound();
 
   await db.update(est.PK, est.SK, {
@@ -215,9 +210,17 @@ const MAX_BOM = 500;
 function validateInput(body) {
   const stringFields = ['customerName', 'customerPhone', 'customerAddress', 'customerEmail', 'fenceType', 'mulchMaterial', 'mulchDelivery'];
   for (const f of stringFields) {
-    if (body[f] && typeof body[f] === 'string' && body[f].length > MAX_STRING) {
-      return f + ' exceeds maximum length';
-    }
+    if (body[f] !== undefined && typeof body[f] !== 'string') return f + ' must be a string';
+    if (body[f] && body[f].length > MAX_STRING) return f + ' exceeds maximum length';
+  }
+  const numericFields = ['fencePrice', 'fenceHeight', 'terrainMultiplier', 'totalFeet', 'totalCost', 'materialsCost', 'mulchDepth'];
+  for (const f of numericFields) {
+    if (body[f] !== undefined && typeof body[f] !== 'number') return f + ' must be a number';
+    if (typeof body[f] === 'number' && !isFinite(body[f])) return f + ' must be a finite number';
+  }
+  const arrayFields = ['fencePoints', 'gates', 'bom', 'sections', 'mulchAreas', 'photos'];
+  for (const f of arrayFields) {
+    if (body[f] !== undefined && !Array.isArray(body[f])) return f + ' must be an array';
   }
   if (body.fencePoints && Array.isArray(body.fencePoints) && body.fencePoints.length > MAX_ARRAY) {
     return 'Too many fence points (max ' + MAX_ARRAY + ')';
@@ -236,6 +239,14 @@ function validateInput(body) {
   }
   if (body.photos && Array.isArray(body.photos) && body.photos.length > 50) {
     return 'Too many photos (max 50)';
+  }
+  const validStatuses = ['draft', 'sent', 'approved', 'declined'];
+  if (body.approvalStatus !== undefined && !validStatuses.includes(body.approvalStatus)) {
+    return 'Invalid approval status';
+  }
+  if (body.status !== undefined) {
+    const validEstStatuses = ['draft', 'sent', 'approved', 'declined', 'deleted'];
+    if (!validEstStatuses.includes(body.status)) return 'Invalid status';
   }
   return null;
 }

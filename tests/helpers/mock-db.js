@@ -76,6 +76,11 @@ class MockDB {
     return { items: page.map(i => ({ ...i })), nextKey };
   }
 
+  // Find a single item by PK + SK prefix + id field
+  async findById(pk, skPrefix, id) {
+    return this.items.find(i => i.PK === pk && i.SK.startsWith(skPrefix) && i.id === id) || null;
+  }
+
   // Query GSI1 by GSI1PK
   async queryGSI(gsi1pk) {
     return this.items
