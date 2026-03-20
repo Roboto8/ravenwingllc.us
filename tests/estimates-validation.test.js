@@ -358,27 +358,48 @@ describe('estimates - input validation', () => {
     });
   });
 
-  // ===== Trash pagination =====
-  describe('trash - pagination', () => {
-    test('paginates through all items to find deleted', async () => {
+  // ===== Trash - server-side filtered =====
+  describe('trash - server-side filtered', () => {
+    test('uses queryFiltered to return only deleted estimates', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query
-        .mockResolvedValueOnce({
-          items: [{ id: 'e1', status: 'draft' }],
-          nextKey: 'cursor1'
-        })
-        .mockResolvedValueOnce({
-          items: [{ id: 'e2', status: 'deleted', PK: 'x', SK: 'y' }],
-          nextKey: null
-        });
+      db.queryFiltered = jest.fn().mockResolvedValue({
+        items: [{ id: 'e2', status: 'deleted', PK: 'x', SK: 'y' }],
+        nextKey: null
+      });
 
       const result = await estimates.trash({});
       const body = JSON.parse(result.body);
 
-      expect(db.query).toHaveBeenCalledTimes(2);
+      expect(db.queryFiltered).toHaveBeenCalledTimes(1);
+      expect(db.queryFiltered).toHaveBeenCalledWith(
+        'COMPANY#comp-1', 'EST#',
+        '#s = :del', { ':del': 'deleted' },
+        50, undefined, { '#s': 'status' }
+      );
       expect(body.estimates).toHaveLength(1);
       expect(body.estimates[0].id).toBe('e2');
       expect(body.estimates[0].PK).toBeUndefined();
+    });
+
+    test('passes pagination params from query string', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.queryFiltered = jest.fn().mockResolvedValue({
+        items: [],
+        nextKey: null
+      });
+
+      const result = await estimates.trash({
+        queryStringParameters: { limit: '10', cursor: 'abc123' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(db.queryFiltered).toHaveBeenCalledWith(
+        'COMPANY#comp-1', 'EST#',
+        '#s = :del', { ':del': 'deleted' },
+        10, 'abc123', { '#s': 'status' }
+      );
+      expect(body.estimates).toHaveLength(0);
+      expect(body.cursor).toBeNull();
     });
   });
 });

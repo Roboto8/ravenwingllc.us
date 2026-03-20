@@ -88,6 +88,32 @@ module.exports = {
     return null;
   },
 
+  async queryFiltered(pk, skPrefix, filterExpr, filterValues, limit = 50, lastKey, filterNames) {
+    const params = {
+      TableName: TABLE,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      FilterExpression: filterExpr,
+      ExpressionAttributeValues: { ':pk': pk, ':sk': skPrefix, ...filterValues },
+      Limit: limit,
+      ScanIndexForward: false
+    };
+    if (filterNames) params.ExpressionAttributeNames = filterNames;
+    if (lastKey) {
+      try {
+        const decoded = JSON.parse(Buffer.from(lastKey, 'base64').toString());
+        if (decoded.PK && decoded.PK !== pk) throw new Error('Invalid cursor');
+        params.ExclusiveStartKey = decoded;
+      } catch (e) {
+        // Invalid cursor — start from beginning
+      }
+    }
+    const { Items, LastEvaluatedKey } = await ddb.send(new QueryCommand(params));
+    return {
+      items: Items || [],
+      nextKey: LastEvaluatedKey ? Buffer.from(JSON.stringify(LastEvaluatedKey)).toString('base64') : null
+    };
+  },
+
   async queryGSI(gsi1pk) {
     const { Items } = await ddb.send(new QueryCommand({
       TableName: TABLE,

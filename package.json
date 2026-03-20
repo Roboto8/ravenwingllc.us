@@ -8,8 +8,9 @@
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "deploy:dev": "serverless client deploy --stage dev",
-    "deploy:prod": "serverless client deploy --stage prod",
+    "deploy:prod": "serverless client deploy --stage prod && aws cloudfront create-invalidation --distribution-id E2Q8DG4LT7KL3 --paths \"/*\" > /dev/null",
     "deploy:backend": "serverless deploy --stage dev",
+    "deploy:backend:prod": "serverless deploy --stage prod",
     "deploy:all": "serverless deploy --stage dev && serverless client deploy --stage dev"
   },
   "license": "MIT",

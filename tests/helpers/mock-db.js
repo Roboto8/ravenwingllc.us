@@ -76,6 +76,45 @@ class MockDB {
     return { items: page.map(i => ({ ...i })), nextKey };
   }
 
+  // Query with server-side filter expression
+  async queryFiltered(pk, skPrefix, filterExpr, filterValues, limit = 50, lastKey, filterNames) {
+    // Parse simple filter like '#s = :del'
+    let matches = this.items
+      .filter(i => i.PK === pk && i.SK.startsWith(skPrefix))
+      .sort((a, b) => b.SK.localeCompare(a.SK));
+
+    // Apply filter: resolve attribute names and match values
+    matches = matches.filter(item => {
+      // Support simple '#name = :value' filters
+      const m = filterExpr.match(/^(#\w+)\s*=\s*(:[\w]+)$/);
+      if (m) {
+        const fieldName = filterNames && filterNames[m[1]] ? filterNames[m[1]] : m[1];
+        const val = filterValues[m[2]];
+        return item[fieldName] === val;
+      }
+      return true;
+    });
+
+    let startIdx = 0;
+    if (lastKey) {
+      try {
+        const decoded = JSON.parse(Buffer.from(lastKey, 'base64').toString());
+        const pos = matches.findIndex(i => i.PK === decoded.PK && i.SK === decoded.SK);
+        if (pos >= 0) startIdx = pos + 1;
+      } catch (e) {
+        // bad cursor
+      }
+    }
+
+    const page = matches.slice(startIdx, startIdx + limit);
+    const hasMore = startIdx + limit < matches.length;
+    const nextKey = hasMore
+      ? Buffer.from(JSON.stringify({ PK: page[page.length - 1].PK, SK: page[page.length - 1].SK })).toString('base64')
+      : null;
+
+    return { items: page.map(i => ({ ...i })), nextKey };
+  }
+
   // Find a single item by PK + SK prefix + id field
   async findById(pk, skPrefix, id) {
     return this.items.find(i => i.PK === pk && i.SK.startsWith(skPrefix) && i.id === id) || null;

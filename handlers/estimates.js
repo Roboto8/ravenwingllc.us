@@ -176,24 +176,24 @@ module.exports.restore = res.wrap(async (event) => {
   return res.ok(stripKeys(est));
 });
 
-// List deleted estimates (trash) - paginate to get all
+// List deleted estimates (trash) - server-side filtered
 module.exports.trash = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
   if (!await checkPermission(event, companyId, 'estimates.view')) return res.forbidden('No permission');
 
-  let allItems = [];
-  let cursor = null;
-  do {
-    const { items, nextKey } = await db.query('COMPANY#' + companyId, 'EST#', 200, cursor);
-    allItems = allItems.concat(items);
-    cursor = nextKey;
-  } while (cursor);
+  const limit = parseInt(event.queryStringParameters?.limit || '50');
+  const lastKey = event.queryStringParameters?.cursor;
 
-  const deleted = allItems.filter(i => i.status === 'deleted');
+  const { items, nextKey } = await db.queryFiltered(
+    'COMPANY#' + companyId, 'EST#',
+    '#s = :del', { ':del': 'deleted' },
+    limit, lastKey, { '#s': 'status' }
+  );
 
   return res.ok({
-    estimates: deleted.map(stripKeys)
+    estimates: items.map(stripKeys),
+    cursor: nextKey
   });
 });
 
@@ -246,6 +246,10 @@ function validateInput(body) {
   }
   if (body.photos && Array.isArray(body.photos) && body.photos.length > 50) {
     return 'Too many photos (max 50)';
+  }
+  if (body.approvalHistory !== undefined) {
+    if (!Array.isArray(body.approvalHistory)) return 'approvalHistory must be an array';
+    if (body.approvalHistory.length > 100) return 'Too many approval history entries (max 100)';
   }
   const validStatuses = ['draft', 'sent', 'approved', 'declined'];
   if (body.approvalStatus !== undefined && !validStatuses.includes(body.approvalStatus)) {

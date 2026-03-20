@@ -131,6 +131,22 @@ const Auth = {
     }
   },
 
+  async forgotPassword(email) {
+    await this._call('ForgotPassword', {
+      ClientId: this.clientId,
+      Username: email
+    });
+  },
+
+  async confirmForgotPassword(email, code, newPassword) {
+    await this._call('ConfirmForgotPassword', {
+      ClientId: this.clientId,
+      Username: email,
+      ConfirmationCode: code,
+      Password: newPassword
+    });
+  },
+
   restore() {
     try {
       const stored = localStorage.getItem('fc_tokens');

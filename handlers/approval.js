@@ -3,6 +3,7 @@ const auth = require('./lib/auth');
 const res = require('./lib/response');
 const crypto = require('crypto');
 const { checkPermission } = require('./roles');
+const { notify } = require('./lib/notify');
 
 // POST /api/estimates/{id}/share — generate share token, set approvalStatus to 'sent'
 module.exports.share = res.wrap(async (event) => {
@@ -117,6 +118,25 @@ module.exports.respond = res.wrap(async (event) => {
     approvalHistory: history,
     updatedAt: new Date().toISOString()
   });
+
+  // Notify the company that owns this estimate
+  const companyId = est.PK.replace('COMPANY#', '');
+  const custName = est.customerName || 'A customer';
+  if (action === 'approved') {
+    await notify(db, companyId, {
+      type: 'approval',
+      title: 'Estimate approved',
+      message: custName + ' approved their estimate.' + (message ? ' "' + message + '"' : ''),
+      link: '/estimates/' + est.id
+    });
+  } else if (action === 'changes_requested') {
+    await notify(db, companyId, {
+      type: 'changes_requested',
+      title: 'Changes requested',
+      message: custName + ' requested changes.' + (message ? ' "' + message + '"' : ''),
+      link: '/estimates/' + est.id
+    });
+  }
 
   return res.ok({ approvalStatus: action, message: 'Response recorded' });
 });

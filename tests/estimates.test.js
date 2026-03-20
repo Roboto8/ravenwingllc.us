@@ -484,9 +484,8 @@ describe('estimates handler', () => {
   describe('trash', () => {
     test('returns only deleted estimates', async () => {
       const deletedEst = { ...mockEstimate, id: 'est-del', status: 'deleted' };
-      const activeEst = { ...mockEstimate, id: 'est-act', status: 'draft' };
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [deletedEst, activeEst] });
+      db.queryFiltered = jest.fn().mockResolvedValue({ items: [deletedEst], nextKey: null });
 
       const result = await estimates.trash({});
       const body = JSON.parse(result.body);
@@ -499,7 +498,7 @@ describe('estimates handler', () => {
 
     test('returns empty array when no deleted estimates', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.query.mockResolvedValue({ items: [mockEstimate], nextKey: null });
+      db.queryFiltered = jest.fn().mockResolvedValue({ items: [], nextKey: null });
 
       const result = await estimates.trash({});
       const body = JSON.parse(result.body);

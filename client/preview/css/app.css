@@ -568,8 +568,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   height: 20px;
   min-width: 20px;
 }
-.addon-row span:nth-child(2) { flex: 1; }
-.addon-price { color: var(--text-muted); font-size: 0.85rem; }
+.addon-name { flex: 1; cursor: text; }
+.addon-name:hover { text-decoration: underline dotted var(--text-muted); }
+.addon-price-wrap { white-space: nowrap; }
+.addon-price-edit { color: var(--text-muted); font-size: 0.85rem; cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+.addon-price-edit:hover { background: var(--border); color: var(--text); }
+.addon-price-editor { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--text-muted); }
+.extra-price-input { width: 56px; padding: 2px 4px; font-size: 0.8rem; border: 1.5px solid var(--accent); border-radius: 4px; background: var(--bg); color: var(--text); text-align: right; }
+.extra-unit-select { padding: 2px 4px; font-size: 0.8rem; border: 1.5px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); }
+.extra-name-input { flex: 1; padding: 2px 6px; font-size: 0.9rem; border: 1.5px solid var(--accent); border-radius: 4px; background: var(--bg); color: var(--text); }
+.extra-remove-btn { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1; opacity: 0.4; transition: opacity 0.15s; }
+.extra-remove-btn:hover { opacity: 1; color: #b93a2a; }
 
 /* Gates */
 .gates-list { min-height: 36px; }
@@ -852,7 +861,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 /* Segment Labels */
-.mulch-area-label { background: none !important; border: none !important; z-index: 200 !important; pointer-events: none; }
+.mulch-area-label { background: none !important; border: none !important; z-index: 200 !important; cursor: grab; }
+.mulch-area-label:active { cursor: grabbing; }
 .mulch-label {
   background: rgba(45, 138, 78, 0.5);
   color: #fff;
@@ -864,7 +874,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   white-space: nowrap;
   text-align: center;
 }
-.segment-label { background: none !important; border: none !important; z-index: 200 !important; }
+.segment-label { background: none !important; border: none !important; z-index: 200 !important; cursor: grab; }
+.segment-label:active { cursor: grabbing; }
 .angle-label { pointer-events: none; z-index: 200 !important; }
 .angle-tag {
   background: rgba(192, 98, 46, 0.7);

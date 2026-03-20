@@ -30,7 +30,7 @@ var I18N = {
     layer_drone: 'Drone',
 
     // -- Map toolbar --
-    tool_draw: 'Draw',
+    tool_draw: 'Fence',
     tool_gate: 'Gate',
     tool_curve: 'Curve',
     tool_mulch: 'Mulch',
@@ -158,6 +158,14 @@ var I18N = {
     auth_have_account: 'Have an account?',
     auth_log_in: 'Log in',
     auth_check_email: 'Check your email for a verification code.',
+    auth_forgot_password: 'Forgot password?',
+    auth_forgot_info: "Enter your email and we'll send a reset code.",
+    auth_send_code_btn: 'Send Reset Code',
+    auth_back_to_login: 'Back to login',
+    auth_reset_info: 'Enter the code from your email and your new password.',
+    auth_reset_btn: 'Reset Password',
+    placeholder_reset_code: 'Reset code',
+    placeholder_new_password: 'New password (10+ chars)',
     placeholder_email: 'Email',
     placeholder_password: 'Password',
     placeholder_password_hint: 'Password (10+ chars, upper, lower, number)',
@@ -240,7 +248,7 @@ var I18N = {
 
     // -- Keyboard shortcuts --
     shortcuts_title: 'Keyboard Shortcuts',
-    shortcut_draw: 'Draw tool',
+    shortcut_draw: 'Fence tool',
     shortcut_gate: 'Gate tool',
     shortcut_curve: 'Toggle curve mode',
     shortcut_section: 'New section',
@@ -395,7 +403,7 @@ var I18N = {
     layer_drone: 'Dron',
 
     // -- Map toolbar --
-    tool_draw: 'Dibujar',
+    tool_draw: 'Cerca',
     tool_gate: 'Puerta',
     tool_curve: 'Curva',
     tool_mulch: 'Mantillo',
@@ -523,6 +531,14 @@ var I18N = {
     auth_have_account: 'Tienes cuenta?',
     auth_log_in: 'Inicia sesion',
     auth_check_email: 'Revisa tu correo para el codigo de verificacion.',
+    auth_forgot_password: 'Olvidaste tu contrasena?',
+    auth_forgot_info: 'Ingresa tu correo y te enviaremos un codigo de restablecimiento.',
+    auth_send_code_btn: 'Enviar Codigo',
+    auth_back_to_login: 'Volver al inicio de sesion',
+    auth_reset_info: 'Ingresa el codigo de tu correo y tu nueva contrasena.',
+    auth_reset_btn: 'Restablecer Contrasena',
+    placeholder_reset_code: 'Codigo de restablecimiento',
+    placeholder_new_password: 'Nueva contrasena (10+ caracteres)',
     placeholder_email: 'Correo electronico',
     placeholder_password: 'Contrasena',
     placeholder_password_hint: 'Contrasena (10+ caracteres, mayuscula, minuscula, numero)',
@@ -605,7 +621,7 @@ var I18N = {
 
     // -- Keyboard shortcuts --
     shortcuts_title: 'Atajos de Teclado',
-    shortcut_draw: 'Herramienta dibujar',
+    shortcut_draw: 'Herramienta cerca',
     shortcut_gate: 'Herramienta puerta',
     shortcut_curve: 'Modo curva',
     shortcut_section: 'Nueva seccion',
@@ -760,7 +776,7 @@ var I18N = {
     layer_drone: 'Drone',
 
     // -- Map toolbar --
-    tool_draw: 'Tekenen',
+    tool_draw: 'Hek',
     tool_gate: 'Poort',
     tool_curve: 'Bocht',
     tool_mulch: 'Mulch',
@@ -888,6 +904,14 @@ var I18N = {
     auth_have_account: 'Heb je een account?',
     auth_log_in: 'Inloggen',
     auth_check_email: 'Controleer je e-mail voor een verificatiecode.',
+    auth_forgot_password: 'Wachtwoord vergeten?',
+    auth_forgot_info: 'Voer je e-mail in en we sturen een herstelcode.',
+    auth_send_code_btn: 'Herstelcode Versturen',
+    auth_back_to_login: 'Terug naar inloggen',
+    auth_reset_info: 'Voer de code uit je e-mail en je nieuwe wachtwoord in.',
+    auth_reset_btn: 'Wachtwoord Herstellen',
+    placeholder_reset_code: 'Herstelcode',
+    placeholder_new_password: 'Nieuw wachtwoord (10+ tekens)',
     placeholder_email: 'E-mail',
     placeholder_password: 'Wachtwoord',
     placeholder_password_hint: 'Wachtwoord (10+ tekens, hoofd-, kleine letter, cijfer)',
@@ -970,7 +994,7 @@ var I18N = {
 
     // -- Keyboard shortcuts --
     shortcuts_title: 'Sneltoetsen',
-    shortcut_draw: 'Tekentool',
+    shortcut_draw: 'Hek tool',
     shortcut_gate: 'Poorttool',
     shortcut_curve: 'Bochtmodus',
     shortcut_section: 'Nieuwe sectie',
@@ -1125,7 +1149,7 @@ var I18N = {
     layer_drone: 'Drone',
 
     // -- Map toolbar --
-    tool_draw: 'Dessiner',
+    tool_draw: 'Cloture',
     tool_gate: 'Portail',
     tool_curve: 'Courbe',
     tool_mulch: 'Paillis',
@@ -1253,6 +1277,14 @@ var I18N = {
     auth_have_account: 'Vous avez un compte ?',
     auth_log_in: 'Se connecter',
     auth_check_email: 'Verifiez votre e-mail pour le code de verification.',
+    auth_forgot_password: 'Mot de passe oublie ?',
+    auth_forgot_info: 'Entrez votre e-mail et nous vous enverrons un code de reinitialisation.',
+    auth_send_code_btn: 'Envoyer le Code',
+    auth_back_to_login: 'Retour a la connexion',
+    auth_reset_info: 'Entrez le code de votre e-mail et votre nouveau mot de passe.',
+    auth_reset_btn: 'Reinitialiser le Mot de Passe',
+    placeholder_reset_code: 'Code de reinitialisation',
+    placeholder_new_password: 'Nouveau mot de passe (10+ car.)',
     placeholder_email: 'E-mail',
     placeholder_password: 'Mot de passe',
     placeholder_password_hint: 'Mot de passe (10+ car., majuscule, minuscule, chiffre)',
@@ -1335,7 +1367,7 @@ var I18N = {
 
     // -- Keyboard shortcuts --
     shortcuts_title: 'Raccourcis Clavier',
-    shortcut_draw: 'Outil dessin',
+    shortcut_draw: 'Outil cloture',
     shortcut_gate: 'Outil portail',
     shortcut_curve: 'Mode courbe',
     shortcut_section: 'Nouvelle section',
@@ -1490,7 +1522,7 @@ var I18N = {
     layer_drone: 'Drohne',
 
     // -- Map toolbar --
-    tool_draw: 'Zeichnen',
+    tool_draw: 'Zaun',
     tool_gate: 'Tor',
     tool_curve: 'Kurve',
     tool_mulch: 'Mulch',
@@ -1618,6 +1650,14 @@ var I18N = {
     auth_have_account: 'Haben Sie ein Konto?',
     auth_log_in: 'Anmelden',
     auth_check_email: 'Pruefen Sie Ihre E-Mail auf einen Verifizierungscode.',
+    auth_forgot_password: 'Passwort vergessen?',
+    auth_forgot_info: 'Geben Sie Ihre E-Mail ein und wir senden Ihnen einen Zurucksetzungscode.',
+    auth_send_code_btn: 'Code Senden',
+    auth_back_to_login: 'Zuruck zur Anmeldung',
+    auth_reset_info: 'Geben Sie den Code aus Ihrer E-Mail und Ihr neues Passwort ein.',
+    auth_reset_btn: 'Passwort Zurucksetzen',
+    placeholder_reset_code: 'Zurucksetzungscode',
+    placeholder_new_password: 'Neues Passwort (10+ Zeichen)',
     placeholder_email: 'E-Mail',
     placeholder_password: 'Passwort',
     placeholder_password_hint: 'Passwort (10+ Zeichen, Gross-, Kleinbuchstabe, Zahl)',
@@ -1700,7 +1740,7 @@ var I18N = {
 
     // -- Keyboard shortcuts --
     shortcuts_title: 'Tastenkuerzel',
-    shortcut_draw: 'Zeichenwerkzeug',
+    shortcut_draw: 'Zaun-Werkzeug',
     shortcut_gate: 'Torwerkzeug',
     shortcut_curve: 'Kurvenmodus',
     shortcut_section: 'Neuer Abschnitt',
@@ -1855,7 +1895,7 @@ var I18N = {
     layer_drone: 'Drone',
 
     // -- Map toolbar --
-    tool_draw: 'Desenhar',
+    tool_draw: 'Cerca',
     tool_gate: 'Portao',
     tool_curve: 'Curva',
     tool_mulch: 'Cobertura',
@@ -1983,6 +2023,14 @@ var I18N = {
     auth_have_account: 'Tem uma conta?',
     auth_log_in: 'Entrar',
     auth_check_email: 'Verifique seu e-mail para o codigo de verificacao.',
+    auth_forgot_password: 'Esqueceu a senha?',
+    auth_forgot_info: 'Digite seu e-mail e enviaremos um codigo de redefinicao.',
+    auth_send_code_btn: 'Enviar Codigo',
+    auth_back_to_login: 'Voltar ao login',
+    auth_reset_info: 'Digite o codigo do seu e-mail e sua nova senha.',
+    auth_reset_btn: 'Redefinir Senha',
+    placeholder_reset_code: 'Codigo de redefinicao',
+    placeholder_new_password: 'Nova senha (10+ caracteres)',
     placeholder_email: 'E-mail',
     placeholder_password: 'Senha',
     placeholder_password_hint: 'Senha (10+ caracteres, maiuscula, minuscula, numero)',
@@ -2065,7 +2113,7 @@ var I18N = {
 
     // -- Keyboard shortcuts --
     shortcuts_title: 'Atalhos de Teclado',
-    shortcut_draw: 'Ferramenta desenhar',
+    shortcut_draw: 'Ferramenta cerca',
     shortcut_gate: 'Ferramenta portao',
     shortcut_curve: 'Modo curva',
     shortcut_section: 'Nova secao',

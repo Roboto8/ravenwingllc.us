@@ -88,7 +88,7 @@
   </div>
 
   <!-- Auth Modal -->
-  <div class="modal-overlay" id="auth-modal" style="display:none" onclick="if(event.target===this)hideAuthUI()">
+  <div class="modal-overlay" id="auth-modal" style="display:none">
     <div class="modal" style="position:relative" onclick="event.stopPropagation()">
       <button class="auth-close" id="auth-close" onclick="hideAuthUI()">&times;</button>
       <h2 class="modal-title">Fence<span class="accent">Trace</span></h2>
@@ -99,6 +99,7 @@
         <div class="form-group"><input type="email" id="login-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
         <div class="form-group"><input type="password" id="login-password" placeholder="Password" data-i18n="placeholder_password" data-i18n-attr="placeholder"></div>
         <button class="btn btn-full" onclick="handleLogin()" data-i18n="auth_login_btn">Log In</button>
+        <p class="auth-switch"><a href="#" onclick="showForgotPassword(); return false;" style="font-size:0.8rem" data-i18n="auth_forgot_password">Forgot password?</a></p>
         <p class="auth-switch"><span data-i18n="auth_no_account">No account?</span> <a href="#" onclick="showSignup(); return false;" data-i18n="auth_sign_up">Sign up</a></p>
       </div>
 
@@ -114,6 +115,21 @@
         <p class="auth-info" data-i18n="auth_check_email">Check your email for a verification code.</p>
         <div class="form-group"><input type="text" id="confirm-code" placeholder="Verification code" data-i18n="placeholder_verification" data-i18n-attr="placeholder"></div>
         <button class="btn btn-full" onclick="handleConfirm()" data-i18n="auth_verify_btn">Verify</button>
+      </div>
+
+      <div id="auth-forgot" class="auth-form" style="display:none">
+        <p class="auth-info" data-i18n="auth_forgot_info">Enter your email and we'll send a reset code.</p>
+        <div class="form-group"><input type="email" id="forgot-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
+        <button class="btn btn-full" onclick="handleForgotPassword()" data-i18n="auth_send_code_btn">Send Reset Code</button>
+        <p class="auth-switch"><a href="#" onclick="showLogin(); return false;" data-i18n="auth_back_to_login">Back to login</a></p>
+      </div>
+
+      <div id="auth-reset" class="auth-form" style="display:none">
+        <p class="auth-info" data-i18n="auth_reset_info">Enter the code from your email and your new password.</p>
+        <div class="form-group"><input type="text" id="reset-code" placeholder="Reset code" data-i18n="placeholder_reset_code" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="password" id="reset-password" placeholder="New password (10+ chars)" data-i18n="placeholder_new_password" data-i18n-attr="placeholder"></div>
+        <button class="btn btn-full" onclick="handleResetPassword()" data-i18n="auth_reset_btn">Reset Password</button>
+        <p class="auth-switch"><a href="#" onclick="showLogin(); return false;" data-i18n="auth_back_to_login">Back to login</a></p>
       </div>
 
       <p class="auth-error" id="auth-error"></p>
@@ -204,6 +220,10 @@
         <select id="lang-select" class="lang-select" onchange="setLang(this.value); if(typeof Auth!=='undefined'&&Auth.isLoggedIn()){API.updateCompany({language:this.value}).catch(function(){})}" title="Language" style="padding:4px 6px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;cursor:pointer;min-width:auto">
           <option value="en">EN</option>
           <option value="es">ES</option>
+          <option value="nl">NL</option>
+          <option value="fr">FR</option>
+          <option value="de">DE</option>
+          <option value="pt">PT</option>
         </select>
         <button class="btn btn-sm btn-outline" id="btn-estimates" onclick="showEstimatesList()" style="display:none" title="My Estimates (M)" data-i18n="btn_my_estimates">My Estimates</button>
         <button class="btn btn-sm btn-outline" id="btn-reports" onclick="showReportsPanel()" style="display:none" title="Reports dashboard">Reports</button>
@@ -248,9 +268,9 @@
       </div>
       <div class="section-tabs" id="section-tabs" style="display:none"></div>
       <div class="map-toolbar">
-        <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')" title="Draw tool (D)">
+        <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')" title="Fence tool (D)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
-          <span data-i18n="tool_draw">Draw</span>
+          <span data-i18n="tool_draw">Fence</span>
         </button>
         <button class="tool-btn" id="undo-btn" onclick="undoLast()" title="Undo (Ctrl+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6.69 3L3 13"/></svg>
@@ -279,6 +299,10 @@
         <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="New section (N)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           <span data-i18n="tool_section">Section</span>
+        </button>
+        <button class="tool-btn" id="gap-btn" onclick="findGaps()" title="Find and close gaps between sections">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h6M14 12h6"/><circle cx="12" cy="12" r="2"/></svg>
+          <span>Gap</span>
         </button>
         <button class="tool-btn danger" id="clear-btn" onclick="clearAll()" title="Clear all (Ctrl+Shift+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
@@ -384,24 +408,22 @@
           </div>
         </div>
 
+        <div class="panel-section" data-section="notes">
+          <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span>Site Notes</h3>
+          <div class="section-body collapsed">
+            <textarea id="section-notes" placeholder="Slope on east side, tree needs removal, gate access from alley..." style="width:100%;min-height:60px;padding:8px;font-size:0.85rem;font-family:var(--font);border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical" oninput="markUnsaved()"></textarea>
+            <p style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Notes are saved with the estimate and included in contractor PDFs.</p>
+          </div>
+        </div>
+
         <div class="panel-section" data-section="extras">
           <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span><span data-i18n="section_extras">Extras</span></h3>
           <div class="section-body collapsed">
-          <label class="addon-row">
-            <input type="checkbox" id="addon-removal" onchange="recalculate()">
-            <span data-i18n="addon_removal">Remove old fence</span>
-            <span class="addon-price">$3/ft</span>
-          </label>
-          <label class="addon-row">
-            <input type="checkbox" id="addon-permit" onchange="recalculate()">
-            <span data-i18n="addon_permit">Permit</span>
-            <span class="addon-price">$150</span>
-          </label>
-          <label class="addon-row">
-            <input type="checkbox" id="addon-stain" onchange="recalculate()">
-            <span data-i18n="addon_stain">Stain / seal</span>
-            <span class="addon-price">$4/ft</span>
-          </label>
+          <div id="extras-list"></div>
+          <button class="add-custom-btn" onclick="addExtra()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Add extra
+          </button>
           </div>
         </div>
 
@@ -556,7 +578,15 @@
 
         <div class="panel-section summary">
           <h3 class="section-title" data-i18n="section_estimate">Estimate</h3>
-          <div class="summary-row">
+          <div class="estimate-toggles" style="display:flex;gap:12px;margin-bottom:8px;padding:0 2px">
+            <label class="est-toggle" style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:var(--text-muted);cursor:pointer;user-select:none">
+              <input type="checkbox" id="toggle-fence" checked onchange="toggleFenceEnabled(this.checked)" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer"> Fence
+            </label>
+            <label class="est-toggle" style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:var(--text-muted);cursor:pointer;user-select:none">
+              <input type="checkbox" id="toggle-mulch" checked onchange="toggleMulchEnabled(this.checked)" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer"> Mulch
+            </label>
+          </div>
+          <div class="summary-row" id="row-fence">
             <span><span id="sum-type">Wood</span> <span data-i18n="summary_fence">fence</span>, <span id="sum-height">6</span>ft</span>
             <span id="sum-fence">$0</span>
           </div>
@@ -564,18 +594,7 @@
             <span><span data-i18n="summary_gates">Gates</span> (<span id="sum-gate-count">0</span>)</span>
             <span id="sum-gates">$0</span>
           </div>
-          <div class="summary-row" id="row-removal" style="display:none">
-            <span data-i18n="summary_removal">Removal</span>
-            <span id="sum-removal">$0</span>
-          </div>
-          <div class="summary-row" id="row-permit" style="display:none">
-            <span data-i18n="summary_permit">Permit</span>
-            <span>$150</span>
-          </div>
-          <div class="summary-row" id="row-stain" style="display:none">
-            <span data-i18n="summary_stain">Stain / seal</span>
-            <span id="sum-stain">$0</span>
-          </div>
+          <div id="extras-summary-rows"></div>
           <div class="summary-row" id="row-terrain" style="display:none">
             <span data-i18n="summary_terrain">Terrain</span>
             <span id="sum-terrain">+0%</span>
@@ -769,7 +788,7 @@
       <div class="acct-tab-content" id="acct-tab-shortcuts">
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Keyboard Shortcuts</p>
         <div class="shortcuts-list">
-          <span class="shortcut-key">D</span><span class="shortcut-desc">Draw tool</span>
+          <span class="shortcut-key">D</span><span class="shortcut-desc">Fence tool</span>
           <span class="shortcut-key">G</span><span class="shortcut-desc">Gate tool</span>
           <span class="shortcut-key">C</span><span class="shortcut-desc">Toggle curve mode</span>
           <span class="shortcut-key">N</span><span class="shortcut-desc">New section</span>
@@ -864,12 +883,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="js/i18n.js?v=20260318"></script>
-  <script src="js/auth.js?v=20260318"></script>
-  <script src="js/api.js?v=20260318"></script>
-  <script src="js/regions.js?v=20260318"></script>
-  <script src="js/app.js?v=20260318"></script>
-  <script src="js/config.js?v=20260318"></script>
+  <script src="js/i18n.js?v=20260320"></script>
+  <script src="js/auth.js?v=20260320"></script>
+  <script src="js/api.js?v=20260320"></script>
+  <script src="js/regions.js?v=20260320"></script>
+  <script src="js/app.js?v=20260320"></script>
+  <script src="js/config.js?v=20260320"></script>
   <script>
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
     API.configure(FC_CONFIG.apiUrl);
@@ -950,15 +969,17 @@
       document.getElementById('auth-gate-msg').style.display = 'none';
       authError('');
     }
-    function showLogin() {
-      document.getElementById('auth-login').style.display = 'block';
-      document.getElementById('auth-signup').style.display = 'none';
-      document.getElementById('auth-confirm').style.display = 'none';
+    var authForms = ['auth-login', 'auth-signup', 'auth-confirm', 'auth-forgot', 'auth-reset'];
+    function showAuthForm(id) {
+      authForms.forEach(function(f) { document.getElementById(f).style.display = f === id ? 'block' : 'none'; });
+      authError('');
     }
-    function showSignup() {
-      document.getElementById('auth-login').style.display = 'none';
-      document.getElementById('auth-signup').style.display = 'block';
-      document.getElementById('auth-confirm').style.display = 'none';
+    function showLogin() { showAuthForm('auth-login'); }
+    function showSignup() { showAuthForm('auth-signup'); }
+    function showForgotPassword() {
+      showAuthForm('auth-forgot');
+      var loginEmail = document.getElementById('login-email').value.trim();
+      if (loginEmail) document.getElementById('forgot-email').value = loginEmail;
     }
     function authError(msg) { document.getElementById('auth-error').textContent = msg; }
 
@@ -995,6 +1016,29 @@
         await Auth.confirm(pendingEmail, code);
         showLogin();
         authError('Verified! You can log in now.');
+      } catch (e) { authError(e.message); }
+    }
+
+    async function handleForgotPassword() {
+      authError('');
+      var email = document.getElementById('forgot-email').value.trim();
+      if (!email) return authError('Enter your email');
+      try {
+        await Auth.forgotPassword(email);
+        pendingEmail = email;
+        showAuthForm('auth-reset');
+      } catch (e) { authError(e.message); }
+    }
+
+    async function handleResetPassword() {
+      authError('');
+      var code = document.getElementById('reset-code').value.trim();
+      var newPassword = document.getElementById('reset-password').value;
+      if (!code || !newPassword) return authError('Code and new password required');
+      try {
+        await Auth.confirmForgotPassword(pendingEmail, code, newPassword);
+        showLogin();
+        authError('Password reset! You can log in now.');
       } catch (e) { authError(e.message); }
     }
 
@@ -1716,11 +1760,7 @@
           fenceClosed,
           sections: saveSections,
           gates: gates.map(g => ({ lat: g.latlng.lat, lng: g.latlng.lng, type: g.type, price: g.price })),
-          addons: {
-            removal: document.getElementById('addon-removal').checked,
-            permit: document.getElementById('addon-permit').checked,
-            stain: document.getElementById('addon-stain').checked
-          },
+          addons: extras.filter(function(e) { return e.on; }).map(function(e) { return { id: e.id, name: e.name, unit: e.unit, price: e.price }; }),
           mulchAreas: mulchAreas.map(function(a) {
             return { points: a.points, areaSqFt: a.areaSqFt, perimeterFt: a.perimeterFt };
           }),
@@ -1729,7 +1769,7 @@
           mulchDelivery: selectedMulchDelivery,
           bom: bom ? bom.items : [],
           totalFeet: feet,
-          totalCost: document.getElementById('sum-total').textContent,
+          totalCost: parseFloat(document.getElementById('sum-total').textContent.replace(/[^0-9.\-]/g, '')) || 0,
           materialsCost: bom ? bom.materialTotal : 0,
           droneOverlay: droneOverlayData ? { bounds: droneOverlayData.bounds } : null
         });
@@ -1907,9 +1947,19 @@
         terrainMultiplier = est.terrainMultiplier || 1;
 
         if (est.addons) {
-          document.getElementById('addon-removal').checked = !!est.addons.removal;
-          document.getElementById('addon-permit').checked = !!est.addons.permit;
-          document.getElementById('addon-stain').checked = !!est.addons.stain;
+          if (Array.isArray(est.addons)) {
+            var addonMap = {};
+            est.addons.forEach(function(a) { addonMap[a.id] = a; });
+            extras.forEach(function(e) { e.on = !!addonMap[e.id]; });
+          } else {
+            // Legacy format
+            extras.forEach(function(e) {
+              if (e.id === 'removal') e.on = !!est.addons.removal;
+              else if (e.id === 'permit') e.on = !!est.addons.permit;
+              else if (e.id === 'stain') e.on = !!est.addons.stain;
+            });
+          }
+          renderExtras();
         }
 
         // Load multi-section data if available, otherwise fall back to single section
@@ -1992,6 +2042,18 @@
         renderPhotoGrid();
 
         recalculate();
+
+        // Pan/zoom map to fit all loaded content
+        var allPts = [];
+        sections.forEach(function(s) { if (s.points) s.points.forEach(function(p) { allPts.push([p.lat, p.lng]); }); });
+        gates.forEach(function(g) { if (g.latlng) allPts.push([g.latlng.lat, g.latlng.lng]); });
+        mulchAreas.forEach(function(a) { if (a.points) a.points.forEach(function(p) { allPts.push([p.lat, p.lng]); }); });
+        if (allPts.length >= 2) {
+          map.fitBounds(L.latLngBounds(allPts).pad(0.15), { animate: true, maxZoom: 20 });
+        } else if (allPts.length === 1) {
+          map.setView(allPts[0], 19, { animate: true });
+        }
+
         showToast('Estimate loaded');
       } catch (e) { showToast('Could not load estimate'); }
     }
