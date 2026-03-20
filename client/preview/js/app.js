@@ -3210,7 +3210,7 @@ function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
 
   switch (shapeName) {
     case 'circle':
-      n = 24;
+      n = 8;
       for (i = 0; i < n; i++) {
         angle = (2 * Math.PI * i) / n;
         pts.push({ lat: centerLat + Math.sin(angle) * r * ftToLat, lng: centerLng + Math.cos(angle) * r * ftToLng });
@@ -3218,7 +3218,7 @@ function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
       break;
 
     case 'oval':
-      n = 24;
+      n = 8;
       var rx = r * 1.5, ry = r * 0.75;
       for (i = 0; i < n; i++) {
         angle = (2 * Math.PI * i) / n;
@@ -3227,10 +3227,9 @@ function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
       break;
 
     case 'kidney':
-      n = 24;
+      n = 8;
       for (i = 0; i < n; i++) {
         angle = (2 * Math.PI * i) / n;
-        // Kidney shape: offset the radius with a dip on one side
         var kr = r * (1 - 0.35 * Math.pow(Math.sin(angle), 2) * (Math.cos(angle) > 0 ? 1 : 0));
         var sx = 1.4, sy = 0.8;
         pts.push({ lat: centerLat + Math.sin(angle) * kr * sy * ftToLat, lng: centerLng + Math.cos(angle) * kr * sx * ftToLng });
@@ -3251,7 +3250,7 @@ function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
       break;
 
     case 'crescent':
-      n = 24;
+      n = 8;
       for (i = 0; i < n; i++) {
         angle = (2 * Math.PI * i) / n;
         // Outer circle minus offset inner circle
@@ -3268,7 +3267,7 @@ function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
       break;
 
     case 'teardrop':
-      n = 20;
+      n = 8;
       for (i = 0; i < n; i++) {
         angle = (2 * Math.PI * i) / n;
         // Teardrop: circle that tapers to a point on one side
