@@ -3186,6 +3186,146 @@ function hideMulchDoneBtn() {
   if (btn) btn.remove();
 }
 
+// === Shape Presets ===
+// Generates polygon points for common landscape bed shapes, centered on given lat/lng.
+// sizeFt controls the rough diameter/width in feet. Returns array of {lat, lng}.
+function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
+  // Convert feet to approximate lat/lng offset
+  var ftToLat = 1 / 364000; // ~1 foot in degrees latitude
+  var ftToLng = ftToLat / Math.cos(centerLat * Math.PI / 180);
+  var r = sizeFt / 2;
+  var pts = [];
+  var i, angle, n;
+
+  switch (shapeName) {
+    case 'circle':
+      n = 24;
+      for (i = 0; i < n; i++) {
+        angle = (2 * Math.PI * i) / n;
+        pts.push({ lat: centerLat + Math.sin(angle) * r * ftToLat, lng: centerLng + Math.cos(angle) * r * ftToLng });
+      }
+      break;
+
+    case 'oval':
+      n = 24;
+      var rx = r * 1.5, ry = r * 0.75;
+      for (i = 0; i < n; i++) {
+        angle = (2 * Math.PI * i) / n;
+        pts.push({ lat: centerLat + Math.sin(angle) * ry * ftToLat, lng: centerLng + Math.cos(angle) * rx * ftToLng });
+      }
+      break;
+
+    case 'kidney':
+      n = 24;
+      for (i = 0; i < n; i++) {
+        angle = (2 * Math.PI * i) / n;
+        // Kidney shape: offset the radius with a dip on one side
+        var kr = r * (1 - 0.35 * Math.pow(Math.sin(angle), 2) * (Math.cos(angle) > 0 ? 1 : 0));
+        var sx = 1.4, sy = 0.8;
+        pts.push({ lat: centerLat + Math.sin(angle) * kr * sy * ftToLat, lng: centerLng + Math.cos(angle) * kr * sx * ftToLng });
+      }
+      break;
+
+    case 'l-shape':
+      // L-shape: two rectangles joined at corner
+      var w = r * 0.5;
+      pts = [
+        { lat: centerLat + r * ftToLat, lng: centerLng - r * ftToLng },
+        { lat: centerLat + r * ftToLat, lng: centerLng + w * ftToLng },
+        { lat: centerLat - w * ftToLat, lng: centerLng + w * ftToLng },
+        { lat: centerLat - w * ftToLat, lng: centerLng + r * ftToLng },
+        { lat: centerLat - r * ftToLat, lng: centerLng + r * ftToLng },
+        { lat: centerLat - r * ftToLat, lng: centerLng - r * ftToLng }
+      ];
+      break;
+
+    case 'crescent':
+      n = 24;
+      for (i = 0; i < n; i++) {
+        angle = (2 * Math.PI * i) / n;
+        // Outer circle minus offset inner circle
+        var outerR = r;
+        var innerR = r * 0.6;
+        var offsetX = r * 0.35;
+        // Use outer for top half, inner (offset) for bottom half
+        if (Math.sin(angle) >= 0) {
+          pts.push({ lat: centerLat + Math.sin(angle) * outerR * 0.7 * ftToLat, lng: centerLng + Math.cos(angle) * outerR * 1.3 * ftToLng });
+        } else {
+          pts.push({ lat: centerLat + Math.sin(angle) * innerR * 0.5 * ftToLat, lng: centerLng + Math.cos(angle) * innerR * 1.1 * ftToLng + offsetX * ftToLng });
+        }
+      }
+      break;
+
+    case 'teardrop':
+      n = 20;
+      for (i = 0; i < n; i++) {
+        angle = (2 * Math.PI * i) / n;
+        // Teardrop: circle that tapers to a point on one side
+        var tr = r * (1 - 0.5 * (1 + Math.cos(angle)) / 2);
+        tr = Math.max(tr, r * 0.1);
+        pts.push({ lat: centerLat + Math.sin(angle) * tr * ftToLat, lng: centerLng + Math.cos(angle) * r * ftToLng });
+      }
+      break;
+
+    case 'square':
+      pts = [
+        { lat: centerLat - r * ftToLat, lng: centerLng - r * ftToLng },
+        { lat: centerLat - r * ftToLat, lng: centerLng + r * ftToLng },
+        { lat: centerLat + r * ftToLat, lng: centerLng + r * ftToLng },
+        { lat: centerLat + r * ftToLat, lng: centerLng - r * ftToLng }
+      ];
+      break;
+
+    case 'rectangle':
+      var rw = r * 1.6, rh = r * 0.7;
+      pts = [
+        { lat: centerLat - rh * ftToLat, lng: centerLng - rw * ftToLng },
+        { lat: centerLat - rh * ftToLat, lng: centerLng + rw * ftToLng },
+        { lat: centerLat + rh * ftToLat, lng: centerLng + rw * ftToLng },
+        { lat: centerLat + rh * ftToLat, lng: centerLng - rw * ftToLng }
+      ];
+      break;
+
+    default:
+      pts = [
+        { lat: centerLat - r * ftToLat, lng: centerLng - r * ftToLng },
+        { lat: centerLat - r * ftToLat, lng: centerLng + r * ftToLng },
+        { lat: centerLat + r * ftToLat, lng: centerLng + r * ftToLng },
+        { lat: centerLat + r * ftToLat, lng: centerLng - r * ftToLng }
+      ];
+  }
+  return pts;
+}
+
+function placeShape(shapeName) {
+  var center = map.getCenter();
+  var sizeFt = 20; // default ~20ft diameter/width
+  var points = generateShapePoints(shapeName, center.lat, center.lng, sizeFt);
+  setTool('mulch');
+  finalizeMulchArea(points);
+  hideShapePicker();
+}
+
+function showShapePicker() {
+  var el = document.getElementById('shape-picker');
+  if (!el) return;
+  if (el.style.display === 'flex') { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function closeShapePicker(e) {
+      if (!el.contains(e.target) && e.target.id !== 'shapes-btn' && !e.target.closest('#shapes-btn')) {
+        el.style.display = 'none';
+        document.removeEventListener('click', closeShapePicker);
+      }
+    });
+  }, 10);
+}
+function hideShapePicker() {
+  var el = document.getElementById('shape-picker');
+  if (el) el.style.display = 'none';
+}
+
 // Sort points by angle from centroid so the polygon never criss-crosses
 function sortPointsByAngle(pts) {
   if (pts.length < 3) return pts;

@@ -860,6 +860,43 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   }
 }
 
+/* Shape Picker */
+.shape-picker {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 1000;
+  width: 260px;
+}
+.shape-picker button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.7rem;
+  width: 56px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.shape-picker button:hover { border-color: var(--accent); background: rgba(192, 98, 46, 0.1); }
+.shape-picker button svg { width: 28px; height: 28px; stroke: var(--text-muted); }
+.shape-picker button:hover svg { stroke: var(--accent); }
+
 /* Segment Labels */
 .mulch-area-label { background: none !important; border: none !important; z-index: 200 !important; cursor: grab; }
 .mulch-area-label:active { cursor: grabbing; }
