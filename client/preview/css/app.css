@@ -138,6 +138,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 .accent { color: var(--accent); }
 
+.early-access-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  white-space: nowrap;
+  vertical-align: middle;
+  opacity: 0.85;
+}
 .nav-tagline {
   font-size: 0.8rem;
   color: var(--text-muted);
