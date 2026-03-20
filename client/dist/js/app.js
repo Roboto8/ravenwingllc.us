@@ -942,24 +942,7 @@ function createSegmentLabel(p1, p2, segIndex) {
   label._dLng = dLng;
   label._segLen = len;
 
-  if (_isMobileDevice) {
-    // Mobile: double-tap to toggle label position (outward snap)
-    var tapCount = 0;
-    var tapTimer = null;
-    label.on('click', function(e) {
-      // Let inner span onclick handle edit clicks — only toggle on the label background
-      if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.tagName === 'BUTTON') return;
-      tapCount++;
-      if (tapCount === 1) {
-        tapTimer = setTimeout(function() { tapCount = 0; }, 400);
-      }
-      if (tapCount >= 2) {
-        clearTimeout(tapTimer);
-        tapCount = 0;
-        toggleSegLabelPosition(label);
-      }
-    });
-  } else {
+  if (!_isMobileDevice) {
     // Desktop: drag to reposition
     label.on('dragstart', function() { label._dragStartLL = label.getLatLng(); });
     label.on('drag', function() {
@@ -3578,34 +3561,7 @@ function finalizeMulchArea(points) {
   areaLabel._leaderLine = mulchLeaderLine;
   areaLabel._dragOffset = null;
 
-  if (_isMobileDevice) {
-    // Mobile: double-tap to toggle label outward
-    var mTapCount = 0;
-    var mTapTimer = null;
-    areaLabel.on('click', function() {
-      mTapCount++;
-      if (mTapCount === 1) {
-        mTapTimer = setTimeout(function() { mTapCount = 0; }, 400);
-      }
-      if (mTapCount >= 2) {
-        clearTimeout(mTapTimer);
-        mTapCount = 0;
-        var snapDist = 0.00020;
-        if (areaLabel._dragOffset) {
-          // Snap back
-          areaLabel._dragOffset = null;
-          areaLabel.setLatLng([areaLabel._anchorLat, areaLabel._anchorLng]);
-          mulchLeaderLine.setStyle({ opacity: 0 });
-        } else {
-          // Snap outward (upward from polygon)
-          areaLabel._dragOffset = { dlat: snapDist, dlng: 0 };
-          areaLabel.setLatLng([areaLabel._anchorLat + snapDist, areaLabel._anchorLng]);
-          mulchLeaderLine.setLatLngs([[areaLabel._anchorLat, areaLabel._anchorLng], [areaLabel._anchorLat + snapDist, areaLabel._anchorLng]]);
-          mulchLeaderLine.setStyle({ opacity: 0.6 });
-        }
-      }
-    });
-  } else {
+  if (!_isMobileDevice) {
     // Desktop: drag to reposition
     areaLabel.on('drag', function() {
       var ll = areaLabel.getLatLng();
@@ -3706,37 +3662,57 @@ function updateMulchAreaVisuals(area) {
 function bindDrag(layer, onStart, onDrag, onEnd) {
   layer.off('mousedown touchstart');
 
+  // Store handlers at function scope so they can be removed properly
+  var _activeMoveHandler = null;
+  var _activeEndHandler = null;
+  var _activeTouchMoveHandler = null;
+  var _activeTouchEndHandler = null;
+
   function startHandler(e) {
+    // In delete mode, don't start drag — let click/tap handle selection
+    if (_deleteMode) return;
     L.DomEvent.stopPropagation(e);
     map.dragging.disable();
     var latlng = e.latlng || (e.touches && map.containerPointToLatLng(L.point(e.touches[0].clientX - map.getContainer().getBoundingClientRect().left, e.touches[0].clientY - map.getContainer().getBoundingClientRect().top)));
     var ctx = onStart(latlng) || {};
+    var _hasMoved = false;
 
-    function moveHandler(ev) {
+    // Clean up any stale handlers
+    if (_activeMoveHandler) map.off('mousemove', _activeMoveHandler);
+    if (_activeEndHandler) map.off('mouseup', _activeEndHandler);
+    if (_activeTouchMoveHandler) document.removeEventListener('touchmove', _activeTouchMoveHandler);
+    if (_activeTouchEndHandler) document.removeEventListener('touchend', _activeTouchEndHandler);
+
+    _activeMoveHandler = function(ev) {
+      _hasMoved = true;
       var ll = ev.latlng || (ev.touches && map.containerPointToLatLng(L.point(ev.touches[0].clientX - map.getContainer().getBoundingClientRect().left, ev.touches[0].clientY - map.getContainer().getBoundingClientRect().top)));
       if (ll) onDrag(ll, ctx);
-    }
-    function endHandler() {
-      map.off('mousemove', moveHandler);
-      map.off('mouseup', endHandler);
-      document.removeEventListener('touchmove', touchMoveHandler);
-      document.removeEventListener('touchend', touchEndHandler);
+    };
+    _activeEndHandler = function() {
+      map.off('mousemove', _activeMoveHandler);
+      map.off('mouseup', _activeEndHandler);
+      document.removeEventListener('touchmove', _activeTouchMoveHandler);
+      document.removeEventListener('touchend', _activeTouchEndHandler);
+      document.removeEventListener('touchcancel', _activeTouchEndHandler);
+      _activeMoveHandler = _activeEndHandler = _activeTouchMoveHandler = _activeTouchEndHandler = null;
       map.dragging.enable();
       if (onEnd) onEnd(ctx);
-    }
-    function touchMoveHandler(te) {
+    };
+    _activeTouchMoveHandler = function(te) {
       te.preventDefault();
+      _hasMoved = true;
       var touch = te.touches[0];
       var rect = map.getContainer().getBoundingClientRect();
       var ll = map.containerPointToLatLng(L.point(touch.clientX - rect.left, touch.clientY - rect.top));
       onDrag(ll, ctx);
-    }
-    function touchEndHandler() { endHandler(); }
+    };
+    _activeTouchEndHandler = function() { _activeEndHandler(); };
 
-    map.on('mousemove', moveHandler);
-    map.on('mouseup', endHandler);
-    document.addEventListener('touchmove', touchMoveHandler, { passive: false });
-    document.addEventListener('touchend', touchEndHandler);
+    map.on('mousemove', _activeMoveHandler);
+    map.on('mouseup', _activeEndHandler);
+    document.addEventListener('touchmove', _activeTouchMoveHandler, { passive: false });
+    document.addEventListener('touchend', _activeTouchEndHandler, { passive: false });
+    document.addEventListener('touchcancel', _activeTouchEndHandler, { passive: false });
   }
 
   layer.on('mousedown', startHandler);
@@ -3744,6 +3720,7 @@ function bindDrag(layer, onStart, onDrag, onEnd) {
   var el = layer.getElement ? layer.getElement() : null;
   if (el) {
     el.addEventListener('touchstart', function(te) {
+      if (_deleteMode) return; // Let tap flow through for delete mode
       te.preventDefault();
       te.stopPropagation();
       var touch = te.touches[0];
@@ -3780,9 +3757,11 @@ function rebindMulchMarkerDrags(areaIdx) {
   // Tap polygon to select/highlight with delete option
   var areaIndex = areaIdx;
   area.polygon.on('click', function(e) {
-    if (_wasDragged) return;
+    if (_wasDragged && !_deleteMode) return;
     L.DomEvent.stopPropagation(e);
-    selectMulchArea(areaIndex, e.latlng);
+    if (_deleteMode) {
+      selectMulchArea(areaIndex, e.latlng);
+    }
   });
 
   // Polygon body drag — move the whole shape
