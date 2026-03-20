@@ -4029,7 +4029,7 @@ function selectFenceSection(idx) {
   showSelectionBar('Section ' + (idx + 1) + ' — ' + Math.round(feet) + ' ft', function() {
     deselectAll();
     ensureSection(idx);
-    removeSection(idx);
+    deleteSection(idx);
     if (sections.length > 0 && sections[0].points.length > 0) {
       showDeleteModeBar();
     } else {
