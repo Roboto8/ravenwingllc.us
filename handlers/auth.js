@@ -58,15 +58,7 @@ module.exports.postConfirmation = async (event) => {
   const companyId = crypto.randomUUID();
   const normalized = normalizeEmail(email);
 
-  // Check if this email (normalized) has already used a trial
-  const existingTrial = await db.get('TRIAL', normalized);
-  const trialUsed = !!existingTrial;
-
-  const trialEnds = trialUsed
-    ? new Date(0).toISOString()  // Expired immediately — no second trial
-    : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-
-  // Create company
+  // Create company on free tier (no trial — free tier gives 3 estimates/month)
   await db.put({
     PK: 'COMPANY#' + companyId,
     SK: 'PROFILE',
@@ -79,21 +71,10 @@ module.exports.postConfirmation = async (event) => {
     logoKey: '',
     stripeCustomerId: '',
     subscriptionId: '',
-    subscriptionStatus: trialUsed ? 'expired' : 'trialing',
-    trialEndsAt: trialEnds,
+    subscriptionStatus: 'free',
+    tier: 'free',
     createdAt: now
   });
-
-  // Record trial usage (persists forever — one trial per normalized email)
-  if (!trialUsed) {
-    await db.put({
-      PK: 'TRIAL',
-      SK: normalized,
-      email,
-      companyId,
-      createdAt: now
-    });
-  }
 
   // Create user as owner
   await db.put({

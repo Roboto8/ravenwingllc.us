@@ -30,7 +30,7 @@ describe('estimates - input validation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue({ subscriptionStatus: 'active' });
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
     db.put.mockImplementation(item => item);
   });
 
@@ -314,25 +314,29 @@ describe('estimates - input validation', () => {
     });
   });
 
-  // ===== Solo tier estimate limit =====
-  describe('solo tier limit', () => {
-    test('blocks create at 20 active estimates on solo', async () => {
-      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'solo' });
-      const twentyEstimates = Array.from({ length: 20 }, (_, i) => ({
-        id: 'est-' + i, status: 'draft'
+  // ===== Free tier estimate limit =====
+  describe('free tier limit', () => {
+    test('blocks create at 3 estimates this month on free tier', async () => {
+      db.get.mockResolvedValue({ subscriptionStatus: 'free', tier: 'free' });
+      const now = new Date();
+      const thisMonth = new Date(now.getFullYear(), now.getMonth(), 2).toISOString();
+      const threeEstimates = Array.from({ length: 3 }, (_, i) => ({
+        id: 'est-' + i, status: 'draft', createdAt: thisMonth
       }));
-      db.query.mockResolvedValue({ items: twentyEstimates });
+      db.query.mockResolvedValue({ items: threeEstimates });
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(403);
-      expect(JSON.parse(result.body).error).toContain('Solo plan limit');
+      expect(JSON.parse(result.body).error).toContain('Free plan limit');
     });
 
-    test('allows create when deleted estimates bring active count under 20', async () => {
-      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'solo' });
+    test('allows create when deleted estimates bring active count under 3', async () => {
+      db.get.mockResolvedValue({ subscriptionStatus: 'free', tier: 'free' });
+      const now = new Date();
+      const thisMonth = new Date(now.getFullYear(), now.getMonth(), 2).toISOString();
       const items = [
-        ...Array.from({ length: 19 }, (_, i) => ({ id: 'est-' + i, status: 'draft' })),
-        { id: 'est-del', status: 'deleted' }
+        ...Array.from({ length: 2 }, (_, i) => ({ id: 'est-' + i, status: 'draft', createdAt: thisMonth })),
+        { id: 'est-del', status: 'deleted', createdAt: thisMonth }
       ];
       db.query.mockResolvedValue({ items });
 
@@ -340,17 +344,17 @@ describe('estimates - input validation', () => {
       expect(result.statusCode).toBe(201);
     });
 
-    test('does not enforce limit for pro tier', async () => {
-      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
+    test('does not enforce limit for solo tier', async () => {
+      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'solo' });
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(201);
-      // Should not even query for estimate count
+      // Should not query for estimate count
       expect(db.query).not.toHaveBeenCalled();
     });
 
-    test('does not enforce limit for team tier', async () => {
-      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'team' });
+    test('does not enforce limit for pro tier', async () => {
+      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(201);

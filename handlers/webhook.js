@@ -49,7 +49,6 @@ module.exports.handler = async (event) => {
           const sub = await s.subscriptions.retrieve(subscriptionId);
           const priceId = sub.items.data[0].price.id;
           if (priceId === process.env.STRIPE_PRICE_SOLO) tier = 'solo';
-          else if (priceId === process.env.STRIPE_PRICE_TEAM) tier = 'team';
           else tier = 'pro';
         } catch (e) {}
         await db.update('COMPANY#' + companyId, 'PROFILE', {

@@ -140,11 +140,12 @@ module.exports.status = res.wrap(async (event) => {
 
   const trialActive = company.subscriptionStatus === 'trialing' && new Date(company.trialEndsAt) > new Date();
   const daysLeft = trialActive ? Math.ceil((new Date(company.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+  const isFree = company.subscriptionStatus === 'free' || (!company.subscriptionStatus);
 
   // Get next billing date from Stripe if subscribed
   let nextBillingDate = null;
   let planAmount = null;
-  let tier = company.tier || 'pro';
+  let tier = company.tier || (isFree ? 'free' : 'pro');
   if (company.subscriptionId && company.subscriptionStatus === 'active') {
     try {
       const s = getStripe();
@@ -154,16 +155,26 @@ module.exports.status = res.wrap(async (event) => {
       // Detect tier from price
       const priceId = sub.items.data[0].price.id;
       if (priceId === process.env.STRIPE_PRICE_SOLO) tier = 'solo';
-      else if (priceId === process.env.STRIPE_PRICE_TEAM) tier = 'team';
       else tier = 'pro';
     } catch (e) {
       // Stripe call failed, continue without billing info
     }
   }
 
+  // Count free tier estimates this month
+  let estimatesUsed = 0;
+  let estimateLimit = null;
+  if (isFree || tier === 'free') {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
+    estimatesUsed = items.filter(i => i.status !== 'deleted' && i.createdAt >= monthStart).length;
+    estimateLimit = 3;
+  }
+
   // past_due gets a 7-day grace period before lockout
   const isPastDue = company.subscriptionStatus === 'past_due';
-  const isActive = company.subscriptionStatus === 'active' || trialActive || isPastDue;
+  const isActive = company.subscriptionStatus === 'active' || trialActive || isPastDue || isFree;
 
   return res.ok({
     status: company.subscriptionStatus,
@@ -175,6 +186,8 @@ module.exports.status = res.wrap(async (event) => {
     nextBillingDate,
     planAmount,
     tier,
+    estimatesUsed,
+    estimateLimit,
     canCancel: company.subscriptionStatus === 'active' || isPastDue
   });
 });

@@ -64,8 +64,8 @@ describe('billing handler', () => {
   const companyWithoutStripe = {
     email: 'new@test.com',
     stripeCustomerId: '',
-    subscriptionStatus: 'trialing',
-    trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString()
+    subscriptionStatus: 'free',
+    tier: 'free'
   };
 
   // ===== CHECKOUT =====
@@ -225,38 +225,22 @@ describe('billing handler', () => {
       expect(body.daysLeft).toBe(0);
     });
 
-    test('returns trialing status with days left', async () => {
-      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    test('returns free tier status', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
-        subscriptionStatus: 'trialing',
-        trialEndsAt: futureDate
+        subscriptionStatus: 'free',
+        tier: 'free'
       });
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
 
-      expect(body.status).toBe('trialing');
-      expect(body.trialActive).toBe(true);
+      expect(body.status).toBe('free');
       expect(body.active).toBe(true);
-      expect(body.daysLeft).toBeGreaterThanOrEqual(6);
-      expect(body.daysLeft).toBeLessThanOrEqual(8);
-    });
-
-    test('returns expired trial status', async () => {
-      auth.getCompanyId.mockResolvedValue('comp-1');
-      db.get.mockResolvedValue({
-        subscriptionStatus: 'trialing',
-        trialEndsAt: '2020-01-01T00:00:00.000Z'
-      });
-
-      const result = await billing.status({});
-      const body = JSON.parse(result.body);
-
-      expect(body.status).toBe('trialing');
-      expect(body.trialActive).toBe(false);
-      expect(body.active).toBe(false);
-      expect(body.daysLeft).toBe(0);
+      expect(body.tier).toBe('free');
+      expect(body.estimatesUsed).toBe(0);
+      expect(body.estimateLimit).toBe(3);
     });
 
     test('returns canceled status', async () => {
@@ -303,7 +287,7 @@ describe('billing handler', () => {
         current_period_end: 1735689600, // 2025-01-01
         items: {
           data: [{
-            price: { id: 'price_pro', unit_amount: 4900 }
+            price: { id: 'price_pro', unit_amount: 3500 }
           }]
         }
       });
@@ -313,7 +297,7 @@ describe('billing handler', () => {
 
       expect(result.statusCode).toBe(200);
       expect(body.nextBillingDate).toBeDefined();
-      expect(body.planAmount).toBe(49);
+      expect(body.planAmount).toBe(35);
       expect(body.tier).toBe('pro');
     });
 
@@ -330,7 +314,7 @@ describe('billing handler', () => {
       mockStripe.subscriptions.retrieve.mockResolvedValue({
         current_period_end: 1735689600,
         items: {
-          data: [{ price: { id: 'price_solo', unit_amount: 2900 } }]
+          data: [{ price: { id: 'price_solo', unit_amount: 1500 } }]
         }
       });
 
@@ -339,8 +323,8 @@ describe('billing handler', () => {
       expect(body.tier).toBe('solo');
     });
 
-    test('detects team tier from Stripe price', async () => {
-      process.env.STRIPE_PRICE_TEAM = 'price_team';
+    test('defaults to pro tier when price does not match solo', async () => {
+      process.env.STRIPE_PRICE_SOLO = 'price_solo';
 
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
@@ -352,13 +336,13 @@ describe('billing handler', () => {
       mockStripe.subscriptions.retrieve.mockResolvedValue({
         current_period_end: 1735689600,
         items: {
-          data: [{ price: { id: 'price_team', unit_amount: 9900 } }]
+          data: [{ price: { id: 'price_unknown', unit_amount: 3500 } }]
         }
       });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
-      expect(body.tier).toBe('team');
+      expect(body.tier).toBe('pro');
     });
 
     test('continues without billing info when Stripe call fails', async () => {
@@ -509,31 +493,31 @@ describe('billing handler', () => {
 
   // ===== STATUS - tier in response =====
   describe('status - tier info', () => {
-    test('returns tier info for non-subscribed users', async () => {
+    test('returns tier info for free tier users', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
-        subscriptionStatus: 'trialing',
-        trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
-        tier: 'solo'
+        subscriptionStatus: 'free',
+        tier: 'free'
       });
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
 
-      expect(body.tier).toBe('solo');
+      expect(body.tier).toBe('free');
     });
 
-    test('returns default pro tier when no tier set', async () => {
+    test('returns default free tier when no tier set and status is free', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
-        subscriptionStatus: 'trialing',
-        trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString()
+        subscriptionStatus: 'free'
       });
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
 
-      expect(body.tier).toBe('pro');
+      expect(body.tier).toBe('free');
     });
 
     test('returns canCancel true for active subscription', async () => {

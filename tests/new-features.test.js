@@ -27,11 +27,12 @@ const db = require('../handlers/lib/dynamo');
 const auth = require('../handlers/lib/auth');
 const estimates = require('../handlers/estimates');
 
-// ========== SOLO TIER ESTIMATE LIMIT ==========
+// ========== FREE TIER ESTIMATE LIMIT ==========
 
-describe('Solo tier estimate limit', () => {
+describe('Free tier estimate limit', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  const freeCompany = { tier: 'free', subscriptionStatus: 'free' };
   const soloCompany = { tier: 'solo', subscriptionStatus: 'active', subscriptionId: 'sub_123' };
   const proCompany = { tier: 'pro', subscriptionStatus: 'active', subscriptionId: 'sub_456' };
 
@@ -40,44 +41,58 @@ describe('Solo tier estimate limit', () => {
   }
 
   function makeEstimates(count) {
+    const now = new Date();
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 2).toISOString();
     return Array.from({ length: count }, (_, i) => ({
-      PK: 'COMPANY#comp-1', SK: 'EST#2025-01-' + i, id: 'est-' + i, status: 'draft'
+      PK: 'COMPANY#comp-1', SK: 'EST#' + thisMonth + '#est-' + i, id: 'est-' + i, status: 'draft', createdAt: thisMonth
     }));
   }
 
-  test('blocks Solo user at 20 active estimates', async () => {
+  test('blocks Free user at 3 estimates this month', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue(soloCompany);
-    db.query.mockResolvedValue({ items: makeEstimates(20), nextKey: null });
+    db.get.mockResolvedValue(freeCompany);
+    db.query.mockResolvedValue({ items: makeEstimates(3), nextKey: null });
 
     const result = await estimates.create(makeCreateEvent());
     expect(result.statusCode).toBe(403);
-    expect(JSON.parse(result.body).error).toContain('Solo plan limit');
+    expect(JSON.parse(result.body).error).toContain('Free plan limit');
   });
 
-  test('allows Solo user under 20 estimates', async () => {
+  test('allows Free user under 3 estimates this month', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue(soloCompany);
-    db.query.mockResolvedValue({ items: makeEstimates(19), nextKey: null });
+    db.get.mockResolvedValue(freeCompany);
+    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
     db.put.mockResolvedValue({});
 
     const result = await estimates.create(makeCreateEvent());
     expect(result.statusCode).toBe(201);
   });
 
-  test('does not count deleted estimates toward Solo limit', async () => {
+  test('does not count deleted estimates toward Free limit', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue(soloCompany);
+    db.get.mockResolvedValue(freeCompany);
+    const now = new Date();
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 2).toISOString();
     const items = [
-      ...makeEstimates(19),
+      ...makeEstimates(2),
       ...Array.from({ length: 5 }, (_, i) => ({
-        PK: 'COMPANY#comp-1', SK: 'EST#del-' + i, id: 'del-' + i, status: 'deleted'
+        PK: 'COMPANY#comp-1', SK: 'EST#del-' + i, id: 'del-' + i, status: 'deleted', createdAt: thisMonth
       }))
     ];
     db.query.mockResolvedValue({ items, nextKey: null });
     db.put.mockResolvedValue({});
 
     const result = await estimates.create(makeCreateEvent());
+    expect(result.statusCode).toBe(201);
+  });
+
+  test('Solo tier has no estimate limit', async () => {
+    auth.getCompanyId.mockResolvedValue('comp-1');
+    db.get.mockResolvedValue(soloCompany);
+    db.put.mockResolvedValue({});
+
+    const result = await estimates.create(makeCreateEvent());
+    expect(db.query).not.toHaveBeenCalled();
     expect(result.statusCode).toBe(201);
   });
 
@@ -141,7 +156,7 @@ describe('sections field in estimates', () => {
 
   test('create stores sections array', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue({ subscriptionStatus: 'active', subscriptionId: 'sub_1' });
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro', subscriptionId: 'sub_1' });
     db.put.mockResolvedValue({});
 
     const sections = [
@@ -174,7 +189,7 @@ describe('sections field in estimates', () => {
 
   test('rejects more than 50 sections', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue({ subscriptionStatus: 'active', subscriptionId: 'sub_1' });
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro', subscriptionId: 'sub_1' });
 
     const tooMany = Array.from({ length: 51 }, () => ({ points: [] }));
     const result = await estimates.create({ body: JSON.stringify({ sections: tooMany }) });

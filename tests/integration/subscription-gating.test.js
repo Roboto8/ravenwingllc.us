@@ -32,8 +32,8 @@ describe('Integration: Subscription Gating', () => {
         SK: 'PROFILE',
         name: 'Billing Gate Co',
         email: 'test@billing.com',
-        subscriptionStatus: 'trialing',
-        trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString()
+        subscriptionStatus: 'free',
+        tier: 'free'
       }
     ]);
   });
@@ -42,31 +42,31 @@ describe('Integration: Subscription Gating', () => {
     auth.getCompanyId.mockResolvedValue(COMPANY_ID);
   });
 
-  test('1. active trial allows estimate creation', async () => {
+  test('1. free tier allows estimate creation', async () => {
     const result = await estimates.create({
-      body: JSON.stringify({ customerName: 'Trial Customer', fenceType: 'wood' })
+      body: JSON.stringify({ customerName: 'Free Customer', fenceType: 'wood' })
     });
     expect(result.statusCode).toBe(201);
   });
 
-  test('2. expired trial blocks estimate creation', async () => {
-    // Expire the trial
-    await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
-      trialEndsAt: '2020-01-01T00:00:00.000Z'
-    });
+  test('2. free tier blocks after 3 estimates this month', async () => {
+    // Create 2 more estimates to reach the limit of 3
+    await estimates.create({ body: JSON.stringify({ customerName: 'Free Customer 2' }) });
+    await estimates.create({ body: JSON.stringify({ customerName: 'Free Customer 3' }) });
 
     const result = await estimates.create({
       body: JSON.stringify({ customerName: 'Blocked Customer' })
     });
 
     expect(result.statusCode).toBe(403);
-    expect(JSON.parse(result.body).error).toContain('Trial expired');
+    expect(JSON.parse(result.body).error).toContain('Free plan limit');
   });
 
   test('3. active subscription allows creation', async () => {
     // Simulate webhook setting subscription to active
     await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
       subscriptionStatus: 'active',
+      tier: 'solo',
       subscriptionId: 'sub_123'
     });
 
@@ -109,6 +109,7 @@ describe('Integration: Subscription Gating', () => {
   test('7. reactivated subscription allows creation again', async () => {
     await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
       subscriptionStatus: 'active',
+      tier: 'solo',
       subscriptionId: 'sub_456'
     });
 

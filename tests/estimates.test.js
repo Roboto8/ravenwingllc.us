@@ -53,17 +53,12 @@ describe('estimates handler', () => {
 
   const activeCompany = {
     subscriptionStatus: 'active',
-    trialEndsAt: '2025-12-31T00:00:00.000Z'
+    tier: 'pro'
   };
 
-  const trialingCompany = {
-    subscriptionStatus: 'trialing',
-    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-  };
-
-  const expiredTrialCompany = {
-    subscriptionStatus: 'trialing',
-    trialEndsAt: '2020-01-01T00:00:00.000Z'
+  const freeCompany = {
+    subscriptionStatus: 'free',
+    tier: 'free'
   };
 
   // ===== LIST =====
@@ -153,26 +148,16 @@ describe('estimates handler', () => {
       expect(body.PK).toBeUndefined(); // keys stripped
     });
 
-    test('creates estimate for active trial', async () => {
+    test('creates estimate for free tier', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.get.mockResolvedValue(trialingCompany);
+      db.get.mockResolvedValue(freeCompany);
       db.put.mockImplementation(item => item);
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await estimates.create({
-        body: JSON.stringify({ customerName: 'Trial User' })
+        body: JSON.stringify({ customerName: 'Free User' })
       });
       expect(result.statusCode).toBe(201);
-    });
-
-    test('blocks create for expired trial', async () => {
-      auth.getCompanyId.mockResolvedValue('comp-1');
-      db.get.mockResolvedValue(expiredTrialCompany);
-
-      const result = await estimates.create({
-        body: JSON.stringify({ customerName: 'Expired User' })
-      });
-      expect(result.statusCode).toBe(403);
-      expect(JSON.parse(result.body).error).toContain('Trial expired');
     });
 
     test('blocks create when no company found', async () => {
@@ -513,10 +498,11 @@ describe('estimates handler', () => {
     });
   });
 
-  // ===== canCreate (trial gating) =====
-  describe('trial gating (canCreate)', () => {
+  // ===== canCreate (subscription gating) =====
+  describe('subscription gating (canCreate)', () => {
     test.each([
-      ['active subscription', { subscriptionStatus: 'active' }, 201],
+      ['active subscription', { subscriptionStatus: 'active', tier: 'solo' }, 201],
+      ['free tier', { subscriptionStatus: 'free', tier: 'free' }, 201],
       ['active trial', {
         subscriptionStatus: 'trialing',
         trialEndsAt: new Date(Date.now() + 86400000).toISOString()
@@ -532,6 +518,7 @@ describe('estimates handler', () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyData);
       db.put.mockImplementation(item => item);
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(expectedStatus);

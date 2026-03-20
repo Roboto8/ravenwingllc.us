@@ -146,7 +146,7 @@ describe('estimates handler - edge cases', () => {
 
   // ===== CREATE - all field defaults =====
   describe('create - complete defaults', () => {
-    const activeCompany = { subscriptionStatus: 'active' };
+    const activeCompany = { subscriptionStatus: 'active', tier: 'pro' };
 
     test('sets all mulch defaults', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
@@ -271,7 +271,7 @@ describe('estimates handler - edge cases', () => {
   describe('create - provided values', () => {
     test('respects user-provided customerEmail', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.get.mockResolvedValue({ subscriptionStatus: 'active' });
+      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
       db.put.mockImplementation(item => item);
 
       const result = await estimates.create({

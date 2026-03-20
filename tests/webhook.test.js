@@ -240,33 +240,8 @@ describe('webhook handler', () => {
       );
     });
 
-    test('detects team tier from price ID', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo_test';
-      process.env.STRIPE_PRICE_TEAM = 'price_team_test';
-      const db = require('../handlers/lib/dynamo');
-
-      mockSubscriptionsRetrieve.mockResolvedValue({
-        items: { data: [{ price: { id: 'price_team_test' } }] }
-      });
-
-      mockConstructEvent.mockReturnValue({
-        type: 'checkout.session.completed',
-        data: {
-          object: { customer: 'cus_123', subscription: 'sub_team' }
-        }
-      });
-
-      await handler(makeEvent());
-
-      expect(db.update).toHaveBeenCalledWith(
-        'COMPANY#comp-abc', 'PROFILE',
-        expect.objectContaining({ tier: 'team' })
-      );
-    });
-
     test('defaults to pro tier when price does not match', async () => {
       process.env.STRIPE_PRICE_SOLO = 'price_solo_test';
-      process.env.STRIPE_PRICE_TEAM = 'price_team_test';
       const db = require('../handlers/lib/dynamo');
 
       mockSubscriptionsRetrieve.mockResolvedValue({

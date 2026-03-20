@@ -4668,9 +4668,9 @@ function showShareDialog(title, url) {
   document.body.appendChild(overlay);
 }
 
-// Send estimate to customer for approval — requires saved estimate
+// Send estimate to customer for approval — requires Pro tier
 async function shareEstimate() {
-  if (typeof requireSubscription === 'function' && !requireSubscription('share estimates')) return;
+  if (typeof requireTier === 'function' && !requireTier('pro', 'send customer approvals')) return;
 
   if (typeof activeEstimateId === 'undefined' || !activeEstimateId) {
     showToast('Save the estimate first, then send to customer');
@@ -5288,7 +5288,7 @@ function captureMapFallback() {
 
 // === PDF Generation ===
 async function generatePDF(mode) {
-  if (typeof requireSubscription === 'function' && !requireSubscription('download PDF estimates')) return;
+  if (typeof requireTier === 'function' && !requireTier('solo', 'export PDF estimates')) return;
   var isCustomerMode = mode === 'customer';
   try {
   showToast(t('toast_generating_pdf'));

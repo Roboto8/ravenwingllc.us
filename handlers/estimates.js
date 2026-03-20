@@ -27,14 +27,17 @@ module.exports.create = res.wrap(async (event) => {
 
   // Check subscription
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
-  if (!canCreate(company)) return res.forbidden('Trial expired. Please subscribe.');
+  if (!canCreate(company)) return res.forbidden('Subscribe to create estimates.');
 
-  // Enforce Solo tier estimate limit (20)
-  if (company.tier === 'solo') {
-    const { items } = await db.query('COMPANY#' + companyId, 'EST#', 21);
-    const active = items.filter(i => i.status !== 'deleted');
-    if (active.length >= 20) {
-      return res.forbidden('Solo plan limit reached (20 estimates). Upgrade to Pro for unlimited.');
+  // Enforce free tier estimate limit (3 per calendar month)
+  const tier = company.tier || 'free';
+  if (tier === 'free') {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
+    const thisMonth = items.filter(i => i.status !== 'deleted' && i.createdAt >= monthStart);
+    if (thisMonth.length >= 3) {
+      return res.forbidden('Free plan limit reached (3 estimates/month). Upgrade to Solo for unlimited.');
     }
   }
 
@@ -265,6 +268,7 @@ function validateInput(body) {
 function canCreate(company) {
   if (!company) return false;
   if (company.subscriptionStatus === 'active') return true;
+  if (company.subscriptionStatus === 'free') return true;
   if (company.subscriptionStatus === 'trialing') {
     return new Date(company.trialEndsAt) > new Date();
   }
