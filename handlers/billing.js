@@ -97,6 +97,7 @@ module.exports.checkout = res.wrap(async (event) => {
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: returnUrl + '?billing=success',
     cancel_url: returnUrl + '?billing=cancel',
+    automatic_tax: { enabled: true },
     // Show clear pricing — no surprises
     consent_collection: { terms_of_service: 'required' },
     custom_text: {
