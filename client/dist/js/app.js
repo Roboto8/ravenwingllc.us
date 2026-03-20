@@ -1932,6 +1932,9 @@ function setTool(tool) {
   // Clean up mulch drawing state when switching away
   if (currentTool === 'mulch' && tool !== 'mulch') {
     hideMulchDoneBtn();
+    // Clean up drag rectangle if stuck
+    if (mulchDragRect) { map.removeLayer(mulchDragRect); mulchDragRect = null; }
+    if (mulchDragStart) { map.dragging.enable(); mulchDragStart = null; }
     if (activeMulchPoints.length > 0) {
       activeMulchMarkers.forEach(function(m) { map.removeLayer(m); });
       activeMulchPoints = [];
@@ -3115,6 +3118,9 @@ function initMulchDragHandlers() {
     if (currentTool !== 'mulch' || (e.originalEvent && e.originalEvent.shiftKey)) return;
     if (e.originalEvent && e.originalEvent.button !== 0) return;
     if (_mulchMarkerDragging) return;
+    if (_deleteMode) return;
+    // Don't start drag if the click came from a UI overlay (shape picker, toolbar, etc.)
+    if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.closest && e.originalEvent.target.closest('.shape-picker, .map-toolbar, .selection-bar, .tool-btn, button')) return;
 
     mulchDragStart = e.latlng;
     map.dragging.disable();
@@ -3134,7 +3140,12 @@ function initMulchDragHandlers() {
   });
 
   map.on('mouseup', function(e) {
-    if (!mulchDragStart || currentTool !== 'mulch') return;
+    if (!mulchDragStart || currentTool !== 'mulch') {
+      // Clean up any stale drag state
+      if (mulchDragRect) { map.removeLayer(mulchDragRect); mulchDragRect = null; }
+      if (mulchDragStart) { map.dragging.enable(); mulchDragStart = null; }
+      return;
+    }
     map.dragging.enable();
 
     var startPx = map.latLngToContainerPoint(mulchDragStart);
@@ -3344,10 +3355,14 @@ var shapeDefaultSizes = {
 };
 
 function placeShape(shapeName) {
+  // Clean up any active mulch drag state first
+  if (mulchDragRect) { map.removeLayer(mulchDragRect); mulchDragRect = null; }
+  if (mulchDragStart) { map.dragging.enable(); mulchDragStart = null; }
+
   var center = map.getCenter();
   var sizeFt = shapeDefaultSizes[shapeName] || 12;
   var points = generateShapePoints(shapeName, center.lat, center.lng, sizeFt);
-  setTool('mulch');
+  if (currentTool !== 'mulch') setTool('mulch');
   finalizeMulchArea(points);
   hideShapePicker();
   // Zoom in if too far out to see the shape
