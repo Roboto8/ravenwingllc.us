@@ -3297,18 +3297,24 @@ function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
   return pts;
 }
 
+// Default real-world sizes per shape (feet) — based on typical landscape beds
+var shapeDefaultSizes = {
+  square: 10, rectangle: 15, circle: 8, oval: 12,
+  kidney: 14, 'l-shape': 12, crescent: 12, teardrop: 10
+};
+
 function placeShape(shapeName) {
   var center = map.getCenter();
-  var zoom = map.getZoom();
-  // Scale shape to be roughly 15% of the visible map width, clamped to reasonable mulch bed sizes
-  var bounds = map.getBounds();
-  var mapWidthFt = bounds.getSouthWest().distanceTo(bounds.getSouthEast()) * 3.28084;
-  var sizeFt = Math.max(8, Math.min(60, mapWidthFt * 0.15));
+  var sizeFt = shapeDefaultSizes[shapeName] || 12;
   var points = generateShapePoints(shapeName, center.lat, center.lng, sizeFt);
   setTool('mulch');
   finalizeMulchArea(points);
   hideShapePicker();
-  showToast('Shape placed — drag corners to resize');
+  // Zoom in if too far out to see the shape
+  if (map.getZoom() < 19) {
+    map.setView(center, 19, { animate: true });
+  }
+  showToast('Shape placed (~' + sizeFt + 'ft) — drag corners to resize');
 }
 
 function showShapePicker() {
