@@ -846,6 +846,11 @@ function removeDroneOverlay() {
 }
 
 function onMapClick(e) {
+  // Deselect any selected object
+  if (_selectedMulchIdx >= 0 || _selectedFenceSectionIdx >= 0) {
+    deselectAll();
+    return;
+  }
   // Drawing is always free — save/share/PDF are gated
 
   // Warn if zoomed too far out for accurate placement
@@ -1640,8 +1645,14 @@ function redrawFenceLine() {
 
     fenceLine = L.polyline(pts, {
       color: '#ff6b1a', weight: 4, opacity: 1,
-      dashArray: fenceClosed ? null : '10, 8'
+      dashArray: fenceClosed ? null : '10, 8',
+      interactive: true
     }).addTo(map);
+    var _secIdx = activeSectionIdx;
+    fenceLine.on('click', function(e) {
+      L.DomEvent.stopPropagation(e);
+      selectFenceSection(_secIdx);
+    });
   } else {
     if (window._fenceLineOutline) { map.removeLayer(window._fenceLineOutline); window._fenceLineOutline = null; }
   }
@@ -3756,15 +3767,12 @@ function rebindMulchMarkerDrags(areaIdx) {
   function flagDragStart() { _wasDragged = true; _mulchMarkerDragging = true; }
   function flagDragEnd() { setTimeout(function() { _wasDragged = false; _mulchMarkerDragging = false; }, 300); }
 
-  // Tap polygon to show delete option — suppressed after drag/rotate
+  // Tap polygon to select/highlight with delete option
   var areaIndex = areaIdx;
   area.polygon.on('click', function(e) {
     if (_wasDragged) return;
     L.DomEvent.stopPropagation(e);
-    var popup = L.popup({ closeButton: true, className: 'mulch-delete-popup', offset: [0, -10] })
-      .setLatLng(e.latlng)
-      .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Area ' + (areaIndex + 1) + '</b><br><button onclick="removeMulchArea(' + areaIndex + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b93a2a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete</button></div>')
-      .openOn(map);
+    selectMulchArea(areaIndex, e.latlng);
   });
 
   // Polygon body drag — move the whole shape
@@ -3854,6 +3862,70 @@ function rebuildMulchCorners(areaIdx) {
 
   // Re-bind all drag handlers
   rebindMulchMarkerDrags(areaIdx);
+}
+
+// === Selection system ===
+var _selectedMulchIdx = -1;
+var _selectedFenceSectionIdx = -1;
+
+function selectMulchArea(idx, latlng) {
+  deselectAll();
+  var area = mulchAreas[idx];
+  if (!area) return;
+  _selectedMulchIdx = idx;
+  area.polygon.setStyle({ color: '#ff4444', fillColor: '#ff4444', fillOpacity: 0.3, weight: 4 });
+  showSelectionBar('Mulch Area ' + (idx + 1) + ' — ' + Math.round(area.areaSqFt).toLocaleString() + ' sq ft', function() {
+    deselectAll();
+    removeMulchArea(idx);
+  });
+}
+
+function selectFenceSection(idx) {
+  deselectAll();
+  var s = sections[idx];
+  if (!s || !s.line) return;
+  _selectedFenceSectionIdx = idx;
+  s.line.setStyle({ color: '#ff4444', weight: 5 });
+  var feet = 0;
+  for (var i = 1; i < s.points.length; i++) feet += s.points[i-1].distanceTo(s.points[i]) * 3.28084;
+  if (s.closed && s.points.length > 2) feet += s.points[s.points.length-1].distanceTo(s.points[0]) * 3.28084;
+  showSelectionBar('Section ' + (idx + 1) + ' — ' + Math.round(feet) + ' ft', function() {
+    deselectAll();
+    ensureSection(idx);
+    removeSection(idx);
+  });
+}
+
+function deselectAll() {
+  if (_selectedMulchIdx >= 0 && mulchAreas[_selectedMulchIdx]) {
+    mulchAreas[_selectedMulchIdx].polygon.setStyle({ color: '#00e64d', fillColor: '#00e64d', fillOpacity: 0.2, weight: 3 });
+  }
+  if (_selectedFenceSectionIdx >= 0 && sections[_selectedFenceSectionIdx] && sections[_selectedFenceSectionIdx].line) {
+    sections[_selectedFenceSectionIdx].line.setStyle({ color: '#ff6b1a', weight: 4 });
+  }
+  _selectedMulchIdx = -1;
+  _selectedFenceSectionIdx = -1;
+  hideSelectionBar();
+}
+
+function showSelectionBar(text, onDelete) {
+  var bar = document.getElementById('selection-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'selection-bar';
+    bar.className = 'selection-bar';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = '<span class="selection-text">' + text + '</span>' +
+    '<button class="selection-delete-btn" id="selection-delete-btn">Delete</button>' +
+    '<button class="selection-cancel-btn" onclick="deselectAll()">Cancel</button>';
+  bar.style.display = 'flex';
+  document.getElementById('selection-delete-btn').onclick = onDelete;
+}
+
+function hideSelectionBar() {
+  var bar = document.getElementById('selection-bar');
+  if (bar) bar.style.display = 'none';
 }
 
 function removeMulchArea(idx) {
