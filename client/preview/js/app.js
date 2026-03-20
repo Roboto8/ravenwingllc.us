@@ -249,6 +249,7 @@ function addNewSection() {
   if (sections.length > 1) {
     showToast(t('toast_section_started', {n: sections.length}));
   }
+  setTimeout(function() { hintNewSection(); }, 2000);
 }
 
 function saveActiveSection() {
@@ -860,6 +861,7 @@ function onMapClick(e) {
   // Warn if zoomed too far out for accurate placement
   if (map.getZoom() < 16 && (currentTool === 'draw' || currentTool === 'gate')) {
     showToast(t('toast_zoom_closer'));
+    hintMobileZoom();
     return;
   }
   if (map.getZoom() < 18 && currentTool === 'draw' && fencePoints.length === 0) {
@@ -1657,6 +1659,7 @@ function toggleCurve() {
   redrawFenceLine();
   updateMidpointHandles();
   recalculate();
+  if (curveMode) setTimeout(function() { hintCurveMode(); }, 1000);
 }
 
 // === Midpoint insertion — click near a segment to add a control point ===
@@ -1958,6 +1961,10 @@ function setTool(tool) {
 
   if (tool === 'mulch' || tool === 'draw' || tool === 'gate') {
     showToolTip(tool);
+  }
+  if (tool === 'mulch') {
+    setTimeout(function() { hintMulchTool(); }, 2000);
+    setTimeout(function() { hintShapesPicker(); }, 6000);
   }
   updateEmptyMapState();
 }
@@ -3680,6 +3687,7 @@ function finalizeMulchArea(points) {
   markUnsaved();
 
   showToast('Mulch area added — ' + areaSqFt.toLocaleString() + ' sq ft');
+  setTimeout(function() { hintFirstMulch(); }, 2000);
 
   var mulchSection = document.querySelector('[data-section="mulch"] .section-title.collapsed');
   if (mulchSection) toggleSection(mulchSection);
@@ -3964,6 +3972,7 @@ function toggleDeleteMode() {
     deselectAll();
     map.getContainer().style.cursor = 'crosshair';
     showDeleteModeBar();
+    setTimeout(function() { hintDeleteMode(); }, 1500);
     // Highlight all objects with a pulsing border
     mulchAreas.forEach(function(a) { if (a.polygon) a.polygon.setStyle({ weight: 4, dashArray: '8,4' }); });
     sections.forEach(function(s) { if (s.line) s.line.setStyle({ weight: 6, dashArray: '8,4' }); });
@@ -4385,7 +4394,7 @@ function recalculate() {
   // After BOM renders with overrides, update the estimate total to match
   if (combinedBOM) {
     var bomTotal = combinedBOM.materialTotal;
-    var adjTotal = bomTotal + gateCost + removal + permit + stain + customTotal;
+    var adjTotal = bomTotal + gateCost + extrasTotal + customTotal;
     document.getElementById('sum-fence').textContent = '$' + Math.round(fenceEnabled ? (bomTotal - (mulchEnabled ? mulchCost : 0)) : 0).toLocaleString();
     if (mulchEnabled && mulchCost > 0) {
       var mulchBomTotal = combinedBOM.items.filter(function(i) { return !i.isHeader && i.name && i.name.indexOf('Mulch') >= 0; }).reduce(function(s, i) { return s + i.total; }, 0);
@@ -4408,6 +4417,8 @@ function recalculate() {
   if (feet > 0) {
     setTimeout(hintBOMAppears, 600);
     setTimeout(hintAfterEstimate, 1200);
+    setTimeout(hintSaveEstimate, 5000);
+    setTimeout(hintShareFlow, 12000);
   }
 }
 
@@ -6371,6 +6382,60 @@ function nextEstimateNumber() {
 function updateEstimateCounterDisplay() {
   var el = document.getElementById('estimate-number');
   if (el) el.textContent = 'Estimate #' + estimateCounter;
+}
+
+// -- New contextual hint triggers --
+function hintMulchTool() {
+  var mulchBtn = document.getElementById('mulch-btn');
+  if (mulchBtn) showHint('mulch_tool', t('hint_mulch_tool'), mulchBtn, 'above');
+}
+
+function hintFirstMulch() {
+  if (mulchAreas.length === 1) {
+    var area = mulchAreas[0];
+    var anchor = area.areaLabel ? area.areaLabel.getElement() : null;
+    if (anchor) showHint('first_mulch', t('hint_first_mulch'), anchor, 'above');
+  }
+}
+
+function hintShapesPicker() {
+  var shapesBtn = document.getElementById('shapes-btn');
+  if (shapesBtn && mulchAreas.length === 0) {
+    showHint('shapes_picker', t('hint_shapes_picker'), shapesBtn, 'above');
+  }
+}
+
+function hintDeleteMode() {
+  var deleteBtn = document.getElementById('delete-mode-btn');
+  if (deleteBtn) showHint('delete_mode', t('hint_delete_mode'), deleteBtn, 'above');
+}
+
+function hintCurveMode() {
+  var curveBtn = document.getElementById('curve-btn');
+  if (curveBtn) showHint('curve_mode', t('hint_curve_mode'), curveBtn, 'above');
+}
+
+function hintNewSection() {
+  if (sections.length === 2) {
+    var tabs = document.getElementById('section-tabs');
+    if (tabs) showHint('new_section', t('hint_new_section'), tabs, 'below');
+  }
+}
+
+function hintSaveEstimate() {
+  var saveBtn = document.querySelector('[onclick*="saveEstimate"]');
+  if (saveBtn) showHint('save_estimate', t('hint_save_estimate'), saveBtn, 'above');
+}
+
+function hintShareFlow() {
+  var shareBtn = document.querySelector('[onclick*="shareEstimate"]');
+  if (shareBtn) showHint('share_flow', t('hint_share_flow'), shareBtn, 'above');
+}
+
+function hintMobileZoom() {
+  if (_inputMethod === 'touch' && map.getZoom() < 17) {
+    showHint('mobile_zoom', t('hint_mobile_zoom'), document.querySelector('.map-toolbar'), 'above');
+  }
 }
 
 // === Keyboard Shortcuts ===
