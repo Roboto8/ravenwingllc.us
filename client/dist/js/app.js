@@ -3299,11 +3299,16 @@ function generateShapePoints(shapeName, centerLat, centerLng, sizeFt) {
 
 function placeShape(shapeName) {
   var center = map.getCenter();
-  var sizeFt = 20; // default ~20ft diameter/width
+  var zoom = map.getZoom();
+  // Scale shape to be roughly 15% of the visible map width, clamped to reasonable mulch bed sizes
+  var bounds = map.getBounds();
+  var mapWidthFt = bounds.getSouthWest().distanceTo(bounds.getSouthEast()) * 3.28084;
+  var sizeFt = Math.max(8, Math.min(60, mapWidthFt * 0.15));
   var points = generateShapePoints(shapeName, center.lat, center.lng, sizeFt);
   setTool('mulch');
   finalizeMulchArea(points);
   hideShapePicker();
+  showToast('Shape placed — drag corners to resize');
 }
 
 function showShapePicker() {
