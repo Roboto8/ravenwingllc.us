@@ -1886,6 +1886,47 @@ function removeGate(id) {
   recalculate();
 }
 
+// === Input method detection ===
+// Detects touch, pen/stylus, mouse, or keyboard. Updates on input.
+var _inputMethod = ('ontouchstart' in window || navigator.maxTouchPoints > 0) ? 'touch' : 'mouse';
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', function(e) {
+    if (e.pointerType === 'pen') _inputMethod = 'pen';
+    else if (e.pointerType === 'touch') _inputMethod = 'touch';
+    else _inputMethod = 'mouse';
+  }, true);
+}
+
+// Context-aware tool tips based on input method and active tool
+var _toolTips = {
+  draw: {
+    touch: 'Tap the map to place fence points',
+    pen:   'Tap to place fence points \u2014 use the stylus for precision',
+    mouse: 'Click the map to place fence points. Press D anytime.'
+  },
+  gate: {
+    touch: 'Tap on the fence line to place a gate',
+    pen:   'Tap on the fence line to place a gate',
+    mouse: 'Click on the fence line to place a gate. Press G anytime.'
+  },
+  mulch: {
+    touch: 'Tap corners to outline a mulch bed, or use Shapes',
+    pen:   'Tap corners to outline a mulch bed \u2014 drag to draw a rectangle',
+    mouse: 'Click corners or drag a rectangle. Use Shapes for presets.'
+  },
+  delete: {
+    touch: 'Tap any fence, mulch bed, or gate to delete it',
+    pen:   'Tap any object to select and delete it',
+    mouse: 'Click any fence section, mulch area, or gate to delete it. Press X to exit.'
+  }
+};
+
+function showToolTip(toolName) {
+  var tips = _toolTips[toolName];
+  if (!tips) return;
+  showToast(tips[_inputMethod] || tips.mouse);
+}
+
 // === Tools ===
 function setTool(tool) {
   // Clean up mulch drawing state when switching away
@@ -1906,13 +1947,8 @@ function setTool(tool) {
 
   map.getContainer().style.cursor = tool === 'draw' ? 'crosshair' : tool === 'gate' ? 'cell' : tool === 'mulch' ? 'crosshair' : '';
 
-  if (tool === 'mulch') {
-    var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (isMobile) {
-      showToast('Tap corners to outline the mulch bed');
-    } else {
-      showToast('Click corners or drag to draw a mulch bed');
-    }
+  if (tool === 'mulch' || tool === 'draw' || tool === 'gate') {
+    showToolTip(tool);
   }
   updateEmptyMapState();
 }
@@ -3167,9 +3203,9 @@ function addMulchPoint(latlng) {
   }
 
   if (activeMulchPoints.length === 1) {
-    showToast('Tap corners to outline the mulch bed');
+    showToast(_inputMethod === 'mouse' ? 'Click to add more corners' : 'Tap to add more corners');
   } else if (activeMulchPoints.length === 3) {
-    showToast('Tap first point or press Done to close');
+    showToast(_inputMethod === 'mouse' ? 'Click first point or press Done to close' : 'Tap first point or press Done to close');
   }
 
   markUnsaved();
@@ -3318,7 +3354,7 @@ function placeShape(shapeName) {
   if (map.getZoom() < 19) {
     map.setView(center, 19, { animate: true });
   }
-  showToast('Shape placed (~' + sizeFt + 'ft) — drag corners to resize');
+  showToast('Shape placed (~' + sizeFt + 'ft) \u2014 ' + (_inputMethod === 'mouse' ? 'drag corners to resize' : 'drag the white handles to resize'));
 }
 
 function showShapePicker() {
@@ -3895,7 +3931,8 @@ function showDeleteModeBar() {
     bar.className = 'selection-bar';
     document.body.appendChild(bar);
   }
-  bar.innerHTML = '<span class="selection-text">Tap an object to delete it</span>' +
+  var tip = _toolTips.delete[_inputMethod] || _toolTips.delete.mouse;
+  bar.innerHTML = '<span class="selection-text">' + tip + '</span>' +
     '<button class="selection-cancel-btn" onclick="exitDeleteMode()">Done</button>';
   bar.style.display = 'flex';
 }
@@ -5823,6 +5860,14 @@ function togglePanel() {
   panel.classList.toggle('collapsed');
   // Let the map resize after the panel animates
   setTimeout(() => map.invalidateSize(), 350);
+}
+
+function toggleDesktopPanel() {
+  var panel = document.getElementById('estimate-panel');
+  var tab = document.getElementById('desktop-panel-tab');
+  panel.classList.toggle('desktop-collapsed');
+  tab.classList.toggle('tab-collapsed');
+  setTimeout(function() { map.invalidateSize(); }, 350);
 }
 
 // === Demo Data (for screenshots) ===
