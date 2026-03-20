@@ -873,6 +873,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   }
 }
 
+/* Delete mode */
+#delete-mode-btn.active { border-color: #ff4444; color: #ff4444; background: rgba(255, 68, 68, 0.1); }
+#delete-mode-btn.active svg { stroke: #ff4444; }
+
 /* Selection bar */
 .selection-bar {
   position: fixed;

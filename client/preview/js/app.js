@@ -846,9 +846,12 @@ function removeDroneOverlay() {
 }
 
 function onMapClick(e) {
-  // Deselect any selected object
-  if (_selectedMulchIdx >= 0 || _selectedFenceSectionIdx >= 0) {
-    deselectAll();
+  // Delete mode: deselect on empty space click but stay in mode
+  if (_deleteMode) {
+    if (_selectedMulchIdx >= 0 || _selectedFenceSectionIdx >= 0 || _selectedGateIdx >= 0) {
+      deselectAll();
+      showDeleteModeBar();
+    }
     return;
   }
   // Drawing is always free — save/share/PDF are gated
@@ -1837,6 +1840,14 @@ function addGate(latlng) {
     if (g) {
       g.latlng = e.target.getLatLng();
       markUnsaved();
+    }
+  });
+
+  marker.on('click', function(e) {
+    if (_deleteMode) {
+      L.DomEvent.stopPropagation(e);
+      var gIdx = gates.findIndex(function(x) { return x.id === gateId; });
+      if (gIdx >= 0) selectGate(gIdx);
     }
   });
 
@@ -3863,28 +3874,78 @@ function rebuildMulchCorners(areaIdx) {
   rebindMulchMarkerDrags(areaIdx);
 }
 
-// === Selection system ===
+// === Delete Mode & Selection ===
+var _deleteMode = false;
 var _selectedMulchIdx = -1;
 var _selectedFenceSectionIdx = -1;
+var _selectedGateIdx = -1;
+
+function toggleDeleteMode() {
+  _deleteMode = !_deleteMode;
+  var btn = document.getElementById('delete-mode-btn');
+  if (btn) btn.classList.toggle('active', _deleteMode);
+  if (_deleteMode) {
+    deselectAll();
+    map.getContainer().style.cursor = 'crosshair';
+    showDeleteModeBar();
+    // Highlight all objects with a pulsing border
+    mulchAreas.forEach(function(a) { if (a.polygon) a.polygon.setStyle({ weight: 4, dashArray: '8,4' }); });
+    sections.forEach(function(s) { if (s.line) s.line.setStyle({ weight: 6, dashArray: '8,4' }); });
+  } else {
+    exitDeleteMode();
+  }
+}
+
+function exitDeleteMode() {
+  _deleteMode = false;
+  var btn = document.getElementById('delete-mode-btn');
+  if (btn) btn.classList.remove('active');
+  map.getContainer().style.cursor = '';
+  // Restore normal styles
+  mulchAreas.forEach(function(a) { if (a.polygon) a.polygon.setStyle({ color: '#00e64d', fillColor: '#00e64d', fillOpacity: 0.2, weight: 3, dashArray: null }); });
+  sections.forEach(function(s) { if (s.line) s.line.setStyle({ color: '#ff6b1a', weight: 4, dashArray: s.closed ? null : '10, 8' }); });
+  deselectAll();
+  hideDeleteModeBar();
+}
+
+function showDeleteModeBar() {
+  var bar = document.getElementById('selection-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'selection-bar';
+    bar.className = 'selection-bar';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = '<span class="selection-text">Tap an object to delete it</span>' +
+    '<button class="selection-cancel-btn" onclick="exitDeleteMode()">Done</button>';
+  bar.style.display = 'flex';
+}
 
 function selectMulchArea(idx, latlng) {
+  if (!_deleteMode) return;
   deselectAll();
   var area = mulchAreas[idx];
   if (!area) return;
   _selectedMulchIdx = idx;
-  area.polygon.setStyle({ color: '#ff4444', fillColor: '#ff4444', fillOpacity: 0.3, weight: 4 });
+  area.polygon.setStyle({ color: '#ff4444', fillColor: '#ff4444', fillOpacity: 0.35, weight: 5, dashArray: null });
   showSelectionBar('Mulch Area ' + (idx + 1) + ' — ' + Math.round(area.areaSqFt).toLocaleString() + ' sq ft', function() {
     deselectAll();
     removeMulchArea(idx);
+    if (mulchAreas.length > 0) {
+      showDeleteModeBar();
+    } else {
+      exitDeleteMode();
+    }
   });
 }
 
 function selectFenceSection(idx) {
+  if (!_deleteMode) return;
   deselectAll();
   var s = sections[idx];
   if (!s || !s.line) return;
   _selectedFenceSectionIdx = idx;
-  s.line.setStyle({ color: '#ff4444', weight: 5 });
+  s.line.setStyle({ color: '#ff4444', weight: 6, dashArray: null });
   var feet = 0;
   for (var i = 1; i < s.points.length; i++) feet += s.points[i-1].distanceTo(s.points[i]) * 3.28084;
   if (s.closed && s.points.length > 2) feet += s.points[s.points.length-1].distanceTo(s.points[0]) * 3.28084;
@@ -3892,18 +3953,47 @@ function selectFenceSection(idx) {
     deselectAll();
     ensureSection(idx);
     removeSection(idx);
+    if (sections.length > 0 && sections[0].points.length > 0) {
+      showDeleteModeBar();
+    } else {
+      exitDeleteMode();
+    }
+  });
+}
+
+function selectGate(idx) {
+  if (!_deleteMode) return;
+  deselectAll();
+  var g = gates[idx];
+  if (!g) return;
+  _selectedGateIdx = idx;
+  showSelectionBar('Gate ' + (idx + 1), function() {
+    deselectAll();
+    gates.splice(idx, 1);
+    renderGates();
+    redrawFence();
+    recalculate();
+    showToast(t('toast_gate_removed'));
+    if (gates.length > 0 || mulchAreas.length > 0 || sections.some(function(s) { return s.points.length > 0; })) {
+      showDeleteModeBar();
+    } else {
+      exitDeleteMode();
+    }
   });
 }
 
 function deselectAll() {
   if (_selectedMulchIdx >= 0 && mulchAreas[_selectedMulchIdx]) {
-    mulchAreas[_selectedMulchIdx].polygon.setStyle({ color: '#00e64d', fillColor: '#00e64d', fillOpacity: 0.2, weight: 3 });
+    var a = mulchAreas[_selectedMulchIdx];
+    a.polygon.setStyle({ color: '#00e64d', fillColor: '#00e64d', fillOpacity: 0.2, weight: _deleteMode ? 4 : 3, dashArray: _deleteMode ? '8,4' : null });
   }
   if (_selectedFenceSectionIdx >= 0 && sections[_selectedFenceSectionIdx] && sections[_selectedFenceSectionIdx].line) {
-    sections[_selectedFenceSectionIdx].line.setStyle({ color: '#ff6b1a', weight: 4 });
+    var s = sections[_selectedFenceSectionIdx];
+    s.line.setStyle({ color: '#ff6b1a', weight: _deleteMode ? 6 : 4, dashArray: _deleteMode ? '8,4' : (s.closed ? null : '10, 8') });
   }
   _selectedMulchIdx = -1;
   _selectedFenceSectionIdx = -1;
+  _selectedGateIdx = -1;
   hideSelectionBar();
 }
 
@@ -3917,7 +4007,7 @@ function showSelectionBar(text, onDelete) {
   }
   bar.innerHTML = '<span class="selection-text">' + text + '</span>' +
     '<button class="selection-delete-btn" id="selection-delete-btn">Delete</button>' +
-    '<button class="selection-cancel-btn" onclick="deselectAll()">Cancel</button>';
+    '<button class="selection-cancel-btn" onclick="deselectAll(); if(_deleteMode) showDeleteModeBar();">Cancel</button>';
   bar.style.display = 'flex';
   document.getElementById('selection-delete-btn').onclick = onDelete;
 }
@@ -6259,6 +6349,13 @@ document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && (e.shiftKey && (e.key === 'z' || e.key === 'Z') || e.key === 'y' || e.key === 'Y')) {
     e.preventDefault();
     redoLast();
+    return;
+  }
+
+  // X: Delete mode
+  if (e.key === 'x' || e.key === 'X') {
+    e.preventDefault();
+    toggleDeleteMode();
     return;
   }
 
