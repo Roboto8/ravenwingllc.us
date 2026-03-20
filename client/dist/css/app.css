@@ -875,11 +875,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 /* Shape Picker */
 .shape-picker {
-  position: absolute;
-  top: 100%;
+  position: fixed;
+  bottom: 60px;
   left: 50%;
   transform: translateX(-50%);
-  margin-top: 6px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;

@@ -88,6 +88,41 @@
   </div>
 
   <!-- Auth Modal -->
+  <div id="shape-picker" class="shape-picker" style="display:none">
+    <button onclick="placeShape('square')" title="Square bed">
+      <svg viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Square</span>
+    </button>
+    <button onclick="placeShape('rectangle')" title="Rectangle bed">
+      <svg viewBox="0 0 40 40"><rect x="3" y="10" width="34" height="20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Rectangle</span>
+    </button>
+    <button onclick="placeShape('circle')" title="Tree ring / circle bed">
+      <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Circle</span>
+    </button>
+    <button onclick="placeShape('oval')" title="Oval island bed">
+      <svg viewBox="0 0 40 40"><ellipse cx="20" cy="20" rx="18" ry="12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Oval</span>
+    </button>
+    <button onclick="placeShape('kidney')" title="Kidney / bean bed">
+      <svg viewBox="0 0 40 40"><path d="M8 20c0-8 6-14 12-14s12 4 12 10-4 10-8 10c-3 0-4-3-6-3s-4 5-8 5-2-2-2-8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Kidney</span>
+    </button>
+    <button onclick="placeShape('l-shape')" title="L-shaped corner bed">
+      <svg viewBox="0 0 40 40"><path d="M8 6h10v14h14v12H8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>L-Shape</span>
+    </button>
+    <button onclick="placeShape('crescent')" title="Crescent / curved bed">
+      <svg viewBox="0 0 40 40"><path d="M28 8c-8 0-16 5-16 12s8 12 16 12c-4-3-6-7-6-12s2-9 6-12z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Crescent</span>
+    </button>
+    <button onclick="placeShape('teardrop')" title="Teardrop bed">
+      <svg viewBox="0 0 40 40"><path d="M20 6c-2 4-10 10-10 18a10 10 0 0020 0c0-8-8-14-10-18z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Teardrop</span>
+    </button>
+  </div>
+
   <div class="modal-overlay" id="auth-modal" style="display:none">
     <div class="modal" style="position:relative" onclick="event.stopPropagation()">
       <button class="auth-close" id="auth-close" onclick="hideAuthUI()">&times;</button>
@@ -289,46 +324,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20L12 4 2 20z"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="14" cy="14" r="1" fill="currentColor"/><circle cx="11" cy="18" r="1" fill="currentColor"/></svg>
           <span data-i18n="tool_mulch">Mulch</span>
         </button>
-        <div style="position:relative;display:inline-block">
-          <button class="tool-btn" id="shapes-btn" onclick="showShapePicker()" title="Drop a preset shape">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
-            <span>Shapes</span>
-          </button>
-          <div id="shape-picker" class="shape-picker" style="display:none">
-            <button onclick="placeShape('square')" title="Square bed">
-              <svg viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>Square</span>
-            </button>
-            <button onclick="placeShape('rectangle')" title="Rectangle bed">
-              <svg viewBox="0 0 40 40"><rect x="3" y="10" width="34" height="20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>Rectangle</span>
-            </button>
-            <button onclick="placeShape('circle')" title="Tree ring / circle bed">
-              <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>Circle</span>
-            </button>
-            <button onclick="placeShape('oval')" title="Oval island bed">
-              <svg viewBox="0 0 40 40"><ellipse cx="20" cy="20" rx="18" ry="12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>Oval</span>
-            </button>
-            <button onclick="placeShape('kidney')" title="Kidney / bean bed">
-              <svg viewBox="0 0 40 40"><path d="M8 20c0-8 6-14 12-14s12 4 12 10-4 10-8 10c-3 0-4-3-6-3s-4 5-8 5-2-2-2-8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>Kidney</span>
-            </button>
-            <button onclick="placeShape('l-shape')" title="L-shaped corner bed">
-              <svg viewBox="0 0 40 40"><path d="M8 6h10v14h14v12H8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>L-Shape</span>
-            </button>
-            <button onclick="placeShape('crescent')" title="Crescent / curved bed">
-              <svg viewBox="0 0 40 40"><path d="M28 8c-8 0-16 5-16 12s8 12 16 12c-4-3-6-7-6-12s2-9 6-12z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>Crescent</span>
-            </button>
-            <button onclick="placeShape('teardrop')" title="Teardrop bed">
-              <svg viewBox="0 0 40 40"><path d="M20 6c-2 4-10 10-10 18a10 10 0 0020 0c0-8-8-14-10-18z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-              <span>Teardrop</span>
-            </button>
-          </div>
-        </div>
+        <button class="tool-btn" id="shapes-btn" onclick="showShapePicker()" title="Drop a preset shape">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
+          <span>Shapes</span>
+        </button>
         <button class="tool-btn" id="close-btn" style="display:none" onclick="closeFence()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
           <span data-i18n="tool_close">Close</span>
