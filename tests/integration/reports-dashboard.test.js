@@ -33,7 +33,7 @@ describe('Integration: Reports Dashboard', () => {
         name: 'Reports Co',
         email: 'test@reports.com',
         subscriptionStatus: 'active',
-        tier: 'pro'
+        tier: 'contractor'
       }
     ]);
   });

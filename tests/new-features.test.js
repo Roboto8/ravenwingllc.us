@@ -33,8 +33,8 @@ describe('Free tier estimate limit', () => {
   beforeEach(() => jest.clearAllMocks());
 
   const freeCompany = { tier: 'free', subscriptionStatus: 'free' };
-  const soloCompany = { tier: 'solo', subscriptionStatus: 'active', subscriptionId: 'sub_123' };
-  const proCompany = { tier: 'pro', subscriptionStatus: 'active', subscriptionId: 'sub_456' };
+  const builderCompany = { tier: 'builder', subscriptionStatus: 'active', subscriptionId: 'sub_123' };
+  const contractorCompany = { tier: 'contractor', subscriptionStatus: 'active', subscriptionId: 'sub_456' };
 
   function makeCreateEvent() {
     return { body: JSON.stringify({ customerName: 'Test', fenceType: 'wood' }) };
@@ -55,7 +55,7 @@ describe('Free tier estimate limit', () => {
 
     const result = await estimates.create(makeCreateEvent());
     expect(result.statusCode).toBe(403);
-    expect(JSON.parse(result.body).error).toContain('Free plan limit');
+    expect(JSON.parse(result.body).error).toContain('Starter plan limit');
   });
 
   test('allows Free user under 3 estimates this month', async () => {
@@ -86,9 +86,9 @@ describe('Free tier estimate limit', () => {
     expect(result.statusCode).toBe(201);
   });
 
-  test('Solo tier has no estimate limit', async () => {
+  test('Builder tier has no estimate limit', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue(soloCompany);
+    db.get.mockResolvedValue(builderCompany);
     db.put.mockResolvedValue({});
 
     const result = await estimates.create(makeCreateEvent());
@@ -96,9 +96,9 @@ describe('Free tier estimate limit', () => {
     expect(result.statusCode).toBe(201);
   });
 
-  test('Pro tier has no estimate limit', async () => {
+  test('Contractor tier has no estimate limit', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue(proCompany);
+    db.get.mockResolvedValue(contractorCompany);
     db.put.mockResolvedValue({});
 
     const result = await estimates.create(makeCreateEvent());
@@ -156,7 +156,7 @@ describe('sections field in estimates', () => {
 
   test('create stores sections array', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro', subscriptionId: 'sub_1' });
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'contractor', subscriptionId: 'sub_1' });
     db.put.mockResolvedValue({});
 
     const sections = [
@@ -189,7 +189,7 @@ describe('sections field in estimates', () => {
 
   test('rejects more than 50 sections', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro', subscriptionId: 'sub_1' });
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'contractor', subscriptionId: 'sub_1' });
 
     const tooMany = Array.from({ length: 51 }, () => ({ points: [] }));
     const result = await estimates.create({ body: JSON.stringify({ sections: tooMany }) });

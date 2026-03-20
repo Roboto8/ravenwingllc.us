@@ -37,7 +37,7 @@ module.exports.create = res.wrap(async (event) => {
     const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
     const thisMonth = items.filter(i => i.status !== 'deleted' && i.createdAt >= monthStart);
     if (thisMonth.length >= 3) {
-      return res.forbidden('Free plan limit reached (3 estimates/month). Upgrade to Solo for unlimited.');
+      return res.forbidden('Starter plan limit reached (3 estimates/month). Upgrade to Builder for unlimited.');
     }
   }
 

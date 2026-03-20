@@ -20,7 +20,7 @@ jest.mock('@aws-sdk/lib-dynamodb', () => {
 // Mock stripe
 const mockConstructEvent = jest.fn();
 const mockSubscriptionsRetrieve = jest.fn().mockResolvedValue({
-  items: { data: [{ price: { id: 'price_pro_test' } }] }
+  items: { data: [{ price: { id: 'price_contractor_test' } }] }
 });
 const mockStripe = {
   webhooks: {
@@ -216,19 +216,18 @@ describe('webhook handler', () => {
 
   // ===== checkout.session.completed - tier detection =====
   describe('checkout.session.completed - tier detection', () => {
-    test('detects solo tier from price ID', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo_test';
-      process.env.STRIPE_PRICE_TEAM = 'price_team_test';
+    test('detects builder tier from price ID', async () => {
+      process.env.STRIPE_PRICE_BUILDER = 'price_builder_test';
       const db = require('../handlers/lib/dynamo');
 
       mockSubscriptionsRetrieve.mockResolvedValue({
-        items: { data: [{ price: { id: 'price_solo_test' } }] }
+        items: { data: [{ price: { id: 'price_builder_test' } }] }
       });
 
       mockConstructEvent.mockReturnValue({
         type: 'checkout.session.completed',
         data: {
-          object: { customer: 'cus_123', subscription: 'sub_solo' }
+          object: { customer: 'cus_123', subscription: 'sub_builder' }
         }
       });
 
@@ -236,12 +235,12 @@ describe('webhook handler', () => {
 
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
-        expect.objectContaining({ tier: 'solo' })
+        expect.objectContaining({ tier: 'builder' })
       );
     });
 
-    test('defaults to pro tier when price does not match', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo_test';
+    test('defaults to contractor tier when price does not match', async () => {
+      process.env.STRIPE_PRICE_BUILDER = 'price_builder_test';
       const db = require('../handlers/lib/dynamo');
 
       mockSubscriptionsRetrieve.mockResolvedValue({
@@ -251,7 +250,7 @@ describe('webhook handler', () => {
       mockConstructEvent.mockReturnValue({
         type: 'checkout.session.completed',
         data: {
-          object: { customer: 'cus_123', subscription: 'sub_pro' }
+          object: { customer: 'cus_123', subscription: 'sub_contractor' }
         }
       });
 
@@ -259,11 +258,11 @@ describe('webhook handler', () => {
 
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
-        expect.objectContaining({ tier: 'pro' })
+        expect.objectContaining({ tier: 'contractor' })
       );
     });
 
-    test('defaults to pro tier when subscription retrieve fails', async () => {
+    test('defaults to contractor tier when subscription retrieve fails', async () => {
       const db = require('../handlers/lib/dynamo');
 
       mockSubscriptionsRetrieve.mockRejectedValue(new Error('Stripe error'));
@@ -279,7 +278,7 @@ describe('webhook handler', () => {
 
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
-        expect.objectContaining({ tier: 'pro' })
+        expect.objectContaining({ tier: 'contractor' })
       );
     });
 

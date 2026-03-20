@@ -272,22 +272,21 @@ describe('billing handler', () => {
     });
 
     test('returns billing info from Stripe when subscriptionId is present and active', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo';
-      process.env.STRIPE_PRICE_TEAM = 'price_team';
+      process.env.STRIPE_PRICE_BUILDER = 'price_builder';
 
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
         subscriptionStatus: 'active',
         subscriptionId: 'sub_123',
         trialEndsAt: '2025-01-01T00:00:00.000Z',
-        tier: 'pro'
+        tier: 'contractor'
       });
 
       mockStripe.subscriptions.retrieve.mockResolvedValue({
         current_period_end: 1735689600, // 2025-01-01
         items: {
           data: [{
-            price: { id: 'price_pro', unit_amount: 3500 }
+            price: { id: 'price_contractor', unit_amount: 3500 }
           }]
         }
       });
@@ -298,11 +297,11 @@ describe('billing handler', () => {
       expect(result.statusCode).toBe(200);
       expect(body.nextBillingDate).toBeDefined();
       expect(body.planAmount).toBe(35);
-      expect(body.tier).toBe('pro');
+      expect(body.tier).toBe('contractor');
     });
 
-    test('detects solo tier from Stripe price', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo';
+    test('detects builder tier from Stripe price', async () => {
+      process.env.STRIPE_PRICE_BUILDER = 'price_builder';
 
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
@@ -314,17 +313,17 @@ describe('billing handler', () => {
       mockStripe.subscriptions.retrieve.mockResolvedValue({
         current_period_end: 1735689600,
         items: {
-          data: [{ price: { id: 'price_solo', unit_amount: 1500 } }]
+          data: [{ price: { id: 'price_builder', unit_amount: 1500 } }]
         }
       });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
-      expect(body.tier).toBe('solo');
+      expect(body.tier).toBe('builder');
     });
 
-    test('defaults to pro tier when price does not match solo', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo';
+    test('defaults to contractor tier when price does not match builder', async () => {
+      process.env.STRIPE_PRICE_BUILDER = 'price_builder';
 
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
@@ -342,7 +341,7 @@ describe('billing handler', () => {
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
-      expect(body.tier).toBe('pro');
+      expect(body.tier).toBe('contractor');
     });
 
     test('continues without billing info when Stripe call fails', async () => {
@@ -381,15 +380,14 @@ describe('billing handler', () => {
 
     test('returns 400 when no price configured', async () => {
       delete process.env.STRIPE_PRICE_ID;
-      delete process.env.STRIPE_PRICE_PRO;
-      delete process.env.STRIPE_PRICE_SOLO;
-      delete process.env.STRIPE_PRICE_TEAM;
+      delete process.env.STRIPE_PRICE_CONTRACTOR;
+      delete process.env.STRIPE_PRICE_BUILDER;
 
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyWithStripe);
 
       const result = await billing.checkout({
-        body: JSON.stringify({ tier: 'solo' })
+        body: JSON.stringify({ tier: 'builder' })
       });
 
       expect(result.statusCode).toBe(400);
@@ -399,50 +397,36 @@ describe('billing handler', () => {
 
   // ===== CHECKOUT - tier selection =====
   describe('checkout - tier selection', () => {
-    test('checkout with tier=solo uses STRIPE_PRICE_SOLO', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo_123';
+    test('checkout with tier=builder uses STRIPE_PRICE_BUILDER', async () => {
+      process.env.STRIPE_PRICE_BUILDER = 'price_builder_123';
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyWithStripe);
       mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
 
       await billing.checkout({
-        body: JSON.stringify({ tier: 'solo' })
+        body: JSON.stringify({ tier: 'builder' })
       });
 
       const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
-      expect(sessionArg.line_items).toEqual([{ price: 'price_solo_123', quantity: 1 }]);
+      expect(sessionArg.line_items).toEqual([{ price: 'price_builder_123', quantity: 1 }]);
     });
 
-    test('checkout with tier=team uses STRIPE_PRICE_TEAM', async () => {
-      process.env.STRIPE_PRICE_TEAM = 'price_team_456';
+    test('checkout with tier=contractor uses STRIPE_PRICE_CONTRACTOR', async () => {
+      process.env.STRIPE_PRICE_CONTRACTOR = 'price_contractor_789';
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyWithStripe);
       mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
 
       await billing.checkout({
-        body: JSON.stringify({ tier: 'team' })
+        body: JSON.stringify({ tier: 'contractor' })
       });
 
       const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
-      expect(sessionArg.line_items).toEqual([{ price: 'price_team_456', quantity: 1 }]);
+      expect(sessionArg.line_items).toEqual([{ price: 'price_contractor_789', quantity: 1 }]);
     });
 
-    test('checkout with tier=pro uses STRIPE_PRICE_PRO', async () => {
-      process.env.STRIPE_PRICE_PRO = 'price_pro_789';
-      auth.getCompanyId.mockResolvedValue('comp-1');
-      db.get.mockResolvedValue(companyWithStripe);
-      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
-
-      await billing.checkout({
-        body: JSON.stringify({ tier: 'pro' })
-      });
-
-      const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
-      expect(sessionArg.line_items).toEqual([{ price: 'price_pro_789', quantity: 1 }]);
-    });
-
-    test('checkout defaults to pro tier when no tier specified', async () => {
-      process.env.STRIPE_PRICE_PRO = 'price_pro_default';
+    test('checkout defaults to contractor tier when no tier specified', async () => {
+      process.env.STRIPE_PRICE_CONTRACTOR = 'price_contractor_default';
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyWithStripe);
       mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
@@ -452,13 +436,12 @@ describe('billing handler', () => {
       });
 
       const sessionArg = mockStripe.checkout.sessions.create.mock.calls[0][0];
-      expect(sessionArg.line_items).toEqual([{ price: 'price_pro_default', quantity: 1 }]);
+      expect(sessionArg.line_items).toEqual([{ price: 'price_contractor_default', quantity: 1 }]);
     });
 
     test('checkout falls back to STRIPE_PRICE_ID when tier price not set', async () => {
-      delete process.env.STRIPE_PRICE_PRO;
-      delete process.env.STRIPE_PRICE_SOLO;
-      delete process.env.STRIPE_PRICE_TEAM;
+      delete process.env.STRIPE_PRICE_CONTRACTOR;
+      delete process.env.STRIPE_PRICE_BUILDER;
       process.env.STRIPE_PRICE_ID = 'price_fallback';
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyWithStripe);
@@ -473,19 +456,19 @@ describe('billing handler', () => {
     });
 
     test('checkout passes tier in customer metadata when creating new customer', async () => {
-      process.env.STRIPE_PRICE_SOLO = 'price_solo_123';
+      process.env.STRIPE_PRICE_BUILDER = 'price_builder_123';
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue(companyWithoutStripe);
       mockStripe.customers.create.mockResolvedValue({ id: 'cus_new' });
       mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://x.com' });
 
       await billing.checkout({
-        body: JSON.stringify({ tier: 'solo' })
+        body: JSON.stringify({ tier: 'builder' })
       });
 
       expect(mockStripe.customers.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          metadata: expect.objectContaining({ tier: 'solo' })
+          metadata: expect.objectContaining({ tier: 'builder' })
         })
       );
     });

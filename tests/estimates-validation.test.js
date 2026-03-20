@@ -30,7 +30,7 @@ describe('estimates - input validation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     auth.getCompanyId.mockResolvedValue('comp-1');
-    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'contractor' });
     db.put.mockImplementation(item => item);
   });
 
@@ -327,7 +327,7 @@ describe('estimates - input validation', () => {
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(403);
-      expect(JSON.parse(result.body).error).toContain('Free plan limit');
+      expect(JSON.parse(result.body).error).toContain('Starter plan limit');
     });
 
     test('allows create when deleted estimates bring active count under 3', async () => {
@@ -344,8 +344,8 @@ describe('estimates - input validation', () => {
       expect(result.statusCode).toBe(201);
     });
 
-    test('does not enforce limit for solo tier', async () => {
-      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'solo' });
+    test('does not enforce limit for builder tier', async () => {
+      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'builder' });
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(201);
@@ -353,8 +353,8 @@ describe('estimates - input validation', () => {
       expect(db.query).not.toHaveBeenCalled();
     });
 
-    test('does not enforce limit for pro tier', async () => {
-      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
+    test('does not enforce limit for contractor tier', async () => {
+      db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'contractor' });
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(201);

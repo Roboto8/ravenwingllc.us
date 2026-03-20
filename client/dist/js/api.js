@@ -121,7 +121,7 @@ const API = {
 
   // Billing
   getStatus() { return this._fetch('/api/billing/status'); },
-  createCheckout(returnUrl, tier) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl, tier: tier || 'pro' }) }); },
+  createCheckout(returnUrl, tier) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl, tier: tier || 'contractor' }) }); },
   createPortal(returnUrl) { return this._fetch('/api/billing/portal', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
   exportData() { return this._fetch('/api/billing/export'); },
 

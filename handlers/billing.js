@@ -64,12 +64,11 @@ module.exports.checkout = res.wrap(async (event) => {
 
   // Determine price based on tier
   const tierPrices = {
-    solo: process.env.STRIPE_PRICE_SOLO,
-    pro: process.env.STRIPE_PRICE_PRO,
-    team: process.env.STRIPE_PRICE_TEAM
+    builder: process.env.STRIPE_PRICE_BUILDER,
+    contractor: process.env.STRIPE_PRICE_CONTRACTOR
   };
-  const tier = body.tier || 'pro';
-  const priceId = tierPrices[tier] || process.env.STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_ID;
+  const tier = body.tier || 'contractor';
+  const priceId = tierPrices[tier] || process.env.STRIPE_PRICE_CONTRACTOR || process.env.STRIPE_PRICE_ID;
 
   if (!priceId) return res.bad('No price configured for tier: ' + tier);
 
@@ -145,7 +144,7 @@ module.exports.status = res.wrap(async (event) => {
   // Get next billing date from Stripe if subscribed
   let nextBillingDate = null;
   let planAmount = null;
-  let tier = company.tier || (isFree ? 'free' : 'pro');
+  let tier = company.tier || (isFree ? 'free' : 'contractor');
   if (company.subscriptionId && company.subscriptionStatus === 'active') {
     try {
       const s = getStripe();
@@ -154,8 +153,8 @@ module.exports.status = res.wrap(async (event) => {
       planAmount = sub.items.data[0].price.unit_amount / 100;
       // Detect tier from price
       const priceId = sub.items.data[0].price.id;
-      if (priceId === process.env.STRIPE_PRICE_SOLO) tier = 'solo';
-      else tier = 'pro';
+      if (priceId === process.env.STRIPE_PRICE_BUILDER) tier = 'builder';
+      else tier = 'contractor';
     } catch (e) {
       // Stripe call failed, continue without billing info
     }

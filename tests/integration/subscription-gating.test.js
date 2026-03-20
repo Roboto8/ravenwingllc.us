@@ -59,14 +59,14 @@ describe('Integration: Subscription Gating', () => {
     });
 
     expect(result.statusCode).toBe(403);
-    expect(JSON.parse(result.body).error).toContain('Free plan limit');
+    expect(JSON.parse(result.body).error).toContain('Starter plan limit');
   });
 
   test('3. active subscription allows creation', async () => {
     // Simulate webhook setting subscription to active
     await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
       subscriptionStatus: 'active',
-      tier: 'solo',
+      tier: 'builder',
       subscriptionId: 'sub_123'
     });
 
@@ -109,7 +109,7 @@ describe('Integration: Subscription Gating', () => {
   test('7. reactivated subscription allows creation again', async () => {
     await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
       subscriptionStatus: 'active',
-      tier: 'solo',
+      tier: 'builder',
       subscriptionId: 'sub_456'
     });
 

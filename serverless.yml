@@ -55,9 +55,8 @@ provider:
     STRIPE_SECRET_KEY: ${ssm:fencecalc.${sls:stage}.stripe-secret-key, ''}
     STRIPE_WEBHOOK_SECRET: ${ssm:fencecalc.${sls:stage}.stripe-webhook-secret, ''}
     STRIPE_PRICE_ID: ${ssm:fencecalc.${sls:stage}.stripe-price-id, ''}
-    STRIPE_PRICE_SOLO: ${ssm:fencecalc.${sls:stage}.stripe-price-solo, ''}
-    STRIPE_PRICE_PRO: ${ssm:fencecalc.${sls:stage}.stripe-price-pro, ''}
-    STRIPE_PRICE_TEAM: ${ssm:fencecalc.${sls:stage}.stripe-price-team, ''}
+    STRIPE_PRICE_BUILDER: ${ssm:fencecalc.${sls:stage}.stripe-price-builder, ''}
+    STRIPE_PRICE_CONTRACTOR: ${ssm:fencecalc.${sls:stage}.stripe-price-contractor, ''}
     FORWARD_TO_EMAIL: ${ssm:fencecalc.${sls:stage}.forward-to-email, 'portertoddc@gmail.com'}
     EMAIL_BUCKET: fencetrace-email-us-east-1
 

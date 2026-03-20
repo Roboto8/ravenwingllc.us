@@ -53,7 +53,7 @@ describe('estimates handler', () => {
 
   const activeCompany = {
     subscriptionStatus: 'active',
-    tier: 'pro'
+    tier: 'contractor'
   };
 
   const freeCompany = {
@@ -501,7 +501,7 @@ describe('estimates handler', () => {
   // ===== canCreate (subscription gating) =====
   describe('subscription gating (canCreate)', () => {
     test.each([
-      ['active subscription', { subscriptionStatus: 'active', tier: 'solo' }, 201],
+      ['active subscription', { subscriptionStatus: 'active', tier: 'builder' }, 201],
       ['free tier', { subscriptionStatus: 'free', tier: 'free' }, 201],
       ['active trial', {
         subscriptionStatus: 'trialing',
