@@ -869,6 +869,7 @@ function onMapClick(e) {
 // === Segment Labels ===
 var segLabelOffsets = {}; // key: sectionIdx-segIndex → {dlat, dlng}
 var segLeaderLines = [];
+var _isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 function createSegmentLabel(p1, p2, segIndex) {
   var meters = p1.distanceTo(p2);
@@ -883,15 +884,18 @@ function createSegmentLabel(p1, p2, segIndex) {
   var dLat = p2.lat - p1.lat;
   var dLng = p2.lng - p1.lng;
   var len = Math.sqrt(dLat * dLat + dLng * dLng);
+  var perpLat = 0, perpLng = 0;
   if (len > 0) {
-    var offset = 0.00003; // ~3 meters
-    midLat += (-dLng / len) * offset;
-    midLng += (dLat / len) * offset;
+    perpLat = -dLng / len;
+    perpLng = dLat / len;
+    midLat += perpLat * 0.00003;
+    midLng += perpLng * 0.00003;
   }
 
-  // Apply any saved drag offset
+  // Apply any saved offset (drag or tap-toggle)
   var offKey = secIdx + '-' + segIndex;
-  if (segLabelOffsets[offKey]) {
+  var isOffset = !!segLabelOffsets[offKey];
+  if (isOffset) {
     midLat += segLabelOffsets[offKey].dlat;
     midLng += segLabelOffsets[offKey].dlng;
   }
@@ -907,40 +911,92 @@ function createSegmentLabel(p1, p2, segIndex) {
       iconAnchor: [30, 8]
     }),
     interactive: true,
-    draggable: true
+    draggable: !_isMobileDevice
   }).addTo(map);
 
-  // Leader line (only visible when label has been dragged away)
+  // Leader line (only visible when label has been moved away)
   var leaderLine = L.polyline([[anchorLat, anchorLng], [midLat, midLng]], {
-    color: '#c0622e', weight: 1, opacity: segLabelOffsets[offKey] ? 0.6 : 0, dashArray: '4,4',
+    color: '#c0622e', weight: 1, opacity: isOffset ? 0.6 : 0, dashArray: '4,4',
     interactive: false
   }).addTo(map);
   segLeaderLines.push(leaderLine);
 
-  // Store anchor for drag calculations
   label._anchorLat = anchorLat;
   label._anchorLng = anchorLng;
+  label._perpLat = perpLat;
+  label._perpLng = perpLng;
   label._offKey = offKey;
   label._leaderLine = leaderLine;
+  label._isOffset = isOffset;
+  label._p1 = p1;
+  label._p2 = p2;
+  label._dLat = dLat;
+  label._dLng = dLng;
+  label._segLen = len;
 
-  label.on('dragstart', function() { label._dragStartLL = label.getLatLng(); });
-  label.on('drag', function() {
-    var ll = label.getLatLng();
-    leaderLine.setLatLngs([[label._anchorLat, label._anchorLng], [ll.lat, ll.lng]]);
-    leaderLine.setStyle({ opacity: 0.6 });
-  });
-  label.on('dragend', function() {
-    var ll = label.getLatLng();
-    var baseLat = (p1.lat + p2.lat) / 2;
-    var baseLng = (p1.lng + p2.lng) / 2;
-    if (len > 0) {
-      baseLat += (-dLng / len) * 0.00003;
-      baseLng += (dLat / len) * 0.00003;
-    }
-    segLabelOffsets[label._offKey] = { dlat: ll.lat - baseLat, dlng: ll.lng - baseLng };
-  });
+  if (_isMobileDevice) {
+    // Mobile: double-tap to toggle label position (outward snap)
+    var tapCount = 0;
+    var tapTimer = null;
+    label.on('click', function(e) {
+      // Let inner span onclick handle edit clicks — only toggle on the label background
+      if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.tagName === 'BUTTON') return;
+      tapCount++;
+      if (tapCount === 1) {
+        tapTimer = setTimeout(function() { tapCount = 0; }, 400);
+      }
+      if (tapCount >= 2) {
+        clearTimeout(tapTimer);
+        tapCount = 0;
+        toggleSegLabelPosition(label);
+      }
+    });
+  } else {
+    // Desktop: drag to reposition
+    label.on('dragstart', function() { label._dragStartLL = label.getLatLng(); });
+    label.on('drag', function() {
+      var ll = label.getLatLng();
+      leaderLine.setLatLngs([[label._anchorLat, label._anchorLng], [ll.lat, ll.lng]]);
+      leaderLine.setStyle({ opacity: 0.6 });
+    });
+    label.on('dragend', function() {
+      var ll = label.getLatLng();
+      var baseLat = (label._p1.lat + label._p2.lat) / 2;
+      var baseLng = (label._p1.lng + label._p2.lng) / 2;
+      if (label._segLen > 0) {
+        baseLat += label._perpLat * 0.00003;
+        baseLng += label._perpLng * 0.00003;
+      }
+      segLabelOffsets[label._offKey] = { dlat: ll.lat - baseLat, dlng: ll.lng - baseLng };
+      label._isOffset = true;
+    });
+  }
 
   return label;
+}
+
+function toggleSegLabelPosition(label) {
+  var snapDist = 0.00015; // ~15 meters outward
+  if (label._isOffset) {
+    // Snap back to default position
+    delete segLabelOffsets[label._offKey];
+    label._isOffset = false;
+    var baseLat = (label._p1.lat + label._p2.lat) / 2 + label._perpLat * 0.00003;
+    var baseLng = (label._p1.lng + label._p2.lng) / 2 + label._perpLng * 0.00003;
+    label.setLatLng([baseLat, baseLng]);
+    label._leaderLine.setStyle({ opacity: 0 });
+  } else {
+    // Snap outward perpendicular to segment
+    var offLat = label._perpLat * snapDist;
+    var offLng = label._perpLng * snapDist;
+    segLabelOffsets[label._offKey] = { dlat: offLat, dlng: offLng };
+    label._isOffset = true;
+    var baseLat = (label._p1.lat + label._p2.lat) / 2 + label._perpLat * 0.00003;
+    var baseLng = (label._p1.lng + label._p2.lng) / 2 + label._perpLng * 0.00003;
+    label.setLatLng([baseLat + offLat, baseLng + offLng]);
+    label._leaderLine.setLatLngs([[label._anchorLat, label._anchorLng], [baseLat + offLat, baseLng + offLng]]);
+    label._leaderLine.setStyle({ opacity: 0.6 });
+  }
 }
 
 function deleteFencePoint(ptIdx) {
@@ -3338,7 +3394,7 @@ function finalizeMulchArea(points) {
       iconAnchor: [60, 36]
     }),
     interactive: true,
-    draggable: true
+    draggable: !_isMobileDevice
   }).addTo(map);
 
   var mulchLeaderLine = L.polyline([[labelAnchor.lat, labelAnchor.lng], [labelAnchor.lat, labelAnchor.lng]], {
@@ -3350,15 +3406,45 @@ function finalizeMulchArea(points) {
   areaLabel._leaderLine = mulchLeaderLine;
   areaLabel._dragOffset = null;
 
-  areaLabel.on('drag', function() {
-    var ll = areaLabel.getLatLng();
-    mulchLeaderLine.setLatLngs([[areaLabel._anchorLat, areaLabel._anchorLng], [ll.lat, ll.lng]]);
-    mulchLeaderLine.setStyle({ opacity: 0.6 });
-  });
-  areaLabel.on('dragend', function() {
-    var ll = areaLabel.getLatLng();
-    areaLabel._dragOffset = { dlat: ll.lat - areaLabel._anchorLat, dlng: ll.lng - areaLabel._anchorLng };
-  });
+  if (_isMobileDevice) {
+    // Mobile: double-tap to toggle label outward
+    var mTapCount = 0;
+    var mTapTimer = null;
+    areaLabel.on('click', function() {
+      mTapCount++;
+      if (mTapCount === 1) {
+        mTapTimer = setTimeout(function() { mTapCount = 0; }, 400);
+      }
+      if (mTapCount >= 2) {
+        clearTimeout(mTapTimer);
+        mTapCount = 0;
+        var snapDist = 0.00020;
+        if (areaLabel._dragOffset) {
+          // Snap back
+          areaLabel._dragOffset = null;
+          areaLabel.setLatLng([areaLabel._anchorLat, areaLabel._anchorLng]);
+          mulchLeaderLine.setStyle({ opacity: 0 });
+        } else {
+          // Snap outward (upward from polygon)
+          areaLabel._dragOffset = { dlat: snapDist, dlng: 0 };
+          areaLabel.setLatLng([areaLabel._anchorLat + snapDist, areaLabel._anchorLng]);
+          mulchLeaderLine.setLatLngs([[areaLabel._anchorLat, areaLabel._anchorLng], [areaLabel._anchorLat + snapDist, areaLabel._anchorLng]]);
+          mulchLeaderLine.setStyle({ opacity: 0.6 });
+        }
+      }
+    });
+  } else {
+    // Desktop: drag to reposition
+    areaLabel.on('drag', function() {
+      var ll = areaLabel.getLatLng();
+      mulchLeaderLine.setLatLngs([[areaLabel._anchorLat, areaLabel._anchorLng], [ll.lat, ll.lng]]);
+      mulchLeaderLine.setStyle({ opacity: 0.6 });
+    });
+    areaLabel.on('dragend', function() {
+      var ll = areaLabel.getLatLng();
+      areaLabel._dragOffset = { dlat: ll.lat - areaLabel._anchorLat, dlng: ll.lng - areaLabel._anchorLng };
+    });
+  }
 
   var area = {
     points: points,
