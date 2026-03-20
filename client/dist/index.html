@@ -229,7 +229,6 @@
   <nav class="nav">
     <div class="nav-left">
       <a href="/" class="nav-brand" style="text-decoration:none;color:inherit">Fence<span class="accent">Trace</span></a>
-      <span class="early-access-badge">EARLY ACCESS</span>
       <span class="nav-tagline" data-i18n="nav_tagline">Estimate in 60 seconds</span>
     </div>
     <div class="nav-right">
@@ -323,6 +322,7 @@
         <button class="tool-btn" id="mulch-btn" onclick="setTool('mulch')" title="Mulch area tool (A)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20L12 4 2 20z"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="14" cy="14" r="1" fill="currentColor"/><circle cx="11" cy="18" r="1" fill="currentColor"/></svg>
           <span data-i18n="tool_mulch">Mulch</span>
+          <span class="early-access-badge tool-badge">EA</span>
         </button>
         <button class="tool-btn" id="shapes-btn" onclick="showShapePicker()" title="Drop a preset shape">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
@@ -361,6 +361,9 @@
       </div>
     </div>
 
+    <button class="desktop-panel-tab" id="desktop-panel-tab" onclick="toggleDesktopPanel()" title="Toggle estimate panel">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
     <div class="estimate-panel" id="estimate-panel">
       <button class="panel-toggle" id="panel-toggle" onclick="togglePanel()">
         <span class="toggle-label" data-i18n="panel_show_estimate">Show Estimate</span>
