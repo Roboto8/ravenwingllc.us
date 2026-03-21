@@ -5976,6 +5976,14 @@ function togglePanel() {
   setTimeout(() => map.invalidateSize(), 350);
 }
 
+// Auto-collapse estimate panel on mobile for maximum map space
+if (window.innerWidth <= 600) {
+  document.addEventListener('DOMContentLoaded', function() {
+    var panel = document.getElementById('estimate-panel');
+    if (panel) panel.classList.add('collapsed');
+  });
+}
+
 function toggleDesktopPanel() {
   var panel = document.getElementById('estimate-panel');
   var tab = document.getElementById('desktop-panel-tab');
