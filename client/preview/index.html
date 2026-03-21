@@ -1191,14 +1191,23 @@
           document.getElementById('trial-banner').style.display = 'none';
           document.getElementById('paywall-modal').style.display = 'none';
         } else {
-          // Starter tier (free, expired trial, canceled — all treated as free)
+          // Starter tier — only show banner when 1 or 0 estimates remaining
           var limit = status.estimateLimit || 2;
           var remaining = Math.max(0, limit - (status.estimatesUsed || 0));
-          document.getElementById('trial-banner').style.display = 'flex';
-          document.getElementById('trial-banner').style.background = '';
-          document.getElementById('trial-text').textContent = remaining + ' free estimate' + (remaining !== 1 ? 's' : '') + ' remaining this month' + (limit === 2 ? ' — share for +1 bonus' : '');
-          document.getElementById('trial-action-btn').textContent = 'Upgrade';
-          document.getElementById('trial-action-btn').onclick = showPricing;
+          if (remaining <= 1) {
+            document.getElementById('trial-banner').style.display = 'flex';
+            document.getElementById('trial-banner').style.background = '';
+            if (remaining === 0) {
+              document.getElementById('trial-text').textContent = 'No free estimates remaining this month';
+              document.getElementById('trial-action-btn').textContent = 'Upgrade';
+            } else {
+              document.getElementById('trial-text').textContent = '1 free estimate remaining' + (limit === 2 ? ' — share for +1 bonus' : '');
+              document.getElementById('trial-action-btn').textContent = 'Upgrade';
+            }
+            document.getElementById('trial-action-btn').onclick = showPricing;
+          } else {
+            document.getElementById('trial-banner').style.display = 'none';
+          }
         }
       } catch (e) {
         // API not deployed or error — allow access (don't lock people out on errors)
