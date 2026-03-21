@@ -37,7 +37,8 @@ module.exports.getUploadUrl = async (event) => {
   const est = await db.findById('COMPANY#' + companyId, 'EST#', estId);
   if (!est) return res.notFound();
 
-  const body = JSON.parse(event.body || '{}');
+  const body = res.parseBody(event);
+  if (!body) return res.bad('Invalid JSON');
   if (!body.filename || !body.contentType) {
     return res.bad('filename and contentType are required');
   }

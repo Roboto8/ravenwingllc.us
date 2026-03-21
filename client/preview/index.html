@@ -26,6 +26,7 @@
   <meta name="theme-color" content="#c0622e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.tile.openstreetmap.org https://server.arcgisonline.com https://*.s3.us-east-1.amazonaws.com data: blob:; connect-src 'self' https://*.execute-api.us-east-1.amazonaws.com https://cognito-idp.us-east-1.amazonaws.com https://nominatim.openstreetmap.org https://*.s3.us-east-1.amazonaws.com https://wa.me; frame-src 'none'; object-src 'none'">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
@@ -1882,9 +1883,9 @@
         body.innerHTML = result.estimates.map(function(e) { return '' +
           '<div class="est-list-item">' +
             '<div class="est-list-content">' +
-              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + '</div>' +
-              '<div class="est-list-detail">' + (e.customerAddress || 'No address') + '</div>' +
-              '<div class="est-list-detail">' + e.fenceType + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
+              '<div class="est-list-name">' + escapeHtml(e.customerName || 'Unnamed') + '</div>' +
+              '<div class="est-list-detail">' + escapeHtml(e.customerAddress || 'No address') + '</div>' +
+              '<div class="est-list-detail">' + escapeHtml(e.fenceType) + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
               '<div class="est-list-date">Deleted ' + new Date(e.deletedAt).toLocaleDateString() + '</div>' +
             '</div>' +
             '<button class="est-restore-btn" onclick="restoreEstimate(\'' + e.id + '\')" title="Restore">Restore</button>' +
@@ -1927,9 +1928,9 @@
           return '' +
           '<div class="est-list-item">' +
             '<div class="est-list-content" onclick="loadSavedEstimate(\'' + e.id + '\')">' +
-              '<div class="est-list-name">' + (e.customerName || 'Unnamed') + badge + '</div>' +
-              '<div class="est-list-detail">' + (e.customerAddress || 'No address') + '</div>' +
-              '<div class="est-list-detail">' + e.fenceType + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
+              '<div class="est-list-name">' + escapeHtml(e.customerName || 'Unnamed') + badge + '</div>' +
+              '<div class="est-list-detail">' + escapeHtml(e.customerAddress || 'No address') + '</div>' +
+              '<div class="est-list-detail">' + escapeHtml(e.fenceType) + ' &middot; ' + e.totalFeet + ' ft &middot; ' + e.totalCost + '</div>' +
               '<div class="est-list-date">' + new Date(e.createdAt).toLocaleDateString() + '</div>' +
             '</div>' +
             '<button class="est-delete-btn" onclick="event.stopPropagation(); deleteEstimate(\'' + e.id + '\')" title="Delete">&times;</button>' +

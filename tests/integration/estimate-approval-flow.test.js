@@ -53,6 +53,7 @@ describe('Integration: Estimate → Approval Flow', () => {
   beforeEach(() => {
     auth.getCompanyId.mockResolvedValue(COMPANY_ID);
     auth.getUser.mockReturnValue({ sub: USER_SUB, email: 'owner@integ.com' });
+    approval._resetRateLimit();
   });
 
   let createdEstimateId;

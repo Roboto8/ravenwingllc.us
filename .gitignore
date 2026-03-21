@@ -6,3 +6,6 @@ coverage/
 android/output/app/build/
 android/output/.gradle/
 android/node_modules/
+.env
+.env.*
+.env.local

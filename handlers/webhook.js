@@ -50,7 +50,7 @@ module.exports.handler = async (event) => {
           const priceId = sub.items.data[0].price.id;
           if (priceId === process.env.STRIPE_PRICE_BUILDER) tier = 'builder';
           else tier = 'contractor';
-        } catch (e) {}
+        } catch (e) { console.warn('Could not retrieve subscription tier:', e.message); }
         await db.update('COMPANY#' + companyId, 'PROFILE', {
           subscriptionStatus: 'active',
           subscriptionId,

@@ -158,7 +158,7 @@ module.exports.status = res.wrap(async (event) => {
       if (priceId === process.env.STRIPE_PRICE_BUILDER) tier = 'builder';
       else tier = 'contractor';
     } catch (e) {
-      // Stripe call failed, continue without billing info
+      console.warn('Stripe subscription lookup failed:', e.message);
     }
   }
 

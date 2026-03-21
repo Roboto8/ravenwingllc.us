@@ -5,6 +5,15 @@ const crypto = require('crypto');
 const { checkPermission } = require('./roles');
 const { notify } = require('./lib/notify');
 
+// In-memory rate limit: token -> last respond timestamp
+const _respondTimestamps = {};
+const RESPOND_RATE_LIMIT_MS = 10000; // 10 seconds
+
+// Reset rate limiter (for testing)
+module.exports._resetRateLimit = function() {
+  for (const key in _respondTimestamps) delete _respondTimestamps[key];
+};
+
 // POST /api/estimates/{id}/share — generate share token, set approvalStatus to 'sent'
 module.exports.share = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
@@ -89,6 +98,20 @@ module.exports.getPublic = res.wrap(async (event) => {
 module.exports.respond = res.wrap(async (event) => {
   const token = event.pathParameters.token;
   if (!token) return res.bad('Missing token');
+
+  // Rate limit: prevent same token from spamming responses
+  const now = Date.now();
+  if (_respondTimestamps[token] && (now - _respondTimestamps[token]) < RESPOND_RATE_LIMIT_MS) {
+    return res.tooMany('Please wait before submitting another response');
+  }
+  _respondTimestamps[token] = now;
+
+  // Clean up stale rate limit entries to prevent memory leak in warm Lambda
+  for (const key in _respondTimestamps) {
+    if (now - _respondTimestamps[key] > RESPOND_RATE_LIMIT_MS * 6) {
+      delete _respondTimestamps[key];
+    }
+  }
 
   const body = res.parseBody(event);
   if (!body) return res.bad('Invalid JSON');

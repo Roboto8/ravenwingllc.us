@@ -26,7 +26,7 @@ const auth = require('../handlers/lib/auth');
 const approval = require('../handlers/approval');
 
 describe('approval handler - edge cases', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => { jest.clearAllMocks(); approval._resetRateLimit(); });
 
   const mockEstimate = {
     PK: 'COMPANY#comp-1', SK: 'EST#2026-01-01#est-1',
