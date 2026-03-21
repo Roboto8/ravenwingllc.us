@@ -259,6 +259,7 @@ function saveActiveSection() {
   s.points = fencePoints;
   s.markers = fenceMarkers;
   s.line = fenceLine;
+  s.outline = window._fenceLineOutline || null;
   s.labels = segmentLabels;
   s.leaderLines = segLeaderLines;
   s.closed = fenceClosed;
@@ -341,6 +342,12 @@ function deleteSection(idx) {
   s.labels.forEach(function(l) { map.removeLayer(l); });
   (s.leaderLines || []).forEach(function(l) { map.removeLayer(l); });
   if (s.line) map.removeLayer(s.line);
+  if (s.outline) { map.removeLayer(s.outline); s.outline = null; }
+  // Also clean up active outline if deleting the active section
+  if (idx === activeSectionIdx && window._fenceLineOutline) {
+    map.removeLayer(window._fenceLineOutline);
+    window._fenceLineOutline = null;
+  }
 
   sections.splice(idx, 1);
 
@@ -2117,8 +2124,11 @@ function clearAll() {
   sections.forEach(function(s) {
     s.markers.forEach(function(m) { map.removeLayer(m); });
     s.labels.forEach(function(l) { map.removeLayer(l); });
+    (s.leaderLines || []).forEach(function(l) { map.removeLayer(l); });
     if (s.line) map.removeLayer(s.line);
+    if (s.outline) map.removeLayer(s.outline);
   });
+  if (window._fenceLineOutline) { map.removeLayer(window._fenceLineOutline); window._fenceLineOutline = null; }
   sections = [];
 
   fencePoints = [];
