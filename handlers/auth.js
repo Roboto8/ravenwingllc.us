@@ -58,7 +58,7 @@ module.exports.postConfirmation = async (event) => {
   const companyId = crypto.randomUUID();
   const normalized = normalizeEmail(email);
 
-  // Create company on free tier (no trial — free tier gives 3 estimates/month)
+  // Create company on free tier (2 estimates/month + share bonus)
   await db.put({
     PK: 'COMPANY#' + companyId,
     SK: 'PROFILE',

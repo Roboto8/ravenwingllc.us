@@ -48,20 +48,20 @@ describe('Free tier estimate limit', () => {
     }));
   }
 
-  test('blocks Free user at 3 estimates this month', async () => {
+  test('blocks Free user at 2 estimates this month', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
     db.get.mockResolvedValue(freeCompany);
-    db.query.mockResolvedValue({ items: makeEstimates(3), nextKey: null });
+    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
 
     const result = await estimates.create(makeCreateEvent());
     expect(result.statusCode).toBe(403);
     expect(JSON.parse(result.body).error).toContain('Starter plan limit');
   });
 
-  test('allows Free user under 3 estimates this month', async () => {
+  test('allows Free user under 2 estimates this month', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
     db.get.mockResolvedValue(freeCompany);
-    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
+    db.query.mockResolvedValue({ items: makeEstimates(1), nextKey: null });
     db.put.mockResolvedValue({});
 
     const result = await estimates.create(makeCreateEvent());
@@ -74,7 +74,7 @@ describe('Free tier estimate limit', () => {
     const now = new Date();
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 2).toISOString();
     const items = [
-      ...makeEstimates(2),
+      ...makeEstimates(1),
       ...Array.from({ length: 5 }, (_, i) => ({
         PK: 'COMPANY#comp-1', SK: 'EST#del-' + i, id: 'del-' + i, status: 'deleted', createdAt: thisMonth
       }))

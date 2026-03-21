@@ -170,7 +170,9 @@ module.exports.status = res.wrap(async (event) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
     estimatesUsed = items.filter(i => i.status !== 'deleted' && i.createdAt >= monthStart).length;
-    estimateLimit = 3;
+    // Base limit 2 + share bonus
+    const nowMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    estimateLimit = 2 + (company.shareBonusMonth === nowMonth ? 1 : 0);
   }
 
   // past_due gets a 7-day grace period before lockout
@@ -192,6 +194,26 @@ module.exports.status = res.wrap(async (event) => {
     estimateLimit,
     canCancel: company.subscriptionStatus === 'active' || isPastDue
   });
+});
+
+// Share bonus — grant +1 estimate for sharing this month
+module.exports.shareBonus = res.wrap(async (event) => {
+  const companyId = await auth.getCompanyId(event, db);
+  if (!companyId) return res.forbidden();
+
+  const company = await db.get('COMPANY#' + companyId, 'PROFILE');
+  if (!company) return res.notFound();
+
+  const now = new Date();
+  const nowMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+  // Already claimed this month
+  if (company.shareBonusMonth === nowMonth) {
+    return res.ok({ granted: false, message: 'Share bonus already claimed this month' });
+  }
+
+  await db.update('COMPANY#' + companyId, 'PROFILE', { shareBonusMonth: nowMonth });
+  return res.ok({ granted: true, message: 'Bonus estimate unlocked! You now have 3 estimates this month.' });
 });
 
 // Data export — let users download all their estimates

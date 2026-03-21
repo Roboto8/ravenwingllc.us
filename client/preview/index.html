@@ -189,7 +189,7 @@
           <div style="font-weight:700;font-size:1rem;color:var(--text)">Starter</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--text-muted);margin:4px 0">$0</div>
           <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.6">
-            3 estimates/month<br>
+            2 estimates/month<br>
             Fence &amp; mulch estimating<br>
             Detailed BOM<br>
             Save &amp; reload
@@ -1192,10 +1192,11 @@
           document.getElementById('paywall-modal').style.display = 'none';
         } else {
           // Starter tier (free, expired trial, canceled — all treated as free)
-          var remaining = Math.max(0, 3 - (status.estimatesUsed || 0));
+          var limit = status.estimateLimit || 2;
+          var remaining = Math.max(0, limit - (status.estimatesUsed || 0));
           document.getElementById('trial-banner').style.display = 'flex';
           document.getElementById('trial-banner').style.background = '';
-          document.getElementById('trial-text').textContent = remaining + ' free estimate' + (remaining !== 1 ? 's' : '') + ' remaining this month';
+          document.getElementById('trial-text').textContent = remaining + ' free estimate' + (remaining !== 1 ? 's' : '') + ' remaining this month' + (limit === 2 ? ' — share for +1 bonus' : '');
           document.getElementById('trial-action-btn').textContent = 'Upgrade';
           document.getElementById('trial-action-btn').onclick = showPricing;
         }
@@ -1415,7 +1416,7 @@
         } else if (status.tier) {
           document.getElementById('account-amount-row').style.display = 'flex';
           var tierName = { free: 'Starter', builder: 'Builder', contractor: 'Contractor' }[status.tier] || 'Starter';
-          var tierDetail = status.tier === 'free' ? (status.estimatesUsed || 0) + '/3 estimates this month' : tierName;
+          var tierDetail = status.tier === 'free' ? (status.estimatesUsed || 0) + '/' + (status.estimateLimit || 2) + ' estimates this month' : tierName;
           document.getElementById('account-amount').textContent = tierDetail;
         }
 

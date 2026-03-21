@@ -316,26 +316,26 @@ describe('estimates - input validation', () => {
 
   // ===== Free tier estimate limit =====
   describe('free tier limit', () => {
-    test('blocks create at 3 estimates this month on free tier', async () => {
+    test('blocks create at 2 estimates this month on free tier', async () => {
       db.get.mockResolvedValue({ subscriptionStatus: 'free', tier: 'free' });
       const now = new Date();
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 2).toISOString();
-      const threeEstimates = Array.from({ length: 3 }, (_, i) => ({
+      const twoEstimates = Array.from({ length: 2 }, (_, i) => ({
         id: 'est-' + i, status: 'draft', createdAt: thisMonth
       }));
-      db.query.mockResolvedValue({ items: threeEstimates });
+      db.query.mockResolvedValue({ items: twoEstimates });
 
       const result = await estimates.create({ body: '{}' });
       expect(result.statusCode).toBe(403);
       expect(JSON.parse(result.body).error).toContain('Starter plan limit');
     });
 
-    test('allows create when deleted estimates bring active count under 3', async () => {
+    test('allows create when deleted estimates bring active count under 2', async () => {
       db.get.mockResolvedValue({ subscriptionStatus: 'free', tier: 'free' });
       const now = new Date();
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 2).toISOString();
       const items = [
-        ...Array.from({ length: 2 }, (_, i) => ({ id: 'est-' + i, status: 'draft', createdAt: thisMonth })),
+        { id: 'est-0', status: 'draft', createdAt: thisMonth },
         { id: 'est-del', status: 'deleted', createdAt: thisMonth }
       ];
       db.query.mockResolvedValue({ items });

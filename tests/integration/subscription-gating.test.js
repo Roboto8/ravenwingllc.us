@@ -49,10 +49,9 @@ describe('Integration: Subscription Gating', () => {
     expect(result.statusCode).toBe(201);
   });
 
-  test('2. free tier blocks after 3 estimates this month', async () => {
-    // Create 2 more estimates to reach the limit of 3
+  test('2. free tier blocks after 2 estimates this month', async () => {
+    // Create 1 more estimate to reach the limit of 2
     await estimates.create({ body: JSON.stringify({ customerName: 'Free Customer 2' }) });
-    await estimates.create({ body: JSON.stringify({ customerName: 'Free Customer 3' }) });
 
     const result = await estimates.create({
       body: JSON.stringify({ customerName: 'Blocked Customer' })
@@ -90,7 +89,7 @@ describe('Integration: Subscription Gating', () => {
       tier: 'free'
     });
 
-    // Already created 4 estimates (tests 1, 2x2, 3), so free tier limit (3/month) is exceeded
+    // Already created 3 estimates (tests 1, 2, 3), so free tier limit (2/month) is exceeded
     const result = await estimates.create({
       body: JSON.stringify({ customerName: 'Canceled Customer' })
     });

@@ -240,7 +240,7 @@ describe('billing handler', () => {
       expect(body.active).toBe(true);
       expect(body.tier).toBe('free');
       expect(body.estimatesUsed).toBe(0);
-      expect(body.estimateLimit).toBe(3);
+      expect(body.estimateLimit).toBe(2);
     });
 
     test('returns canceled status', async () => {
@@ -758,6 +758,85 @@ describe('billing handler', () => {
 
       const result = await billing.exportData({});
       expect(result.statusCode).toBe(404);
+    });
+  });
+
+  // ===== SHARE BONUS =====
+  describe('shareBonus', () => {
+    function currentMonth() {
+      const now = new Date();
+      return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    }
+
+    test('sets shareBonusMonth on company and returns granted true', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({ subscriptionStatus: 'free', tier: 'free' });
+
+      const result = await billing.shareBonus({ body: '{}' });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.granted).toBe(true);
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-1', 'PROFILE',
+        { shareBonusMonth: currentMonth() }
+      );
+    });
+
+    test('returns granted false when already claimed this month', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'free',
+        tier: 'free',
+        shareBonusMonth: currentMonth()
+      });
+
+      const result = await billing.shareBonus({ body: '{}' });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.granted).toBe(false);
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    test('allows claiming when shareBonusMonth is from a different month', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'free',
+        tier: 'free',
+        shareBonusMonth: '2025-01'
+      });
+
+      const result = await billing.shareBonus({ body: '{}' });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.granted).toBe(true);
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-1', 'PROFILE',
+        { shareBonusMonth: currentMonth() }
+      );
+    });
+
+    test('returns 403 when no auth', async () => {
+      auth.getCompanyId.mockResolvedValue(null);
+      const result = await billing.shareBonus({ body: '{}' });
+      expect(result.statusCode).toBe(403);
+    });
+
+    test('status returns estimateLimit 3 when share bonus is active', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        subscriptionStatus: 'free',
+        tier: 'free',
+        shareBonusMonth: currentMonth()
+      });
+      db.query.mockResolvedValue({ items: [] });
+
+      const result = await billing.status({});
+      const body = JSON.parse(result.body);
+
+      expect(body.estimateLimit).toBe(3);
     });
   });
 });

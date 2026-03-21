@@ -38,8 +38,14 @@ module.exports.create = res.wrap(async (event) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
     const thisMonth = items.filter(i => i.status !== 'deleted' && i.createdAt >= monthStart);
-    if (thisMonth.length >= 3) {
-      return res.forbidden('Starter plan limit reached (3 estimates/month). Upgrade to Builder for unlimited.');
+    // Base limit 2 + share bonus (1 if shared this month)
+    const nowMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const freeLimit = 2 + (company.shareBonusMonth === nowMonth ? 1 : 0);
+    if (thisMonth.length >= freeLimit) {
+      const msg = freeLimit === 2
+        ? 'Starter plan limit reached (2 estimates/month). Share an estimate for +1 bonus, or upgrade to Builder for unlimited.'
+        : 'Starter plan limit reached (' + freeLimit + ' estimates/month). Upgrade to Builder for unlimited.';
+      return res.forbidden(msg);
     }
   }
 

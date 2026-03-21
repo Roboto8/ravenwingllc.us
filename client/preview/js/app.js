@@ -4529,6 +4529,18 @@ document.addEventListener('click', function(e) {
 });
 
 // === Share / Approval Workflow ===
+// Claim share bonus estimate when user shares
+function claimShareBonus() {
+  if (typeof API !== 'undefined' && API.claimShareBonus && window._ftTier === 'free') {
+    API.claimShareBonus().then(function(r) {
+      if (r && r.granted) {
+        showToast('Bonus estimate unlocked! You now have 3 this month.');
+        window._ftEstimateLimit = 3;
+      }
+    }).catch(function() {});
+  }
+}
+
 // Share interactive map view — for teammates/collaboration
 function shareView() {
   try {
@@ -4660,7 +4672,7 @@ function showShareDialog(title, url) {
       '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px">' + title + '</p>' +
       '<div style="display:flex;gap:8px;margin-bottom:16px">' +
         '<input type="text" value="' + url.replace(/"/g, '&quot;') + '" readonly id="share-url-input" style="flex:1;padding:10px 12px;font-size:0.85rem;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;text-overflow:ellipsis">' +
-        '<button class="btn" onclick="document.getElementById(\'share-url-input\').select();copyToClipboard(\'' + url.replace(/'/g, "\\'") + '\');this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Copy\',2000)" style="white-space:nowrap;min-width:70px">Copy</button>' +
+        '<button class="btn" onclick="document.getElementById(\'share-url-input\').select();copyToClipboard(\'' + url.replace(/'/g, "\\'") + '\');claimShareBonus();this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Copy\',2000)" style="white-space:nowrap;min-width:70px">Copy</button>' +
       '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px">' +
         (('ontouchstart' in window || navigator.maxTouchPoints > 0) ?
@@ -4679,6 +4691,13 @@ function showShareDialog(title, url) {
     '</div>';
 
   document.body.appendChild(overlay);
+
+  // Claim share bonus when any share link is clicked
+  overlay.addEventListener('click', function(e) {
+    if (e.target.closest('a[href^="sms:"], a[href^="mailto:"], a[href*="wa.me"], a[href*="facebook.com"], a[href*="discord"]')) {
+      claimShareBonus();
+    }
+  });
 }
 
 // Send estimate to customer for approval — requires Contractor tier

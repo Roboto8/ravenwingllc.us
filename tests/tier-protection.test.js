@@ -2,7 +2,7 @@
  * Tier Protection Tests
  *
  * Validates that feature gating works correctly for each tier:
- * - Starter (free): 3 estimates/month, no PDF, no approvals
+ * - Starter (free): 2 estimates/month (+1 share bonus), no PDF, no approvals
  * - Builder ($15): unlimited estimates, PDF export, no approvals
  * - Contractor ($35): unlimited estimates, PDF export, customer approvals
  */
@@ -56,31 +56,31 @@ describe('Tier protection — Starter (free)', () => {
     expect(result.statusCode).toBe(201);
   });
 
-  test('allows second and third estimate', async () => {
+  test('allows second estimate', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
     db.get.mockResolvedValue(freeCompany);
-    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
+    db.query.mockResolvedValue({ items: makeEstimates(1), nextKey: null });
     db.put.mockResolvedValue({});
 
     const result = await estimates.create(makeEvent({ customerName: 'Test' }));
     expect(result.statusCode).toBe(201);
   });
 
-  test('blocks fourth estimate in same month', async () => {
+  test('blocks third estimate in same month', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
     db.get.mockResolvedValue(freeCompany);
-    db.query.mockResolvedValue({ items: makeEstimates(3), nextKey: null });
+    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
 
     const result = await estimates.create(makeEvent({ customerName: 'Test' }));
     expect(result.statusCode).toBe(403);
     expect(JSON.parse(result.body).error).toContain('Starter plan limit');
-    expect(JSON.parse(result.body).error).toContain('3 estimates/month');
+    expect(JSON.parse(result.body).error).toContain('2 estimates/month');
   });
 
   test('does not count deleted estimates toward limit', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
     db.get.mockResolvedValue(freeCompany);
-    const items = makeEstimates(3);
+    const items = makeEstimates(2);
     items[0].status = 'deleted';
     db.query.mockResolvedValue({ items, nextKey: null });
     db.put.mockResolvedValue({});
@@ -92,7 +92,7 @@ describe('Tier protection — Starter (free)', () => {
   test('does not count previous month estimates toward limit', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
     db.get.mockResolvedValue(freeCompany);
-    // 3 estimates from last month, 0 from this month
+    // 3 estimates from last month (over limit), 0 from this month — should still allow
     db.query.mockResolvedValue({ items: makeEstimates(3, -1), nextKey: null });
     db.put.mockResolvedValue({});
 
@@ -172,7 +172,7 @@ describe('Tier protection — expired/canceled users get free tier limits', () =
       subscriptionStatus: 'trialing',
       trialEndsAt: new Date(0).toISOString()
     });
-    db.query.mockResolvedValue({ items: makeEstimates(3), nextKey: null });
+    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
 
     const result = await estimates.create(makeEvent({ customerName: 'Test' }));
     expect(result.statusCode).toBe(403);
@@ -197,7 +197,7 @@ describe('Tier protection — expired/canceled users get free tier limits', () =
       subscriptionStatus: 'canceled',
       tier: 'free'
     });
-    db.query.mockResolvedValue({ items: makeEstimates(3), nextKey: null });
+    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
 
     const result = await estimates.create(makeEvent({ customerName: 'Test' }));
     expect(result.statusCode).toBe(403);
@@ -214,6 +214,47 @@ describe('Tier protection — expired/canceled users get free tier limits', () =
     const result = await estimates.create(makeEvent({ customerName: 'Test' }));
     expect(result.statusCode).toBe(201);
     expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('Tier protection — share bonus', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const freeCompany = { subscriptionStatus: 'free', tier: 'free' };
+
+  function currentMonth() {
+    const now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  }
+
+  test('share bonus grants limit of 3 instead of 2 for current month', async () => {
+    auth.getCompanyId.mockResolvedValue('comp-1');
+    db.get.mockResolvedValue({ ...freeCompany, shareBonusMonth: currentMonth() });
+    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
+    db.put.mockResolvedValue({});
+
+    const result = await estimates.create(makeEvent({ customerName: 'Bonus User' }));
+    expect(result.statusCode).toBe(201);
+  });
+
+  test('share bonus does not help when at 3 estimates', async () => {
+    auth.getCompanyId.mockResolvedValue('comp-1');
+    db.get.mockResolvedValue({ ...freeCompany, shareBonusMonth: currentMonth() });
+    db.query.mockResolvedValue({ items: makeEstimates(3), nextKey: null });
+
+    const result = await estimates.create(makeEvent({ customerName: 'Over Limit' }));
+    expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).error).toContain('3 estimates/month');
+  });
+
+  test('share bonus from different month does not grant extra estimate', async () => {
+    auth.getCompanyId.mockResolvedValue('comp-1');
+    db.get.mockResolvedValue({ ...freeCompany, shareBonusMonth: '2025-01' });
+    db.query.mockResolvedValue({ items: makeEstimates(2), nextKey: null });
+
+    const result = await estimates.create(makeEvent({ customerName: 'Old Bonus' }));
+    expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).error).toContain('2 estimates/month');
   });
 });
 

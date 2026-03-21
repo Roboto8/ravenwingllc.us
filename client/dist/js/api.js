@@ -124,6 +124,7 @@ const API = {
   createCheckout(returnUrl, tier) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl, tier: tier || 'contractor' }) }); },
   createPortal(returnUrl) { return this._fetch('/api/billing/portal', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
   exportData() { return this._fetch('/api/billing/export'); },
+  claimShareBonus() { return this._fetch('/api/billing/share-bonus', { method: 'POST' }); },
 
   // Reports
   getReports(period) {

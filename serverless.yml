@@ -261,6 +261,14 @@ functions:
           authorizer:
             name: cognitoAuthorizer
 
+  billingShareBonus:
+    handler: handlers/billing.shareBonus
+    events:
+      - httpApi:
+          path: /api/billing/share-bonus
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
   billingExport:
     handler: handlers/billing.exportData
     events:
