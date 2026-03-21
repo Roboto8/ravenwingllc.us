@@ -435,8 +435,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 /* Estimate Panel */
 .estimate-panel {
-  width: clamp(300px, 30vw, 400px);
-  min-width: 300px;
+  width: clamp(280px, 30vw, 400px);
   background: var(--surface);
   border-left: 2px solid var(--border);
   display: flex;
@@ -444,6 +443,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   position: relative;
   flex-shrink: 0;
   transition: width 0.3s ease;
+  overflow-x: hidden;
 }
 
 /* Desktop collapse: panel slides to zero width */
@@ -1659,7 +1659,7 @@ body.twa-mode .modal-overlay {
 
 /* Tablets and small desktops */
 @media (max-width: 1024px) {
-  .estimate-panel { width: clamp(280px, 32vw, 340px); min-width: 280px; }
+  .estimate-panel { width: clamp(260px, 30vw, 320px); }
   .fence-types { grid-template-columns: 1fr 1fr; gap: 4px; }
   .fence-type-btn { padding: 8px 4px; font-size: 0.82rem; }
   .panel-scroll { padding: 14px 12px; }
