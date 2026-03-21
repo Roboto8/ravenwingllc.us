@@ -11,7 +11,7 @@
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Fence estimating software — trace fence lines on satellite imagery, get instant bill of materials with every post, rail, bracket, and concrete bag. Wood, vinyl, chain link, aluminum, iron. Regional pricing. Free trial.">
+  <meta name="description" content="Fence estimating software — trace fence lines on satellite imagery, get instant bill of materials with every post, rail, bracket, and concrete bag. Wood, vinyl, chain link, aluminum, iron. Regional pricing. Free to start.">
   <meta name="keywords" content="fence estimate, fence calculator, fence bid, fence contractor software, bill of materials, fence cost, fencing estimate, satellite fence estimator">
   <link rel="canonical" href="https://fencetrace.com/">
   <title>FenceTrace | Fence Estimating Software</title>
@@ -128,7 +128,7 @@
       <button class="auth-close" id="auth-close" onclick="hideAuthUI()">&times;</button>
       <h2 class="modal-title">Fence<span class="accent">Trace</span></h2>
       <p class="auth-gate-msg" id="auth-gate-msg" style="display:none"></p>
-      <p class="modal-sub" data-i18n="auth_subtitle">14-day free trial. No card required.</p>
+      <p class="modal-sub" data-i18n="auth_subtitle">Free to use — no card required.</p>
 
       <div id="auth-login" class="auth-form">
         <div class="form-group"><input type="email" id="login-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
@@ -142,7 +142,7 @@
         <div class="form-group"><input type="text" id="signup-company" placeholder="Company name" data-i18n="placeholder_company" data-i18n-attr="placeholder"><span class="field-hint" data-i18n="hint_company_name">Shown on estimates and approvals your customers see</span></div>
         <div class="form-group"><input type="email" id="signup-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
         <div class="form-group"><input type="password" id="signup-password" placeholder="Password (10+ chars, upper, lower, number)" data-i18n="placeholder_password_hint" data-i18n-attr="placeholder"></div>
-        <button class="btn btn-full" onclick="handleSignup()" data-i18n="auth_signup_btn">Start Free Trial</button>
+        <button class="btn btn-full" onclick="handleSignup()" data-i18n="auth_signup_btn">Create Free Account</button>
         <p class="auth-switch"><span data-i18n="auth_have_account">Have an account?</span> <a href="#" onclick="showLogin(); return false;" data-i18n="auth_log_in">Log in</a></p>
       </div>
 
@@ -1397,7 +1397,7 @@
         var status = await API.getStatus();
         var statusText = status.status === 'active' ? 'Active subscriber'
           : status.status === 'free' ? 'Starter plan'
-          : status.trialActive ? 'Free trial (' + status.daysLeft + ' days left)'
+          : status.trialActive ? 'Starter (' + status.estimatesRemaining + ' estimates left)'
           : status.status === 'canceled' ? 'Canceled'
           : status.status === 'past_due' ? 'Payment past due'
           : 'Inactive';

@@ -149,9 +149,9 @@ var I18N = {
 
     // -- Auth modal --
     auth_title: 'FenceTrace',
-    auth_subtitle: '14-day free trial. No card required.',
+    auth_subtitle: 'Free to use — no card required.',
     auth_login_btn: 'Log In',
-    auth_signup_btn: 'Start Free Trial',
+    auth_signup_btn: 'Create Free Account',
     auth_verify_btn: 'Verify',
     auth_no_account: 'No account?',
     auth_sign_up: 'Sign up',
@@ -178,11 +178,11 @@ var I18N = {
     auth_verified: 'Verified! You can log in now.',
 
     // -- Trial / Paywall --
-    trial_expired: 'Trial Expired',
-    trial_subscribe_msg: 'Subscribe to keep creating estimates.',
-    trial_subscribe_btn: 'Subscribe',
-    trial_subscribe_price: 'Subscribe — $49/mo',
-    trial_days_left: '{n} days left in trial',
+    upgrade_needed: 'Upgrade Required',
+    trial_subscribe_msg: 'Upgrade to create unlimited estimates.',
+    trial_subscribe_btn: 'Upgrade',
+    trial_subscribe_price: 'Upgrade — Builder $15/mo',
+    estimates_remaining: '{n} estimates remaining this month',
 
     // -- Account modal --
     account_title: 'Account',
@@ -227,7 +227,7 @@ var I18N = {
 
     // -- Status labels --
     status_active: 'Active',
-    status_trialing: 'Trial',
+    status_trialing: 'Starter',
     status_expired: 'Expired',
     status_canceled: 'Canceled',
     status_past_due: 'Past Due',
@@ -531,9 +531,9 @@ var I18N = {
 
     // -- Auth modal --
     auth_title: 'FenceTrace',
-    auth_subtitle: 'Prueba gratis de 14 dias. Sin tarjeta.',
+    auth_subtitle: 'Gratis — sin tarjeta requerida.',
     auth_login_btn: 'Iniciar Sesion',
-    auth_signup_btn: 'Comenzar Prueba Gratis',
+    auth_signup_btn: 'Crear Cuenta Gratis',
     auth_verify_btn: 'Verificar',
     auth_no_account: 'Sin cuenta?',
     auth_sign_up: 'Registrate',
@@ -560,11 +560,11 @@ var I18N = {
     auth_verified: 'Verificado! Ya puedes iniciar sesion.',
 
     // -- Trial / Paywall --
-    trial_expired: 'Prueba Expirada',
-    trial_subscribe_msg: 'Suscribete para seguir creando estimaciones.',
-    trial_subscribe_btn: 'Suscribirse',
-    trial_subscribe_price: 'Suscribirse — $49/mes',
-    trial_days_left: '{n} dias restantes de prueba',
+    upgrade_needed: 'Mejora Requerida',
+    trial_subscribe_msg: 'Mejora para crear estimaciones ilimitadas.',
+    trial_subscribe_btn: 'Mejorar',
+    trial_subscribe_price: 'Mejorar — Builder $15/mes',
+    estimates_remaining: '{n} estimaciones restantes este mes',
 
     // -- Account modal --
     account_title: 'Cuenta',
@@ -609,7 +609,7 @@ var I18N = {
 
     // -- Status labels --
     status_active: 'Activo',
-    status_trialing: 'Prueba',
+    status_trialing: 'Starter',
     status_expired: 'Expirado',
     status_canceled: 'Cancelado',
     status_past_due: 'Pago Vencido',
@@ -913,9 +913,9 @@ var I18N = {
 
     // -- Auth modal --
     auth_title: 'FenceTrace',
-    auth_subtitle: '14 dagen gratis proberen. Geen kaart nodig.',
+    auth_subtitle: 'Gratis te gebruiken — geen kaart nodig.',
     auth_login_btn: 'Inloggen',
-    auth_signup_btn: 'Gratis Proberen',
+    auth_signup_btn: 'Gratis Account Aanmaken',
     auth_verify_btn: 'Verifieren',
     auth_no_account: 'Geen account?',
     auth_sign_up: 'Registreren',
@@ -942,11 +942,11 @@ var I18N = {
     auth_verified: 'Geverifieerd! Je kunt nu inloggen.',
 
     // -- Trial / Paywall --
-    trial_expired: 'Proefperiode Verlopen',
-    trial_subscribe_msg: 'Abonneer om offertes te blijven maken.',
-    trial_subscribe_btn: 'Abonneren',
-    trial_subscribe_price: 'Abonneren — $49/mnd',
-    trial_days_left: '{n} dagen proefperiode over',
+    upgrade_needed: 'Upgrade Vereist',
+    trial_subscribe_msg: 'Upgrade voor onbeperkte offertes.',
+    trial_subscribe_btn: 'Upgraden',
+    trial_subscribe_price: 'Upgraden — Builder $15/mnd',
+    estimates_remaining: '{n} offertes resterend deze maand',
 
     // -- Account modal --
     account_title: 'Account',
@@ -991,7 +991,7 @@ var I18N = {
 
     // -- Status labels --
     status_active: 'Actief',
-    status_trialing: 'Proef',
+    status_trialing: 'Starter',
     status_expired: 'Verlopen',
     status_canceled: 'Geannuleerd',
     status_past_due: 'Achterstallig',
@@ -1295,9 +1295,9 @@ var I18N = {
 
     // -- Auth modal --
     auth_title: 'FenceTrace',
-    auth_subtitle: 'Essai gratuit de 14 jours. Sans carte.',
+    auth_subtitle: 'Gratuit — sans carte requise.',
     auth_login_btn: 'Connexion',
-    auth_signup_btn: 'Essai Gratuit',
+    auth_signup_btn: 'Creer un Compte Gratuit',
     auth_verify_btn: 'Verifier',
     auth_no_account: 'Pas de compte ?',
     auth_sign_up: 'S\'inscrire',
@@ -1324,11 +1324,11 @@ var I18N = {
     auth_verified: 'Verifie ! Vous pouvez vous connecter.',
 
     // -- Trial / Paywall --
-    trial_expired: 'Essai Expire',
-    trial_subscribe_msg: 'Abonnez-vous pour continuer a creer des devis.',
-    trial_subscribe_btn: 'S\'abonner',
-    trial_subscribe_price: 'S\'abonner — $49/mois',
-    trial_days_left: '{n} jours d\'essai restants',
+    upgrade_needed: 'Mise a Niveau Requise',
+    trial_subscribe_msg: 'Passez a un forfait superieur pour des devis illimites.',
+    trial_subscribe_btn: 'Mettre a Niveau',
+    trial_subscribe_price: 'Mettre a Niveau — Builder $15/mois',
+    estimates_remaining: '{n} devis restants ce mois',
 
     // -- Account modal --
     account_title: 'Compte',
@@ -1373,7 +1373,7 @@ var I18N = {
 
     // -- Status labels --
     status_active: 'Actif',
-    status_trialing: 'Essai',
+    status_trialing: 'Starter',
     status_expired: 'Expire',
     status_canceled: 'Annule',
     status_past_due: 'En Retard',
@@ -1677,9 +1677,9 @@ var I18N = {
 
     // -- Auth modal --
     auth_title: 'FenceTrace',
-    auth_subtitle: '14 Tage kostenlos testen. Keine Karte noetig.',
+    auth_subtitle: 'Kostenlos — keine Karte erforderlich.',
     auth_login_btn: 'Anmelden',
-    auth_signup_btn: 'Kostenlos Testen',
+    auth_signup_btn: 'Kostenloses Konto Erstellen',
     auth_verify_btn: 'Verifizieren',
     auth_no_account: 'Kein Konto?',
     auth_sign_up: 'Registrieren',
@@ -1706,11 +1706,11 @@ var I18N = {
     auth_verified: 'Verifiziert! Sie koennen sich jetzt anmelden.',
 
     // -- Trial / Paywall --
-    trial_expired: 'Testphase Abgelaufen',
-    trial_subscribe_msg: 'Abonnieren Sie, um weiter Angebote zu erstellen.',
-    trial_subscribe_btn: 'Abonnieren',
-    trial_subscribe_price: 'Abonnieren — $49/Monat',
-    trial_days_left: '{n} Tage Testphase verbleibend',
+    upgrade_needed: 'Upgrade Erforderlich',
+    trial_subscribe_msg: 'Upgraden Sie fuer unbegrenzte Angebote.',
+    trial_subscribe_btn: 'Upgraden',
+    trial_subscribe_price: 'Upgraden — Builder $15/Monat',
+    estimates_remaining: '{n} Angebote diesen Monat verbleibend',
 
     // -- Account modal --
     account_title: 'Konto',
@@ -1755,7 +1755,7 @@ var I18N = {
 
     // -- Status labels --
     status_active: 'Aktiv',
-    status_trialing: 'Testphase',
+    status_trialing: 'Starter',
     status_expired: 'Abgelaufen',
     status_canceled: 'Gekuendigt',
     status_past_due: 'Ueberfaellig',
@@ -2059,9 +2059,9 @@ var I18N = {
 
     // -- Auth modal --
     auth_title: 'FenceTrace',
-    auth_subtitle: 'Teste gratis de 14 dias. Sem cartao.',
+    auth_subtitle: 'Gratis — sem cartao necessario.',
     auth_login_btn: 'Entrar',
-    auth_signup_btn: 'Teste Gratis',
+    auth_signup_btn: 'Criar Conta Gratis',
     auth_verify_btn: 'Verificar',
     auth_no_account: 'Sem conta?',
     auth_sign_up: 'Cadastrar',
@@ -2088,11 +2088,11 @@ var I18N = {
     auth_verified: 'Verificado! Voce ja pode entrar.',
 
     // -- Trial / Paywall --
-    trial_expired: 'Teste Expirado',
-    trial_subscribe_msg: 'Assine para continuar criando orcamentos.',
-    trial_subscribe_btn: 'Assinar',
-    trial_subscribe_price: 'Assinar — $49/mes',
-    trial_days_left: '{n} dias restantes de teste',
+    upgrade_needed: 'Upgrade Necessario',
+    trial_subscribe_msg: 'Faca upgrade para orcamentos ilimitados.',
+    trial_subscribe_btn: 'Upgrade',
+    trial_subscribe_price: 'Upgrade — Builder $15/mes',
+    estimates_remaining: '{n} orcamentos restantes este mes',
 
     // -- Account modal --
     account_title: 'Conta',
@@ -2137,7 +2137,7 @@ var I18N = {
 
     // -- Status labels --
     status_active: 'Ativo',
-    status_trialing: 'Teste',
+    status_trialing: 'Starter',
     status_expired: 'Expirado',
     status_canceled: 'Cancelado',
     status_past_due: 'Em Atraso',
