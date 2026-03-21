@@ -434,7 +434,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 /* Estimate Panel */
 .estimate-panel {
-  width: clamp(270px, 28vw, 380px);
+  width: clamp(300px, 30vw, 400px);
+  min-width: 300px;
   background: var(--surface);
   border-left: 2px solid var(--border);
   display: flex;
@@ -1657,7 +1658,7 @@ body.twa-mode .modal-overlay {
 
 /* Tablets and small desktops */
 @media (max-width: 1024px) {
-  .estimate-panel { width: clamp(240px, 30vw, 320px); }
+  .estimate-panel { width: clamp(280px, 32vw, 340px); min-width: 280px; }
   .fence-types { grid-template-columns: 1fr 1fr; gap: 4px; }
   .fence-type-btn { padding: 8px 4px; font-size: 0.82rem; }
   .panel-scroll { padding: 14px 12px; }
