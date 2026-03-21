@@ -1959,6 +1959,14 @@ function setTool(tool) {
 
   map.getContainer().style.cursor = tool === 'draw' ? 'crosshair' : tool === 'gate' ? 'cell' : tool === 'mulch' ? 'crosshair' : '';
 
+  // Update mobile contextual toolbar
+  var toolbar = document.querySelector('.map-toolbar');
+  if (toolbar) {
+    toolbar.classList.remove('mode-fence', 'mode-mulch');
+    if (tool === 'draw' || tool === 'gate') toolbar.classList.add('mode-fence');
+    else if (tool === 'mulch') toolbar.classList.add('mode-mulch');
+  }
+
   if (tool === 'mulch' || tool === 'draw' || tool === 'gate') {
     showToolTip(tool);
   }

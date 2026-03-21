@@ -301,7 +301,7 @@
         <p style="margin-top:6px;font-size:0.72rem;color:var(--text-muted);text-align:center">Drag the photo to move. Drag orange corners to resize.</p>
       </div>
       <div class="section-tabs" id="section-tabs" style="display:none"></div>
-      <div class="map-toolbar">
+      <div class="map-toolbar mode-fence">
         <button class="tool-btn active" id="draw-btn" onclick="setTool('draw')" title="Fence tool (D)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
           <span data-i18n="tool_draw">Fence</span>
@@ -323,7 +323,7 @@
           <span data-i18n="tool_mulch">Mulch</span>
           <span class="early-access-badge tool-badge">EA</span>
         </button>
-        <button class="tool-btn" id="shapes-btn" onclick="showShapePicker()" title="Preset mulch bed shapes">
+        <button class="tool-btn ctx-mulch" id="shapes-btn" onclick="showShapePicker()" title="Preset mulch bed shapes">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
           <span>Mulch Shapes</span>
         </button>
@@ -331,15 +331,15 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
           <span data-i18n="tool_close">Close</span>
         </button>
-        <button class="tool-btn" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
+        <button class="tool-btn ctx-fence" id="curve-btn" onclick="toggleCurve()" title="Toggle curve mode (C)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 9-10 18-10"/></svg>
           <span data-i18n="tool_curve">Curve</span>
         </button>
-        <button class="tool-btn" id="section-btn" onclick="addNewSection()" title="New section (N)">
+        <button class="tool-btn ctx-fence" id="section-btn" onclick="addNewSection()" title="New section (N)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           <span data-i18n="tool_section">Section</span>
         </button>
-        <button class="tool-btn" id="gap-btn" onclick="findGaps()" title="Find and close gaps between sections">
+        <button class="tool-btn ctx-fence" id="gap-btn" onclick="findGaps()" title="Find and close gaps between sections">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h6M14 12h6"/><circle cx="12" cy="12" r="2"/></svg>
           <span>Gap</span>
         </button>
@@ -347,7 +347,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
           <span>Delete</span>
         </button>
-        <button class="tool-btn danger" id="clear-btn" onclick="clearAll()" title="Clear all (Ctrl+Shift+Z)">
+        <button class="tool-btn danger ctx-overflow" id="clear-btn" onclick="clearAll()" title="Clear all (Ctrl+Shift+Z)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
           <span data-i18n="tool_clear">Clear</span>
         </button>

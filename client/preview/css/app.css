@@ -110,6 +110,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .layer-btn { padding: 6px 10px; font-size: 0.78rem; min-height: 36px; }
   .map-toolbar { padding: 6px 8px; gap: 4px; }
   .tool-btn { padding: 8px 10px; font-size: 0.78rem; min-height: 36px; }
+  /* Contextual toolbar: hide secondary buttons on mobile, show based on active tool */
+  .ctx-fence, .ctx-mulch, .ctx-overflow { display: none !important; }
+  .map-toolbar.mode-fence .ctx-fence { display: flex !important; }
+  .map-toolbar.mode-mulch .ctx-mulch { display: flex !important; }
   .drone-banner, #drone-banner { max-width: 280px; font-size: 0.78rem; }
   .map-empty-state { bottom: auto; top: 50%; transform: translate(-50%, -50%); }
 }
