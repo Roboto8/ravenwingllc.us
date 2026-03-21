@@ -3140,8 +3140,8 @@ function initMulchDragHandlers() {
     if (e.originalEvent && e.originalEvent.button !== 0) return;
     if (_mulchMarkerDragging) return;
     if (_deleteMode) return;
-    // Don't start drag if the click came from a UI overlay (shape picker, toolbar, etc.)
-    if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.closest && e.originalEvent.target.closest('.shape-picker, .map-toolbar, .selection-bar, .tool-btn, button')) return;
+    // Don't start drag if the click came from a UI overlay or existing mulch element (label, marker, polygon)
+    if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.closest && e.originalEvent.target.closest('.shape-picker, .map-toolbar, .selection-bar, .tool-btn, button, .mulch-area-label, .leaflet-marker-icon')) return;
 
     mulchDragStart = e.latlng;
     map.dragging.disable();
