@@ -4655,8 +4655,9 @@ function showShareDialog(title, url) {
         '<button class="btn" onclick="document.getElementById(\'share-url-input\').select();copyToClipboard(\'' + url.replace(/'/g, "\\'") + '\');this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Copy\',2000)" style="white-space:nowrap;min-width:70px">Copy</button>' +
       '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px">' +
+        (('ontouchstart' in window || navigator.maxTouchPoints > 0) ?
         '<a href="sms:?body=' + encodeURIComponent(title + '\n' + url) + '" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:var(--text);font-size:0.72rem;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);min-width:56px">' +
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Text</a>' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Text</a>' : '') +
         '<a href="mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent('Please review this estimate:\n\n' + url) + '" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:var(--text);font-size:0.72rem;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);min-width:56px">' +
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>Email</a>' +
         '<a href="https://wa.me/?text=' + encodeURIComponent(title + '\n' + url) + '" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:var(--text);font-size:0.72rem;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);min-width:56px">' +
