@@ -30,8 +30,10 @@ module.exports.create = res.wrap(async (event) => {
   if (!canCreate(company)) return res.forbidden('Subscribe to create estimates.');
 
   // Enforce free tier estimate limit (3 per calendar month)
+  // Applies to free tier, expired trials, canceled, and expired legacy users
   const tier = company.tier || 'free';
-  if (tier === 'free') {
+  const isPaid = company.subscriptionStatus === 'active' || company.subscriptionStatus === 'past_due';
+  if (!isPaid && (tier === 'free' || !['builder', 'contractor'].includes(tier))) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -268,9 +270,11 @@ function validateInput(body) {
 function canCreate(company) {
   if (!company) return false;
   if (company.subscriptionStatus === 'active') return true;
+  if (company.subscriptionStatus === 'past_due') return true;
   if (company.subscriptionStatus === 'free') return true;
-  if (company.subscriptionStatus === 'trialing') {
-    return new Date(company.trialEndsAt) > new Date();
-  }
+  if (company.subscriptionStatus === 'trialing') return true; // expired trials fall through to free tier limit
+  if (company.subscriptionStatus === 'canceled') return true; // canceled users get free tier
+  // expired status from legacy signups — treat as free tier
+  if (company.subscriptionStatus === 'expired') return true;
   return false;
 }

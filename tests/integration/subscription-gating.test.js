@@ -83,19 +83,22 @@ describe('Integration: Subscription Gating', () => {
     expect(body.subscriptionStatus).toBe('active');
   });
 
-  test('5. canceled subscription blocks creation', async () => {
+  test('5. canceled subscription allows creation with free tier limits', async () => {
     await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
       subscriptionStatus: 'canceled',
-      subscriptionId: ''
+      subscriptionId: '',
+      tier: 'free'
     });
 
+    // Already created 4 estimates (tests 1, 2x2, 3), so free tier limit (3/month) is exceeded
     const result = await estimates.create({
       body: JSON.stringify({ customerName: 'Canceled Customer' })
     });
     expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).error).toContain('Starter plan limit');
   });
 
-  test('6. past_due subscription blocks creation', async () => {
+  test('6. past_due subscription allows creation', async () => {
     await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
       subscriptionStatus: 'past_due'
     });
@@ -103,7 +106,7 @@ describe('Integration: Subscription Gating', () => {
     const result = await estimates.create({
       body: JSON.stringify({ customerName: 'Past Due Customer' })
     });
-    expect(result.statusCode).toBe(403);
+    expect(result.statusCode).toBe(201);
   });
 
   test('7. reactivated subscription allows creation again', async () => {
@@ -122,7 +125,8 @@ describe('Integration: Subscription Gating', () => {
   test('8. existing estimates still accessible when subscription lapses', async () => {
     // Cancel subscription
     await mockDB.update(`COMPANY#${COMPANY_ID}`, 'PROFILE', {
-      subscriptionStatus: 'canceled'
+      subscriptionStatus: 'canceled',
+      tier: 'free'
     });
 
     // List should still work (read-only)

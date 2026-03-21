@@ -249,12 +249,14 @@ describe('billing handler', () => {
         subscriptionStatus: 'canceled',
         trialEndsAt: '2025-01-01T00:00:00.000Z'
       });
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
 
       expect(body.status).toBe('canceled');
-      expect(body.active).toBe(false);
+      expect(body.active).toBe(true);
+      expect(body.tier).toBe('free');
     });
 
     test('returns 403 when no auth', async () => {
@@ -522,6 +524,7 @@ describe('billing handler', () => {
         subscriptionStatus: 'canceled',
         trialEndsAt: '2025-01-01T00:00:00.000Z'
       });
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
@@ -536,6 +539,7 @@ describe('billing handler', () => {
         subscriptionId: 'sub_123',
         trialEndsAt: '2025-01-01T00:00:00.000Z'
       });
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);

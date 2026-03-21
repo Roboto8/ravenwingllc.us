@@ -170,14 +170,16 @@ describe('estimates handler', () => {
       expect(result.statusCode).toBe(403);
     });
 
-    test('blocks create for canceled subscription', async () => {
+    test('allows create for canceled subscription (free tier limits)', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({ subscriptionStatus: 'canceled' });
+      db.put.mockImplementation(item => item);
+      db.query.mockResolvedValue({ items: [] });
 
       const result = await estimates.create({
         body: JSON.stringify({})
       });
-      expect(result.statusCode).toBe(403);
+      expect(result.statusCode).toBe(201);
     });
 
     test('uses defaults for missing fields', async () => {
@@ -510,9 +512,9 @@ describe('estimates handler', () => {
       ['expired trial', {
         subscriptionStatus: 'trialing',
         trialEndsAt: '2020-01-01T00:00:00.000Z'
-      }, 403],
-      ['canceled', { subscriptionStatus: 'canceled' }, 403],
-      ['past_due', { subscriptionStatus: 'past_due' }, 403],
+      }, 201],
+      ['canceled', { subscriptionStatus: 'canceled' }, 201],
+      ['past_due', { subscriptionStatus: 'past_due' }, 201],
       ['null company', null, 403]
     ])('%s => %d', async (label, companyData, expectedStatus) => {
       auth.getCompanyId.mockResolvedValue('comp-1');

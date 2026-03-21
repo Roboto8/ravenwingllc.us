@@ -145,7 +145,6 @@ describe('webhook handler', () => {
     test.each([
       ['active', 'active'],
       ['past_due', 'past_due'],
-      ['canceled', 'canceled'],
       ['unpaid', 'unpaid'] // passthrough for unknown status
     ])('maps stripe status "%s" to "%s"', async (stripeStatus, expectedStatus) => {
       const db = require('../handlers/lib/dynamo');
@@ -165,6 +164,27 @@ describe('webhook handler', () => {
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
         { subscriptionStatus: expectedStatus, subscriptionId: 'sub_xyz' }
+      );
+    });
+
+    test('maps stripe status "canceled" and sets tier to free', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockConstructEvent.mockReturnValue({
+        type: 'customer.subscription.updated',
+        data: {
+          object: {
+            customer: 'cus_123',
+            id: 'sub_xyz',
+            status: 'canceled'
+          }
+        }
+      });
+
+      await handler(makeEvent());
+
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-abc', 'PROFILE',
+        { subscriptionStatus: 'canceled', subscriptionId: 'sub_xyz', tier: 'free' }
       );
     });
   });
@@ -187,7 +207,7 @@ describe('webhook handler', () => {
 
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
-        { subscriptionStatus: 'canceled', subscriptionId: '' }
+        { subscriptionStatus: 'canceled', subscriptionId: '', tier: 'free' }
       );
     });
   });

@@ -1185,25 +1185,17 @@
           document.getElementById('trial-action-btn').textContent = 'Update Payment';
           document.getElementById('trial-action-btn').onclick = handleManageBilling;
           document.getElementById('paywall-modal').style.display = 'none';
-        } else if (status.tier === 'free') {
-          // Free tier: show usage banner
+        } else if (status.tier === 'builder' || status.tier === 'contractor') {
+          // Paid subscriber — hide banner
+          document.getElementById('trial-banner').style.display = 'none';
+          document.getElementById('paywall-modal').style.display = 'none';
+        } else {
+          // Starter tier (free, expired trial, canceled — all treated as free)
           var remaining = Math.max(0, 3 - (status.estimatesUsed || 0));
           document.getElementById('trial-banner').style.display = 'flex';
           document.getElementById('trial-banner').style.background = '';
           document.getElementById('trial-text').textContent = remaining + ' free estimate' + (remaining !== 1 ? 's' : '') + ' remaining this month';
           document.getElementById('trial-action-btn').textContent = 'Upgrade';
-          document.getElementById('trial-action-btn').onclick = showPricing;
-        } else if (status.status === 'active') {
-          document.getElementById('trial-banner').style.display = 'none';
-          document.getElementById('paywall-modal').style.display = 'none';
-        } else if (status.trialActive && status.status === 'trialing') {
-          // Legacy trial users — show banner prompting upgrade
-          document.getElementById('trial-banner').style.display = 'flex';
-          document.getElementById('trial-text').textContent = status.daysLeft + ' days left in trial';
-        } else if (!status.active) {
-          document.getElementById('trial-banner').style.display = 'flex';
-          document.getElementById('trial-text').textContent = 'Subscribe to keep creating estimates.';
-          document.getElementById('trial-action-btn').textContent = 'View Plans';
           document.getElementById('trial-action-btn').onclick = showPricing;
         }
       } catch (e) {

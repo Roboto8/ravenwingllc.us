@@ -68,10 +68,9 @@ module.exports.handler = async (event) => {
           : data.status === 'past_due' ? 'past_due'
           : data.status === 'canceled' ? 'canceled'
           : data.status;
-        await db.update('COMPANY#' + companyId, 'PROFILE', {
-          subscriptionStatus: status,
-          subscriptionId: data.id
-        });
+        const updateFields = { subscriptionStatus: status, subscriptionId: data.id };
+        if (status === 'canceled') updateFields.tier = 'free';
+        await db.update('COMPANY#' + companyId, 'PROFILE', updateFields);
       }
       break;
     }
@@ -82,7 +81,8 @@ module.exports.handler = async (event) => {
       if (companyId) {
         await db.update('COMPANY#' + companyId, 'PROFILE', {
           subscriptionStatus: 'canceled',
-          subscriptionId: ''
+          subscriptionId: '',
+          tier: 'free'
         });
       }
       break;
@@ -121,6 +121,7 @@ module.exports.handler = async (event) => {
         await db.update('COMPANY#' + companyId, 'PROFILE', {
           subscriptionStatus: 'canceled',
           subscriptionId: '',
+          tier: 'free',
           canceledAt: new Date().toISOString(),
           cancelReason: 'refunded'
         });
@@ -153,6 +154,7 @@ module.exports.handler = async (event) => {
         await db.update('COMPANY#' + companyId, 'PROFILE', {
           subscriptionStatus: 'canceled',
           subscriptionId: '',
+          tier: 'free',
           canceledAt: new Date().toISOString(),
           cancelReason: 'dispute'
         });

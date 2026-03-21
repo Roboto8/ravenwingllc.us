@@ -139,12 +139,14 @@ module.exports.status = res.wrap(async (event) => {
 
   const trialActive = company.subscriptionStatus === 'trialing' && new Date(company.trialEndsAt) > new Date();
   const daysLeft = trialActive ? Math.ceil((new Date(company.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
-  const isFree = company.subscriptionStatus === 'free' || (!company.subscriptionStatus);
+  const isPaidStatus = company.subscriptionStatus === 'active' || company.subscriptionStatus === 'past_due';
+  const isFree = !isPaidStatus;
 
   // Get next billing date from Stripe if subscribed
   let nextBillingDate = null;
   let planAmount = null;
-  let tier = company.tier || (isFree ? 'free' : 'contractor');
+  // Default tier: use stored tier, but fall back to 'free' for non-paid users
+  let tier = isPaidStatus ? (company.tier || 'contractor') : 'free';
   if (company.subscriptionId && company.subscriptionStatus === 'active') {
     try {
       const s = getStripe();
@@ -160,10 +162,10 @@ module.exports.status = res.wrap(async (event) => {
     }
   }
 
-  // Count free tier estimates this month
+  // Count estimates this month for non-paid users (free, expired trial, canceled)
   let estimatesUsed = 0;
   let estimateLimit = null;
-  if (isFree || tier === 'free') {
+  if (isFree) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -173,7 +175,8 @@ module.exports.status = res.wrap(async (event) => {
 
   // past_due gets a 7-day grace period before lockout
   const isPastDue = company.subscriptionStatus === 'past_due';
-  const isActive = company.subscriptionStatus === 'active' || trialActive || isPastDue || isFree;
+  // All users can create (subject to limits) — active flag controls UI, not hard lockout
+  const isActive = true;
 
   return res.ok({
     status: company.subscriptionStatus,
