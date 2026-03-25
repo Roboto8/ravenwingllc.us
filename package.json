@@ -1,7 +1,7 @@
 {
   "name": "ravenwingllc-us",
   "version": "2.0.0",
-  "description": "FenceCalc - Satellite-powered fence estimates",
+  "description": "Fence Trace - Satellite-powered fence estimates",
   "private": true,
   "scripts": {
     "test": "jest",

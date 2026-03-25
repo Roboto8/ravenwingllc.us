@@ -1,8 +1,8 @@
 {
   "packageId": "com.ravenwingllc.fencecalc",
   "host": "ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com",
-  "name": "FenceCalc",
-  "launcherName": "FenceCalc",
+  "name": "Fence Trace",
+  "launcherName": "Fence Trace",
   "display": "standalone",
   "themeColor": {
     "model": "rgb",
