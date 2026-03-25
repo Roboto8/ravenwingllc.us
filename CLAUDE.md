@@ -101,9 +101,8 @@ All queries are company-scoped via PK to enforce tenant isolation.
 
 ## Tier System
 
-- **Free:** 2 estimates/month + 1 bonus for sharing
-- **Builder:** Unlimited estimates
-- **Contractor:** Full features + team management
+- **Starter (Free):** 2 estimates/month + 1 bonus for sharing, fence & mulch estimating, detailed BOM, save & reload
+- **Pro ($4.99/mo):** Unlimited estimates, custom price book, customer approvals, job site photos, PDF export & sharing
 
 ## Testing Conventions
 
