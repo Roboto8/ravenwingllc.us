@@ -42,6 +42,7 @@ const API = {
     var data = await resp.json();
 
     if (resp.status === 401) {
+      // Token expired — try refresh once
       try {
         await this._refreshOnce();
         headers.Authorization = 'Bearer ' + Auth.tokens.idToken;
@@ -54,6 +55,11 @@ const API = {
         if (typeof showAuthUI === 'function') showAuthUI();
         throw new Error('Session expired');
       }
+    }
+
+    if (resp.status === 403) {
+      // Authorization failure — don't retry, token refresh won't help
+      throw new Error(data.error || 'Access denied — contact support if this persists');
     }
 
     if (!resp.ok) throw new Error(data.error || 'Request failed');
@@ -121,7 +127,7 @@ const API = {
 
   // Billing
   getStatus() { return this._fetch('/api/billing/status'); },
-  createCheckout(returnUrl, tier) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl, tier: tier || 'contractor' }) }); },
+  createCheckout(returnUrl, tier) { return this._fetch('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ returnUrl, tier: tier || 'pro' }) }); },
   createPortal(returnUrl) { return this._fetch('/api/billing/portal', { method: 'POST', body: JSON.stringify({ returnUrl }) }); },
   exportData() { return this._fetch('/api/billing/export'); },
   claimShareBonus() { return this._fetch('/api/billing/share-bonus', { method: 'POST' }); },

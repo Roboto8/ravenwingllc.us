@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200">
+  <!-- Background -->
+  <rect width="1200" height="1200" fill="#f5f0eb"/>
+
+  <!-- Brand color bar at top -->
+  <rect width="1200" height="8" fill="#c0622e"/>
+
+  <!-- Fence icon (centered, upper area) -->
+  <g transform="translate(390, 160) scale(0.82)">
+    <rect width="512" height="512" rx="102" fill="#c0622e"/>
+    <rect x="105" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+    <rect x="170" y="160" width="32" height="180" rx="4" fill="white" opacity="0.95"/>
+    <rect x="235" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+    <rect x="300" y="160" width="32" height="180" rx="4" fill="white" opacity="0.95"/>
+    <rect x="365" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+    <polygon points="105,140 121,108 137,140" fill="white" opacity="0.95"/>
+    <polygon points="170,160 186,128 202,160" fill="white" opacity="0.95"/>
+    <polygon points="235,140 251,108 267,140" fill="white" opacity="0.95"/>
+    <polygon points="300,160 316,128 332,160" fill="white" opacity="0.95"/>
+    <polygon points="365,140 381,108 397,140" fill="white" opacity="0.95"/>
+    <rect x="95" y="195" width="312" height="16" rx="3" fill="white" opacity="0.7"/>
+    <rect x="95" y="275" width="312" height="16" rx="3" fill="white" opacity="0.7"/>
+    <path d="M80 390 L160 375 L260 395 L360 370 L440 385" stroke="white" stroke-width="6" fill="none" stroke-dasharray="16,10" stroke-linecap="round" opacity="0.9"/>
+    <circle cx="80" cy="390" r="12" fill="white"/>
+    <circle cx="80" cy="390" r="5" fill="#c0622e"/>
+    <circle cx="260" cy="395" r="12" fill="white"/>
+    <circle cx="260" cy="395" r="5" fill="#c0622e"/>
+    <circle cx="440" cy="385" r="12" fill="white"/>
+    <circle cx="440" cy="385" r="5" fill="#c0622e"/>
+  </g>
+
+  <!-- Brand name -->
+  <text x="600" y="730" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="bold" fill="#2d2017">FenceTrace</text>
+
+  <!-- Tagline -->
+  <text x="600" y="810" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="44" fill="#6b5a4e">Satellite Fence Estimating</text>
+
+  <!-- CTA button -->
+  <rect x="400" y="890" width="400" height="80" rx="40" fill="#c0622e"/>
+  <text x="600" y="943" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="bold" fill="white">Try It Free</text>
+
+  <!-- Bullet points -->
+  <text x="600" y="1060" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="#8a7a6e">Draw on satellite imagery · Instant estimates · Free to start</text>
+</svg>

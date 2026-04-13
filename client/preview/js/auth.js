@@ -156,7 +156,7 @@ const Auth = {
         // Refresh in background if expired — don't logout on failure
         if (this.user.exp * 1000 < Date.now() && this.tokens.refreshToken) {
           this.refresh().catch(function() {
-            // Silent fail — next API call will get 401 and prompt login
+            // Silent fail — next API call will get 403 and trigger refresh/login
           });
         }
       }

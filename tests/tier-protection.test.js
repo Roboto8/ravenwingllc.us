@@ -291,7 +291,7 @@ describe('Tier protection — frontend requireTier validation', () => {
   test('_tierRank has correct values', async () => {
     const page = await createPage();
     const ranks = await page.evaluate(() => _tierRank);
-    expect(ranks).toEqual({ free: 0, builder: 1, contractor: 2 });
+    expect(ranks).toEqual({ free: 0, builder: 1, contractor: 2, pro: 2 });
     await page.close();
   }, 20000);
 
@@ -343,23 +343,18 @@ describe('Tier protection — frontend requireTier validation', () => {
     const page = await createPage();
     const result = await page.evaluate(() => {
       var starter = document.getElementById('plan-starter');
-      var builder = document.getElementById('plan-builder');
-      var contractor = document.getElementById('plan-contractor');
+      var pro = document.getElementById('plan-pro');
       return {
         starterExists: !!starter,
-        builderExists: !!builder,
-        contractorExists: !!contractor,
+        proExists: !!pro,
         starterText: starter ? starter.textContent : '',
-        builderText: builder ? builder.textContent : '',
-        contractorText: contractor ? contractor.textContent : ''
+        proText: pro ? pro.textContent : ''
       };
     });
     expect(result.starterExists).toBe(true);
-    expect(result.builderExists).toBe(true);
-    expect(result.contractorExists).toBe(true);
+    expect(result.proExists).toBe(true);
     expect(result.starterText).toContain('Starter');
-    expect(result.builderText).toContain('$15');
-    expect(result.contractorText).toContain('$35');
+    expect(result.proText).toContain('$4.99');
     await page.close();
   }, 20000);
 });

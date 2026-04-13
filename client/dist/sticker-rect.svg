@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900">
+  <!-- Rounded rectangle sticker -->
+  <rect width="1200" height="900" rx="60" fill="#c0622e"/>
+  <rect x="12" y="12" width="1176" height="876" rx="52" fill="none" stroke="white" stroke-width="3" opacity="0.25"/>
+
+  <!-- Icon on left side -->
+  <g transform="translate(40, 150) scale(0.65)">
+    <rect width="512" height="512" rx="102" fill="rgba(0,0,0,0.15)"/>
+    <rect x="105" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+    <rect x="170" y="160" width="32" height="180" rx="4" fill="white" opacity="0.95"/>
+    <rect x="235" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+    <rect x="300" y="160" width="32" height="180" rx="4" fill="white" opacity="0.95"/>
+    <rect x="365" y="140" width="32" height="200" rx="4" fill="white" opacity="0.95"/>
+    <polygon points="105,140 121,108 137,140" fill="white" opacity="0.95"/>
+    <polygon points="170,160 186,128 202,160" fill="white" opacity="0.95"/>
+    <polygon points="235,140 251,108 267,140" fill="white" opacity="0.95"/>
+    <polygon points="300,160 316,128 332,160" fill="white" opacity="0.95"/>
+    <polygon points="365,140 381,108 397,140" fill="white" opacity="0.95"/>
+    <rect x="95" y="195" width="312" height="16" rx="3" fill="white" opacity="0.7"/>
+    <rect x="95" y="275" width="312" height="16" rx="3" fill="white" opacity="0.7"/>
+    <path d="M80 390 L160 375 L260 395 L360 370 L440 385" stroke="white" stroke-width="6" fill="none" stroke-dasharray="16,10" stroke-linecap="round" opacity="0.9"/>
+    <circle cx="80" cy="390" r="10" fill="white"/>
+    <circle cx="260" cy="395" r="10" fill="white"/>
+    <circle cx="440" cy="385" r="10" fill="white"/>
+  </g>
+
+  <!-- Text on right side -->
+  <text x="780" y="340" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="110" font-weight="bold" fill="white">FenceTrace</text>
+
+  <!-- Tagline -->
+  <text x="780" y="450" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="48" fill="white" opacity="0.85">Estimate in 60 Seconds</text>
+
+  <!-- Hook -->
+  <text x="780" y="560" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="white" opacity="0.7">Draw on Satellite Imagery</text>
+
+  <!-- URL -->
+  <text x="780" y="750" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="bold" fill="white" opacity="0.9">fencetrace.com</text>
+</svg>

@@ -159,7 +159,7 @@ describe('billing handler - edge cases', () => {
 
   // ===== STATUS - default tier =====
   describe('status - tier defaults', () => {
-    test('returns contractor as default tier', async () => {
+    test('returns pro as default tier', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({
         subscriptionStatus: 'active',
@@ -170,7 +170,7 @@ describe('billing handler - edge cases', () => {
       const result = await billing.status({});
       const body = JSON.parse(result.body);
 
-      expect(body.tier).toBe('contractor');
+      expect(body.tier).toBe('pro');
     });
   });
 

@@ -299,10 +299,10 @@ describe('billing handler', () => {
       expect(result.statusCode).toBe(200);
       expect(body.nextBillingDate).toBeDefined();
       expect(body.planAmount).toBe(35);
-      expect(body.tier).toBe('contractor');
+      expect(body.tier).toBe('pro');
     });
 
-    test('detects builder tier from Stripe price', async () => {
+    test('detects pro tier from Stripe builder price (legacy)', async () => {
       process.env.STRIPE_PRICE_BUILDER = 'price_builder';
 
       auth.getCompanyId.mockResolvedValue('comp-1');
@@ -321,10 +321,10 @@ describe('billing handler', () => {
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
-      expect(body.tier).toBe('builder');
+      expect(body.tier).toBe('pro');
     });
 
-    test('defaults to contractor tier when price does not match builder', async () => {
+    test('defaults to pro tier when price does not match known prices', async () => {
       process.env.STRIPE_PRICE_BUILDER = 'price_builder';
 
       auth.getCompanyId.mockResolvedValue('comp-1');
@@ -343,7 +343,7 @@ describe('billing handler', () => {
 
       const result = await billing.status({});
       const body = JSON.parse(result.body);
-      expect(body.tier).toBe('contractor');
+      expect(body.tier).toBe('pro');
     });
 
     test('continues without billing info when Stripe call fails', async () => {

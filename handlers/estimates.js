@@ -33,7 +33,7 @@ module.exports.create = res.wrap(async (event) => {
   // Applies to free tier, expired trials, canceled, and expired legacy users
   const tier = company.tier || 'free';
   const isPaid = company.subscriptionStatus === 'active' || company.subscriptionStatus === 'past_due';
-  if (!isPaid && (tier === 'free' || !['builder', 'contractor'].includes(tier))) {
+  if (!isPaid && (tier === 'free' || !['pro', 'builder', 'contractor'].includes(tier))) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
@@ -43,8 +43,8 @@ module.exports.create = res.wrap(async (event) => {
     const freeLimit = 2 + (company.shareBonusMonth === nowMonth ? 1 : 0);
     if (thisMonth.length >= freeLimit) {
       const msg = freeLimit === 2
-        ? 'Starter plan limit reached (2 estimates/month). Share an estimate for +1 bonus, or upgrade to Builder for unlimited.'
-        : 'Starter plan limit reached (' + freeLimit + ' estimates/month). Upgrade to Builder for unlimited.';
+        ? 'Starter plan limit reached (2 estimates/month). Share an estimate for +1 bonus, or upgrade to Pro for unlimited.'
+        : 'Starter plan limit reached (' + freeLimit + ' estimates/month). Upgrade to Pro for unlimited.';
       return res.forbidden(msg);
     }
   }

@@ -64,11 +64,12 @@ module.exports.checkout = res.wrap(async (event) => {
 
   // Determine price based on tier
   const tierPrices = {
+    pro: process.env.STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_CONTRACTOR,
     builder: process.env.STRIPE_PRICE_BUILDER,
     contractor: process.env.STRIPE_PRICE_CONTRACTOR
   };
-  const tier = body.tier || 'contractor';
-  const priceId = tierPrices[tier] || process.env.STRIPE_PRICE_CONTRACTOR || process.env.STRIPE_PRICE_ID;
+  const tier = body.tier || 'pro';
+  const priceId = tierPrices[tier] || process.env.STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_CONTRACTOR || process.env.STRIPE_PRICE_ID;
 
   if (!priceId) return res.bad('No price configured for tier: ' + tier);
 
@@ -146,17 +147,18 @@ module.exports.status = res.wrap(async (event) => {
   let nextBillingDate = null;
   let planAmount = null;
   // Default tier: use stored tier, but fall back to 'free' for non-paid users
-  let tier = isPaidStatus ? (company.tier || 'contractor') : 'free';
+  let tier = isPaidStatus ? (company.tier || 'pro') : 'free';
   if (company.subscriptionId && company.subscriptionStatus === 'active') {
     try {
       const s = getStripe();
       const sub = await s.subscriptions.retrieve(company.subscriptionId);
       nextBillingDate = new Date(sub.current_period_end * 1000).toISOString();
       planAmount = sub.items.data[0].price.unit_amount / 100;
-      // Detect tier from price
+      // Detect tier from price — legacy builder/contractor map to pro
       const priceId = sub.items.data[0].price.id;
-      if (priceId === process.env.STRIPE_PRICE_BUILDER) tier = 'builder';
-      else tier = 'contractor';
+      if (priceId === process.env.STRIPE_PRICE_PRO) tier = 'pro';
+      else if (priceId === process.env.STRIPE_PRICE_BUILDER) tier = 'pro';
+      else tier = 'pro';
     } catch (e) {
       console.warn('Stripe subscription lookup failed:', e.message);
     }

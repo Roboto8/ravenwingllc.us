@@ -55,6 +55,7 @@ provider:
     STRIPE_SECRET_KEY: ${ssm:fencecalc.${sls:stage}.stripe-secret-key, ''}
     STRIPE_WEBHOOK_SECRET: ${ssm:fencecalc.${sls:stage}.stripe-webhook-secret, ''}
     STRIPE_PRICE_ID: ${ssm:fencecalc.${sls:stage}.stripe-price-id, ''}
+    STRIPE_PRICE_PRO: ${ssm:fencecalc.${sls:stage}.stripe-price-pro, ''}
     STRIPE_PRICE_BUILDER: ${ssm:fencecalc.${sls:stage}.stripe-price-builder, ''}
     STRIPE_PRICE_CONTRACTOR: ${ssm:fencecalc.${sls:stage}.stripe-price-contractor, ''}
     FORWARD_TO_EMAIL: ${ssm:fencecalc.${sls:stage}.forward-to-email, 'portertoddc@gmail.com'}
@@ -120,6 +121,12 @@ provider:
 functions:
   postConfirmation:
     handler: handlers/auth.postConfirmation
+    events:
+      - cognitoUserPool:
+          pool: ravenwingllc-${sls:stage}
+          trigger: PostConfirmation
+          existing: true
+          forceDeploy: true
 
   getCompany:
     handler: handlers/company.get
