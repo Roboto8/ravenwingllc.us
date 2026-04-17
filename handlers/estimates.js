@@ -165,6 +165,11 @@ module.exports.purge = res.wrap(async (event) => {
   const est = await db.findById('COMPANY#' + companyId, 'EST#', id);
   if (!est) return res.notFound();
 
+  // Require the estimate to already be soft-deleted so the 90-day trash window is preserved.
+  if (est.status !== 'deleted') {
+    return res.bad('Estimate must be in trash before it can be purged');
+  }
+
   await db.remove(est.PK, est.SK);
   return res.ok({ purged: true });
 });

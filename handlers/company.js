@@ -10,22 +10,32 @@ module.exports.get = res.wrap(async (event) => {
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!company) return res.notFound('Company not found');
 
-  return res.ok({
+  // Pricebook and company email are company-confidential; only users who can edit
+  // the company (or manage billing) get the full payload. Other members see a
+  // public-facing subset sufficient for rendering.
+  const canSeeConfidential =
+    (await checkPermission(event, companyId, 'company.edit')) ||
+    (await checkPermission(event, companyId, 'billing.manage'));
+
+  const base = {
     id: companyId,
     name: company.name,
-    email: company.email,
     phone: company.phone,
     accentColor: company.accentColor,
     tagline: company.tagline,
-    address: company.address,
     logoKey: company.logoKey,
     logo: company.logo || null,
     subscriptionStatus: company.subscriptionStatus,
     trialEndsAt: company.trialEndsAt,
     region: company.region || 'national',
-    pricebook: company.pricebook || {},
     language: company.language || 'en'
-  });
+  };
+  if (canSeeConfidential) {
+    base.email = company.email;
+    base.address = company.address;
+    base.pricebook = company.pricebook || {};
+  }
+  return res.ok(base);
 });
 
 module.exports.update = res.wrap(async (event) => {

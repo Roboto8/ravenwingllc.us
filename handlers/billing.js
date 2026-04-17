@@ -205,6 +205,7 @@ module.exports.status = res.wrap(async (event) => {
 module.exports.shareBonus = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
+  if (!await checkPermission(event, companyId, 'billing.manage')) return res.forbidden('No permission to manage billing');
 
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
   if (!company) return res.notFound();

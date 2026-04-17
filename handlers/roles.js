@@ -55,6 +55,15 @@ module.exports.list = res.wrap(async (event) => {
   return res.ok({ roles, allPermissions: ALL_PERMISSIONS });
 });
 
+// Ensure the caller cannot grant permissions they don't themselves hold.
+// Owners pass through (they have everything). Non-owners may only include permissions
+// they currently possess.
+function filterGrantablePermissions(requested, callerPerms) {
+  if (callerPerms === 'owner') return requested.slice();
+  const held = new Set(callerPerms);
+  return requested.filter(p => held.has(p));
+}
+
 // Create a new role
 module.exports.create = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
@@ -70,7 +79,10 @@ module.exports.create = res.wrap(async (event) => {
   if (!name || name.length < 2) return res.bad('Role name required (2+ chars, alphanumeric)');
   if (name === 'owner' || name === 'member') return res.bad('Cannot create built-in role name');
 
-  const permissions = (body.permissions || []).filter(p => ALL_PERMISSIONS.includes(p));
+  const callerPerms = await getUserPermissions(event, companyId);
+  const requested = (body.permissions || []).filter(p => ALL_PERMISSIONS.includes(p));
+  const permissions = filterGrantablePermissions(requested, callerPerms);
+  const dropped = requested.filter(p => !permissions.includes(p));
   const color = body.color || '#6b6052';
 
   await db.put({
@@ -82,7 +94,7 @@ module.exports.create = res.wrap(async (event) => {
     createdAt: new Date().toISOString()
   });
 
-  return res.created({ name, color, permissions, builtIn: false });
+  return res.created({ name, color, permissions, builtIn: false, droppedPermissions: dropped });
 });
 
 // Update a role
@@ -101,7 +113,9 @@ module.exports.update = res.wrap(async (event) => {
   const updates = {};
 
   if (body.permissions) {
-    updates.permissions = body.permissions.filter(p => ALL_PERMISSIONS.includes(p));
+    const callerPerms = await getUserPermissions(event, companyId);
+    const requested = body.permissions.filter(p => ALL_PERMISSIONS.includes(p));
+    updates.permissions = filterGrantablePermissions(requested, callerPerms);
   }
   if (body.color) updates.color = body.color;
   if (Object.keys(updates).length === 0) return res.bad('No valid fields');
@@ -168,29 +182,30 @@ module.exports.assign = res.wrap(async (event) => {
 
 // Check if the current user has a specific permission
 async function checkPermission(event, companyId, permission) {
+  const perms = await getUserPermissions(event, companyId);
+  if (perms === 'owner') return true;
+  return perms.includes(permission);
+}
+
+// Return the caller's full permission set (or 'owner' sentinel). Used for separation-of-duties
+// checks so a 'team.roles' holder can't grant/keep permissions they themselves do not have.
+async function getUserPermissions(event, companyId) {
   const user = auth.getUser(event);
-  if (!user) return false;
+  if (!user) return [];
 
   const items = await db.queryGSI('USER#' + user.sub);
-  if (items.length === 0) return false;
+  if (items.length === 0) return [];
 
   const userRecord = items[0];
   const role = userRecord.role || 'member';
 
-  // Owner always has all permissions
-  if (role === 'owner') return true;
-
-  // Check built-in member role
-  if (role === 'member') {
-    return DEFAULT_MEMBER_ROLE.permissions.includes(permission);
-  }
-
-  // Check custom role
+  if (role === 'owner') return 'owner';
+  if (role === 'member') return DEFAULT_MEMBER_ROLE.permissions.slice();
   const roleRecord = await db.get('COMPANY#' + companyId, 'ROLE#' + role);
-  if (!roleRecord) return DEFAULT_MEMBER_ROLE.permissions.includes(permission);
-
-  return (roleRecord.permissions || []).includes(permission);
+  if (!roleRecord) return DEFAULT_MEMBER_ROLE.permissions.slice();
+  return (roleRecord.permissions || []).slice();
 }
 
 module.exports.checkPermission = checkPermission;
+module.exports.getUserPermissions = getUserPermissions;
 module.exports.ALL_PERMISSIONS = ALL_PERMISSIONS;

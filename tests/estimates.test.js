@@ -392,9 +392,9 @@ describe('estimates handler', () => {
 
   // ===== PURGE =====
   describe('purge', () => {
-    test('permanently deletes estimate', async () => {
+    test('permanently deletes estimate when already in trash', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
-      db.findById.mockResolvedValue(mockEstimate);
+      db.findById.mockResolvedValue({ ...mockEstimate, status: 'deleted' });
       db.remove.mockResolvedValue({});
 
       const result = await estimates.purge({
@@ -405,6 +405,19 @@ describe('estimates handler', () => {
       expect(result.statusCode).toBe(200);
       expect(body.purged).toBe(true);
       expect(db.remove).toHaveBeenCalledWith(mockEstimate.PK, mockEstimate.SK);
+    });
+
+    test('rejects purge of non-deleted estimate (preserves 90-day trash window)', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({ ...mockEstimate, status: 'active' });
+      db.remove.mockResolvedValue({});
+
+      const result = await estimates.purge({
+        pathParameters: { id: 'est-123' }
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(db.remove).not.toHaveBeenCalled();
     });
 
     test('returns 404 when estimate not found', async () => {

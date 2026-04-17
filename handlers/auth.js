@@ -26,8 +26,11 @@ module.exports.postConfirmation = async (event) => {
     if (items.length > 0 && items[0].status === 'pending') {
       const invite = items[0];
 
-      // Verify the signup email matches the invited email — if not, fall through to create own company
-      if (!invite.email || invite.email.toLowerCase() === email.toLowerCase()) {
+      // Reject expired invites (TTL cleanup is eventual; check here for correctness too).
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (invite.expiresAt && invite.expiresAt < nowSec) {
+        // Fall through to create-own-company path (safer than joining expired company).
+      } else if (!invite.email || invite.email.toLowerCase() === email.toLowerCase()) {
         const companyId = invite.GSI1SK.replace('COMPANY#', '');
 
         // Create user under existing company

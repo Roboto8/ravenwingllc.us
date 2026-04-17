@@ -9,8 +9,19 @@ module.exports.list = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
   if (!companyId) return res.forbidden();
 
+  // Only invite-managers see raw tokens; others see redacted invite list so a low-priv
+  // member cannot lift a pending token and join as that identity.
+  const canManageInvites = await checkPermission(event, companyId, 'team.invite');
+
   const { items } = await db.query('COMPANY#' + companyId, 'USER#', 50);
   const invites = await db.query('COMPANY#' + companyId, 'INVITE#', 50);
+
+  const now = Date.now();
+  const pendingInvites = invites.items.filter(i => {
+    if (i.status !== 'pending') return false;
+    if (i.expiresAt && i.expiresAt * 1000 < now) return false;
+    return true;
+  });
 
   return res.ok({
     members: items.map(m => ({
@@ -19,13 +30,12 @@ module.exports.list = res.wrap(async (event) => {
       role: m.role,
       joinedAt: m.createdAt
     })),
-    invites: invites.items
-      .filter(i => i.status === 'pending')
-      .map(i => ({
-        email: i.email,
-        token: i.token,
-        invitedAt: i.createdAt
-      }))
+    invites: pendingInvites.map(i => {
+      const base = { email: i.email, invitedAt: i.createdAt };
+      if (i.expiresAt) base.expiresAt = new Date(i.expiresAt * 1000).toISOString();
+      if (canManageInvites) base.token = i.token;
+      return base;
+    })
   });
 });
 
@@ -47,6 +57,8 @@ module.exports.invite = res.wrap(async (event) => {
 
   const token = crypto.randomUUID();
   const now = new Date().toISOString();
+  const INVITE_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
+  const expiresAt = Math.floor(Date.now() / 1000) + INVITE_TTL_SECONDS;
 
   await db.put({
     PK: 'COMPANY#' + companyId,
@@ -56,10 +68,12 @@ module.exports.invite = res.wrap(async (event) => {
     email,
     token,
     status: 'pending',
-    createdAt: now
+    createdAt: now,
+    // DynamoDB TTL attribute (table already has TTL enabled on `expiresAt` per serverless.yml)
+    expiresAt
   });
 
-  return res.created({ token, email });
+  return res.created({ token, email, expiresAt: new Date(expiresAt * 1000).toISOString() });
 });
 
 // Revoke an invite
@@ -104,6 +118,7 @@ module.exports.validate = res.wrap(async (event) => {
 
   const invite = items[0];
   if (invite.status !== 'pending') return res.bad('Invite already used');
+  if (invite.expiresAt && invite.expiresAt * 1000 < Date.now()) return res.bad('Invite has expired');
 
   const companyId = invite.GSI1SK.replace('COMPANY#', '');
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');

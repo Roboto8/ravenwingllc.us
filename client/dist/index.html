@@ -2127,10 +2127,13 @@
       var bucket = FC_CONFIG.assetsBucket || '';
       var region = 'us-east-1';
       grid.innerHTML = activeEstimatePhotos.map(function(p) {
-        var thumbUrl = 'https://' + bucket + '.s3.' + region + '.amazonaws.com/' + p.key;
+        // Photo keys are user-writable via estimate update; HTML-escape them before injecting
+        // into the src attribute, and URI-encode each path segment to neutralise quote/bracket bytes.
+        var safeKey = String(p.key || '').split('/').map(encodeURIComponent).join('/');
+        var thumbUrl = 'https://' + bucket + '.s3.' + region + '.amazonaws.com/' + safeKey;
         return '<div style="position:relative;aspect-ratio:1;border-radius:4px;overflow:hidden;background:var(--surface-2)">' +
-          '<img src="' + thumbUrl + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">' +
-          '<button onclick="removePhoto(\'' + p.key.replace(/'/g, "\\'") + '\')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:14px;line-height:1;cursor:pointer" title="Delete photo">&times;</button>' +
+          '<img src="' + escapeHtml(thumbUrl) + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">' +
+          '<button onclick="removePhoto(\'' + escapeHtml(String(p.key || '').replace(/'/g, "\\'")) + '\')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:14px;line-height:1;cursor:pointer" title="Delete photo">&times;</button>' +
         '</div>';
       }).join('');
     }
