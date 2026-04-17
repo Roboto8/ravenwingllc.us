@@ -98,6 +98,9 @@ module.exports.checkout = res.wrap(async (event) => {
     success_url: returnUrl + '?billing=success',
     cancel_url: returnUrl + '?billing=cancel',
     automatic_tax: { enabled: true },
+    // automatic_tax requires the Customer to have an address; save the one collected at checkout
+    customer_update: { address: 'auto', name: 'auto' },
+    billing_address_collection: 'required',
     // Show clear pricing — no surprises
     consent_collection: { terms_of_service: 'required' },
     custom_text: {
