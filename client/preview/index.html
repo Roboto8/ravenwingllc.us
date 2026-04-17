@@ -58,33 +58,10 @@
 
   <!-- Onboarding Overlay -->
   <div id="onboarding-overlay" class="onboarding-overlay" style="display:none">
-    <div class="onboarding-backdrop" onclick="onboardFinish()"></div>
-    <div class="onboarding-step" data-step="1">
-      <div class="onboarding-card onboarding-card-search">
-        <div class="onboarding-arrow onboarding-arrow-up"></div>
-        <div class="onboarding-step-num">1 / 3 <a href="#" onclick="onboardFinish(); return false;" style="float:right;color:var(--text-muted);font-size:12px;text-decoration:none">Skip</a></div>
-        <h3 class="onboarding-title" data-i18n="onboard_step1_title">Search for a property address</h3>
-        <p class="onboarding-desc" data-i18n="onboard_step1_desc">Type an address into the search bar to fly to any property on the satellite map.</p>
-        <button class="btn btn-sm onboarding-next" onclick="onboardNext()" data-i18n="onboard_next">Next</button>
-      </div>
-    </div>
-    <div class="onboarding-step" data-step="2" style="display:none">
-      <div class="onboarding-card onboarding-card-map">
-        <div class="onboarding-arrow onboarding-arrow-up"></div>
-        <div class="onboarding-step-num">2 / 3 <a href="#" onclick="onboardFinish(); return false;" style="float:right;color:var(--text-muted);font-size:12px;text-decoration:none">Skip</a></div>
-        <h3 class="onboarding-title" data-i18n="onboard_step2_title">Click the map to draw fence lines</h3>
-        <p class="onboarding-desc" data-i18n="onboard_step2_desc">Click points on the map to trace the fence. Each segment shows its length in feet.</p>
-        <button class="btn btn-sm onboarding-next" onclick="onboardNext()" data-i18n="onboard_next">Next</button>
-      </div>
-    </div>
-    <div class="onboarding-step" data-step="3" style="display:none">
-      <div class="onboarding-card onboarding-card-panel">
-        <div class="onboarding-arrow onboarding-arrow-left"></div>
-        <div class="onboarding-step-num">3 / 3</div>
-        <h3 class="onboarding-title" data-i18n="onboard_step3_title">Review your estimate and share it</h3>
-        <p class="onboarding-desc" data-i18n="onboard_step3_desc">Pick materials, add extras, then share or save your estimate as a PDF.</p>
-        <button class="btn btn-sm onboarding-next" onclick="onboardFinish()" data-i18n="onboard_got_it">Got it</button>
-      </div>
+    <div class="onboarding-card onboarding-card-panel" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:480px;width:calc(100% - 32px)">
+      <h3 class="onboarding-title" data-i18n="onboard_title">Welcome to FenceTrace</h3>
+      <p class="onboarding-desc" data-i18n="onboard_desc">Search an address, click the map to trace your fence, then review the estimate on the right.</p>
+      <button class="btn btn-sm onboarding-next" onclick="onboardFinish()" data-i18n="onboard_got_it">Got it</button>
     </div>
   </div>
 
@@ -959,22 +936,24 @@
     updateOnlineStatus();
 
     // === Onboarding ===
-    let onboardStep = 1;
-
     function showOnboarding() {
-      if (localStorage.getItem('fc_onboarded') === 'true') return;
+      if (localStorage.getItem('fc_onboarded') === 'true') {
+        maybeShowCookieBanner();
+        return;
+      }
       document.getElementById('onboarding-overlay').style.display = 'block';
-    }
-
-    function onboardNext() {
-      document.querySelector('.onboarding-step[data-step="' + onboardStep + '"]').style.display = 'none';
-      onboardStep++;
-      document.querySelector('.onboarding-step[data-step="' + onboardStep + '"]').style.display = 'block';
     }
 
     function onboardFinish() {
       document.getElementById('onboarding-overlay').style.display = 'none';
       localStorage.setItem('fc_onboarded', 'true');
+      maybeShowCookieBanner();
+    }
+
+    function maybeShowCookieBanner() {
+      if (localStorage.getItem('fc_cookie_ok')) return;
+      var banner = document.getElementById('cookie-banner');
+      if (banner) banner.style.display = 'block';
     }
 
     // === Invite detection ===
@@ -1786,7 +1765,13 @@
       try {
         const { url } = await API.createCheckout(window.location.href, selectedTier);
         window.location.href = url;
-      } catch (e) { showToast('Billing error: ' + (e.message || e)); console.error('Checkout error:', e); }
+      } catch (e) {
+        if (e.authFailed) {
+          document.getElementById('paywall-modal').style.display = 'none';
+        }
+        showToast('Billing error: ' + (e.message || e));
+        console.error('Checkout error:', e);
+      }
     }
 
     // === Save/Load Estimates ===
@@ -2523,7 +2508,7 @@
       <button onclick="localStorage.setItem('fc_cookie_ok','1');document.getElementById('cookie-banner').style.display='none'" style="background:var(--accent,#c0622e);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;white-space:nowrap">Got it</button>
     </div>
   </div>
-  <script>if(!localStorage.getItem('fc_cookie_ok'))document.getElementById('cookie-banner').style.display='block';</script>
+  <!-- Cookie banner is gated by maybeShowCookieBanner() — shown only after onboarding is dismissed -->
 
 </body>
 </html>

@@ -123,7 +123,7 @@ functions:
     handler: handlers/auth.postConfirmation
     events:
       - cognitoUserPool:
-          pool: ravenwingllc-${sls:stage}
+          pool: fencecalc-${sls:stage}
           trigger: PostConfirmation
           existing: true
           forceDeploy: true

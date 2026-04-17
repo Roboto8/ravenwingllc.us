@@ -43,18 +43,28 @@ const API = {
 
     if (resp.status === 401) {
       // Token expired — try refresh once
+      var refreshErr = null;
       try {
         await this._refreshOnce();
-        headers.Authorization = 'Bearer ' + Auth.tokens.idToken;
-        var retry = await this._fetchWithRetry(this.baseUrl + path, { ...opts, headers });
-        var retryData = await retry.json();
-        if (!retry.ok) throw new Error(retryData.error || 'Request failed');
-        return retryData;
       } catch (e) {
-        Auth.logout();
-        if (typeof showAuthUI === 'function') showAuthUI();
-        throw new Error('Session expired');
+        refreshErr = e;
       }
+      if (!refreshErr) {
+        try {
+          headers.Authorization = 'Bearer ' + Auth.tokens.idToken;
+          var retry = await this._fetchWithRetry(this.baseUrl + path, { ...opts, headers });
+          var retryData = await retry.json().catch(function() { return {}; });
+          if (retry.ok) return retryData;
+          refreshErr = new Error(retryData.error || retryData.message || ('Retry failed: ' + retry.status));
+        } catch (e) {
+          refreshErr = e;
+        }
+      }
+      Auth.logout();
+      if (typeof showAuthUI === 'function') showAuthUI();
+      var err = new Error('Session expired — ' + (refreshErr.message || refreshErr));
+      err.authFailed = true;
+      throw err;
     }
 
     if (resp.status === 403) {
