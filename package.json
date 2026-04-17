@@ -16,7 +16,6 @@
   "license": "MIT",
   "author": "RavenWing LLC",
   "dependencies": {
-    "electron": "^33.4.11",
     "stripe": "^17.0.0"
   },
   "devDependencies": {
