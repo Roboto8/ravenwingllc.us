@@ -8,7 +8,7 @@
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "deploy:dev": "serverless client deploy --stage dev",
-    "deploy:prod": "serverless client deploy --stage prod && aws cloudfront create-invalidation --distribution-id E2Q8DG4LT7KL3 --paths \"/*\" > /dev/null",
+    "deploy:prod": "serverless client deploy --stage prod && aws cloudfront create-invalidation --distribution-id E2Q8DG4LT7KL3 --paths \"/*\"",
     "deploy:backend": "serverless deploy --stage dev",
     "deploy:backend:prod": "serverless deploy --stage prod",
     "deploy:all": "serverless deploy --stage dev && serverless client deploy --stage dev"
@@ -25,6 +25,7 @@
     "@aws-sdk/lib-dynamodb": "^3.600.0",
     "@aws-sdk/s3-request-presigner": "^3.1010.0",
     "jest": "^29.7.0",
+    "puppeteer-core": "^22.15.0",
     "serverless-finch": "^4.0.4"
   }
 }
