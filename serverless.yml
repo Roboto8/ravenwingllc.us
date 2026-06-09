@@ -430,6 +430,16 @@ functions:
     # events:
     #   - schedule: rate(1 day)
 
+  dailyDigest:
+    handler: handlers/daily-digest.handler
+    timeout: 60
+    events:
+      # 10:00 UTC = 6 AM EDT (summer) / 5 AM EST (winter). Internal owner report,
+      # not customer email, so no CAN-SPAM gate. Switch to cron(0 11 ...) for 6 AM EST year-round.
+      - schedule:
+          rate: cron(0 10 * * ? *)
+          enabled: true
+
   stripeWebhook:
     handler: handlers/webhook.handler
     events:
