@@ -2808,26 +2808,31 @@ function renderBOM(bom) {
   bom.materialTotal = bom.items.reduce(function(sum, i) { return sum + i.total; }, 0);
   bom.materialTotal = Math.round(bom.materialTotal);
 
-  container.innerHTML = bom.items.map(function(i) {
+  container.innerHTML = bom.items.map(function(i, idx) {
     if (i.isHeader) {
       return '<div class="bom-section-header">' + escapeHtml(i.name) + '</div>';
     }
-    var eName = i.name.replace(/'/g, "\\'");
-    return '<div class="bom-row">' +
+    return '<div class="bom-row" data-idx="' + idx + '">' +
       '<div class="bom-name">' + escapeHtml(i.name) + '</div>' +
       '<div class="bom-fields">' +
         '<label class="bom-field"><span class="bom-field-label">Qty</span>' +
-          '<input type="number" class="bom-qty" value="' + i.qty + '" min="0" ' +
-            'onchange="updateBomQty(\'' + eName + '\', this.value)">' +
+          '<input type="number" class="bom-qty" value="' + i.qty + '" min="0">' +
         '</label>' +
         '<label class="bom-field"><span class="bom-field-label">Price</span>' +
-          '<input type="number" class="bom-price" value="' + i.unitCost.toFixed(2) + '" min="0" step="0.25" ' +
-            'onchange="updateBomPrice(\'' + eName + '\', this.value)">' +
+          '<input type="number" class="bom-price" value="' + i.unitCost.toFixed(2) + '" min="0" step="0.25">' +
         '</label>' +
         '<span class="bom-cost">$' + i.total.toLocaleString() + '</span>' +
       '</div>' +
     '</div>';
   }).join('');
+
+  // Bind by item index — names can contain quotes, so they can't be
+  // interpolated into inline handler attributes safely.
+  container.querySelectorAll('.bom-row').forEach(function(row) {
+    var item = bom.items[parseInt(row.getAttribute('data-idx'), 10)];
+    row.querySelector('.bom-qty').onchange = function() { updateBomQty(item.name, this.value); };
+    row.querySelector('.bom-price').onchange = function() { updateBomPrice(item.name, this.value); };
+  });
 
   document.getElementById('bom-total').textContent = '$' + bom.materialTotal.toLocaleString();
 }
