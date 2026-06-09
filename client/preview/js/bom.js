@@ -6,17 +6,20 @@ const BOM = {
     postSpacing: 8,
     heights: {
       4: {
-        postLength: '4x4x6 PT', postCost: 12, rails: 2, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '4x4x6 PT', postCost: 12, postCostGothic: 15, rails: 2,
+        railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x4 dog ear PT', picketCost: 2.25,
         screwsPerPicket: 4, concreteBags: 2, brackets: 2
       },
       6: {
-        postLength: '4x4x8 PT', postCost: 16, rails: 3, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '4x4x8 PT', postCost: 16, postCostGothic: 19, rails: 3,
+        railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x6 dog ear PT', picketCost: 3,
         screwsPerPicket: 6, concreteBags: 2, brackets: 3
       },
       8: {
-        postLength: '6x6x12 PT', postCost: 42, rails: 4, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '6x6x12 PT', postCost: 42, rails: 4,
+        railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x8 dog ear PT', picketCost: 5.50,
         screwsPerPicket: 8, concreteBags: 4, brackets: 4
       }
@@ -136,6 +139,8 @@ function calculateBOM(feet, fenceType, height, options = {}) {
   const customPricing = options.customPricing || {};
   const fenceClosed = options.fenceClosed || false;
   const fencePointCount = options.fencePointCount || 2;
+  const woodRailLength = options.woodRailLength === 16 ? 16 : 8;
+  const woodPostTop = options.woodPostTop === 'gothic' ? 'gothic' : 'flat';
 
   const spec = BOM[fenceType];
   if (!spec || !spec.heights[height]) return null;
@@ -152,17 +157,33 @@ function calculateBOM(feet, fenceType, height, options = {}) {
 
   if (fenceType === 'wood') {
     const totalPickets = sections * h.pickets;
-    const totalRails = sections * h.rails;
+    const totalRailsPerStick8 = sections * h.rails;
+    const railSticks = woodRailLength === 16 ? Math.ceil(totalRailsPerStick8 / 2) : totalRailsPerStick8;
+    const railDesc = woodRailLength === 16 ? (h.railDesc16 || h.railDesc) : h.railDesc;
+    const railCost = woodRailLength === 16
+      ? p('railCost16', h.railCost16 != null ? h.railCost16 : h.railCost * 2)
+      : p('railCost', h.railCost);
     const totalBrackets = sections * h.brackets * 2;
     const totalScrews = totalPickets * h.screwsPerPicket + totalBrackets * 2;
     const screwBoxes = Math.ceil(totalScrews / ex.screwsPerBox);
     const totalConcrete = posts * h.concreteBags;
 
-    items.push({ name: h.postLength + ' posts', qty: posts, unit: 'ea', unitCost: p('postCost', h.postCost) });
-    items.push({ name: h.railDesc + ' rails', qty: totalRails, unit: 'ea', unitCost: p('railCost', h.railCost) });
+    const isFourByFour = h.postLength.indexOf('4x4') === 0;
+    const useGothic = woodPostTop === 'gothic' && isFourByFour;
+    const postLabel = useGothic
+      ? h.postLength + ' French Gothic posts'
+      : h.postLength + ' posts';
+    const postCost = useGothic
+      ? p('postCostGothic', h.postCostGothic != null ? h.postCostGothic : h.postCost + 3)
+      : p('postCost', h.postCost);
+
+    items.push({ name: postLabel, qty: posts, unit: 'ea', unitCost: postCost });
+    items.push({ name: railDesc + ' rails', qty: railSticks, unit: 'ea', unitCost: railCost });
     items.push({ name: h.picketDesc + ' pickets', qty: totalPickets, unit: 'ea', unitCost: p('picketCost', h.picketCost) });
     items.push({ name: 'Rail brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
-    items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
+    if (!useGothic) {
+      items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
+    }
     items.push({ name: '50lb concrete bags', qty: totalConcrete, unit: 'bags', unitCost: pe('concreteBagCost', ex.concreteBagCost) });
     items.push({ name: 'Exterior deck screws (box)', qty: screwBoxes, unit: 'boxes', unitCost: pe('screwBoxCost', ex.screwBoxCost) });
   }

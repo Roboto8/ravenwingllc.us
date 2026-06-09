@@ -10,7 +10,7 @@
     gtag('config', 'G-JWN3TZB9P5');
   </script>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Fence estimating software — trace fence lines on satellite imagery, get instant bill of materials with every post, rail, bracket, and concrete bag. Wood, vinyl, chain link, aluminum, iron. Regional pricing. Free to start.">
   <meta name="keywords" content="fence estimate, fence calculator, fence bid, fence contractor software, bill of materials, fence cost, fencing estimate, satellite fence estimator">
   <link rel="canonical" href="https://fencetrace.com/">
@@ -26,7 +26,7 @@
   <meta name="theme-color" content="#c0622e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.google.com https://*.tile.openstreetmap.org https://server.arcgisonline.com https://*.s3.us-east-1.amazonaws.com https://*.amazonaws.com data: blob:; connect-src 'self' https://*.execute-api.us-east-1.amazonaws.com https://cognito-idp.us-east-1.amazonaws.com https://nominatim.openstreetmap.org https://*.s3.us-east-1.amazonaws.com https://wa.me; frame-src 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.google.com https://*.tile.openstreetmap.org https://server.arcgisonline.com https://*.s3.us-east-1.amazonaws.com https://*.amazonaws.com data: blob:; connect-src 'self' https://*.execute-api.us-east-1.amazonaws.com https://cognito-idp.us-east-1.amazonaws.com https://nominatim.openstreetmap.org https://*.s3.us-east-1.amazonaws.com https://wa.me https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com; frame-src 'none'; object-src 'none'">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
@@ -109,38 +109,38 @@
       <p class="modal-sub" data-i18n="auth_subtitle">Free to use — no card required.</p>
 
       <div id="auth-login" class="auth-form">
-        <div class="form-group"><input type="email" id="login-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
-        <div class="form-group"><input type="password" id="login-password" placeholder="Password" data-i18n="placeholder_password" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="email" id="login-email" placeholder="Email" autocomplete="email" inputmode="email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="password" id="login-password" placeholder="Password" autocomplete="current-password" data-i18n="placeholder_password" data-i18n-attr="placeholder"></div>
         <button class="btn btn-full" onclick="handleLogin()" data-i18n="auth_login_btn">Log In</button>
         <p class="auth-switch"><a href="#" onclick="showForgotPassword(); return false;" style="font-size:0.8rem" data-i18n="auth_forgot_password">Forgot password?</a></p>
         <p class="auth-switch"><span data-i18n="auth_no_account">No account?</span> <a href="#" onclick="showSignup(); return false;" data-i18n="auth_sign_up">Sign up</a></p>
       </div>
 
       <div id="auth-signup" class="auth-form" style="display:none">
-        <div class="form-group"><input type="text" id="signup-company" placeholder="Company name" data-i18n="placeholder_company" data-i18n-attr="placeholder"><span class="field-hint" data-i18n="hint_company_name">Shown on estimates and approvals your customers see</span></div>
-        <div class="form-group"><input type="email" id="signup-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
-        <div class="form-group"><input type="password" id="signup-password" placeholder="Password (10+ chars, upper, lower, number)" data-i18n="placeholder_password_hint" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="text" id="signup-company" placeholder="Company name" autocomplete="organization" data-i18n="placeholder_company" data-i18n-attr="placeholder"><span class="field-hint" data-i18n="hint_company_name">Shown on estimates and approvals your customers see</span></div>
+        <div class="form-group"><input type="email" id="signup-email" placeholder="Email" autocomplete="email" inputmode="email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="password" id="signup-password" placeholder="Password (10+ chars, upper, lower, number)" autocomplete="new-password" data-i18n="placeholder_password_hint" data-i18n-attr="placeholder"></div>
         <button class="btn btn-full" onclick="handleSignup()" data-i18n="auth_signup_btn">Create Free Account</button>
         <p class="auth-switch"><span data-i18n="auth_have_account">Have an account?</span> <a href="#" onclick="showLogin(); return false;" data-i18n="auth_log_in">Log in</a></p>
       </div>
 
       <div id="auth-confirm" class="auth-form" style="display:none">
         <p class="auth-info" data-i18n="auth_check_email">Check your email for a verification code.</p>
-        <div class="form-group"><input type="text" id="confirm-code" placeholder="Verification code" data-i18n="placeholder_verification" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="text" id="confirm-code" placeholder="Verification code" autocomplete="one-time-code" inputmode="numeric" data-i18n="placeholder_verification" data-i18n-attr="placeholder"></div>
         <button class="btn btn-full" onclick="handleConfirm()" data-i18n="auth_verify_btn">Verify</button>
       </div>
 
       <div id="auth-forgot" class="auth-form" style="display:none">
         <p class="auth-info" data-i18n="auth_forgot_info">Enter your email and we'll send a reset code.</p>
-        <div class="form-group"><input type="email" id="forgot-email" placeholder="Email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="email" id="forgot-email" placeholder="Email" autocomplete="email" inputmode="email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
         <button class="btn btn-full" onclick="handleForgotPassword()" data-i18n="auth_send_code_btn">Send Reset Code</button>
         <p class="auth-switch"><a href="#" onclick="showLogin(); return false;" data-i18n="auth_back_to_login">Back to login</a></p>
       </div>
 
       <div id="auth-reset" class="auth-form" style="display:none">
         <p class="auth-info" data-i18n="auth_reset_info">Enter the code from your email and your new password.</p>
-        <div class="form-group"><input type="text" id="reset-code" placeholder="Reset code" data-i18n="placeholder_reset_code" data-i18n-attr="placeholder"></div>
-        <div class="form-group"><input type="password" id="reset-password" placeholder="New password (10+ chars)" data-i18n="placeholder_new_password" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="text" id="reset-code" placeholder="Reset code" autocomplete="one-time-code" inputmode="numeric" data-i18n="placeholder_reset_code" data-i18n-attr="placeholder"></div>
+        <div class="form-group"><input type="password" id="reset-password" placeholder="New password (10+ chars)" autocomplete="new-password" data-i18n="placeholder_new_password" data-i18n-attr="placeholder"></div>
         <button class="btn btn-full" onclick="handleResetPassword()" data-i18n="auth_reset_btn">Reset Password</button>
         <p class="auth-switch"><a href="#" onclick="showLogin(); return false;" data-i18n="auth_back_to_login">Back to login</a></p>
       </div>
@@ -401,6 +401,22 @@
               <span data-i18n="fence_iron">Iron</span>
               <span class="fence-price" title="Tap to edit price" onclick="editFencePrice(event, 'iron')">$55/ft</span>
             </button>
+          </div>
+          <div id="wood-options" class="wood-options" style="margin-top:10px">
+            <div class="wood-option-row" style="margin-bottom:6px">
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:3px">Rail length</div>
+              <div class="height-options">
+                <button class="height-btn active" data-rail="16" onclick="selectWoodRailLength(this, 16)">2x4x16</button>
+                <button class="height-btn" data-rail="8" onclick="selectWoodRailLength(this, 8)">2x4x8</button>
+              </div>
+            </div>
+            <div class="wood-option-row">
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:3px">Post top</div>
+              <div class="height-options">
+                <button class="height-btn active" data-top="flat" onclick="selectWoodPostTop(this, 'flat')">Flat</button>
+                <button class="height-btn" data-top="gothic" onclick="selectWoodPostTop(this, 'gothic')">French Gothic</button>
+              </div>
+            </div>
           </div>
           </div>
         </div>
@@ -1990,7 +2006,7 @@
         selectedFence = { type: est.fenceType, price: prices[est.fenceType] || 25 };
         document.querySelectorAll('.fence-type-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.fence-type-btn').forEach(b => {
-          if (b.textContent.toLowerCase().includes(est.fenceType.replace('-', ' '))) b.classList.add('active');
+          if (b.dataset.type === est.fenceType) b.classList.add('active');
         });
 
         selectedHeight = est.fenceHeight || 6;
@@ -2027,7 +2043,7 @@
             selectedFence = { type: est.sections[0].fenceType, price: est.sections[0].fencePrice || 25 };
             document.querySelectorAll('.fence-type-btn').forEach(function(b) { b.classList.remove('active'); });
             document.querySelectorAll('.fence-type-btn').forEach(function(b) {
-              if (b.textContent.toLowerCase().indexOf(est.sections[0].fenceType.replace('-', ' ')) >= 0) b.classList.add('active');
+              if (b.dataset.type === est.sections[0].fenceType) b.classList.add('active');
             });
           }
           if (est.sections[0].fenceHeight) selectedHeight = est.sections[0].fenceHeight;
@@ -2039,7 +2055,7 @@
               selectedFence = { type: sec.fenceType, price: sec.fencePrice || 25 };
               document.querySelectorAll('.fence-type-btn').forEach(function(b) { b.classList.remove('active'); });
               document.querySelectorAll('.fence-type-btn').forEach(function(b) {
-                if (b.textContent.toLowerCase().indexOf(sec.fenceType.replace('-', ' ')) >= 0) b.classList.add('active');
+                if (b.dataset.type === sec.fenceType) b.classList.add('active');
               });
             }
             if (sec.fenceHeight) selectedHeight = sec.fenceHeight;

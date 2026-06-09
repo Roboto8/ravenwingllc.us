@@ -118,6 +118,47 @@ describe('calculateBOM', () => {
       const bom8 = calculateBOM(100, 'wood', 8);
       expect(bom4.materialTotal).toBeLessThan(bom8.materialTotal);
     });
+
+    // --- Wood options: rail length & post top ---
+    test('woodRailLength=8 (default) lists 2x4x8 rails at full stick count', () => {
+      const bom = calculateBOM(100, 'wood', 6);
+      const rail = bom.items.find(i => i.name.includes('rails'));
+      expect(rail.name).toMatch(/2x4x8/);
+      expect(rail.qty).toBe(13 * 3); // 13 sections * 3 rails @ 6ft
+    });
+
+    test('woodRailLength=16 halves the stick count and uses 2x4x16 SKU', () => {
+      const bom = calculateBOM(100, 'wood', 6, { woodRailLength: 16 });
+      const rail = bom.items.find(i => i.name.includes('rails'));
+      expect(rail.name).toMatch(/2x4x16/);
+      // 13 sections * 3 rails = 39 stick-equivalents at 8ft, halved = ceil(39/2) = 20
+      expect(rail.qty).toBe(Math.ceil(39 / 2));
+      expect(rail.unitCost).toBe(12);
+    });
+
+    test('woodPostTop=gothic at 4ft (4x4 posts) renames post line and drops post caps', () => {
+      const bom = calculateBOM(100, 'wood', 4, { woodPostTop: 'gothic' });
+      const post = bom.items.find(i => i.name.includes('posts'));
+      expect(post.name).toMatch(/French Gothic/);
+      const caps = bom.items.find(i => i.name === 'Post caps');
+      expect(caps).toBeUndefined();
+    });
+
+    test('woodPostTop=gothic adds upcharge over flat at 4ft', () => {
+      const flat = calculateBOM(100, 'wood', 4, { woodPostTop: 'flat' });
+      const gothic = calculateBOM(100, 'wood', 4, { woodPostTop: 'gothic' });
+      const flatPost = flat.items.find(i => i.name.includes('posts'));
+      const gothicPost = gothic.items.find(i => i.name.includes('posts'));
+      expect(gothicPost.unitCost).toBeGreaterThan(flatPost.unitCost);
+    });
+
+    test('woodPostTop=gothic at 8ft (6x6 posts) is silently ignored — caps still listed', () => {
+      const bom = calculateBOM(100, 'wood', 8, { woodPostTop: 'gothic' });
+      const post = bom.items.find(i => i.name.includes('posts'));
+      expect(post.name).not.toMatch(/French Gothic/);
+      const caps = bom.items.find(i => i.name === 'Post caps');
+      expect(caps).toBeDefined();
+    });
   });
 
   // --- Vinyl ---

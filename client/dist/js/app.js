@@ -236,6 +236,8 @@ function addNewSection() {
     fenceType: selectedFence.type,
     fencePrice: selectedFence.price,
     fenceHeight: selectedHeight,
+    woodRailLength: selectedWoodRailLength,
+    woodPostTop: selectedWoodPostTop,
     notes: ''
   };
   sections.push(newSection);
@@ -267,6 +269,8 @@ function saveActiveSection() {
   s.fenceType = selectedFence.type;
   s.fencePrice = selectedFence.price;
   s.fenceHeight = selectedHeight;
+  s.woodRailLength = selectedWoodRailLength;
+  s.woodPostTop = selectedWoodPostTop;
   var notesEl = document.getElementById('section-notes');
   if (notesEl) s.notes = notesEl.value;
 }
@@ -286,13 +290,23 @@ function loadActiveSection() {
     selectedFence = { type: s.fenceType, price: s.fencePrice || 25 };
     document.querySelectorAll('.fence-type-btn').forEach(function(b) { b.classList.remove('active'); });
     document.querySelectorAll('.fence-type-btn').forEach(function(b) {
-      if (b.textContent.toLowerCase().indexOf(s.fenceType.replace('-', ' ')) >= 0) b.classList.add('active');
+      if (b.dataset.type === s.fenceType) b.classList.add('active');
     });
+    var woodOpts = document.getElementById('wood-options');
+    if (woodOpts) woodOpts.style.display = (s.fenceType === 'wood') ? '' : 'none';
   }
+  selectedWoodRailLength = (s.woodRailLength === 8) ? 8 : 16;
+  selectedWoodPostTop = (s.woodPostTop === 'gothic') ? 'gothic' : 'flat';
+  document.querySelectorAll('#wood-options .height-btn[data-rail]').forEach(function(b) {
+    b.classList.toggle('active', parseInt(b.dataset.rail, 10) === selectedWoodRailLength);
+  });
+  document.querySelectorAll('#wood-options .height-btn[data-top]').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.top === selectedWoodPostTop);
+  });
   if (s.fenceHeight) {
     selectedHeight = s.fenceHeight;
     // Update height buttons
-    var heightBtns = document.querySelectorAll('.height-options')[0];
+    var heightBtns = document.querySelector('.panel-section[data-section="height"] .height-options');
     if (heightBtns) {
       heightBtns.querySelectorAll('.height-btn').forEach(function(b) {
         b.classList.remove('active');
@@ -421,6 +435,8 @@ function getTotalFootageAllSections() {
 }
 var baseFencePrices = { wood: 25, vinyl: 35, 'chain-link': 15, aluminum: 40, iron: 55 };
 let selectedFence = { type: 'wood', price: 25 };
+let selectedWoodRailLength = 16; // 16 (contractor 2x4x16) or 8 (DIY 2x4x8)
+let selectedWoodPostTop = 'flat'; // 'flat' or 'gothic' (4x4 posts only)
 
 function updateFencePricesForRegion() {
   var mult = (typeof REGIONS !== 'undefined' && typeof companyRegion !== 'undefined' && REGIONS[companyRegion])
@@ -2180,9 +2196,27 @@ function selectFence(btn, type) {
   document.querySelectorAll('.fence-type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedFence = { type, price: parseInt(btn.dataset.price) };
+  var woodOpts = document.getElementById('wood-options');
+  if (woodOpts) woodOpts.style.display = (type === 'wood') ? '' : 'none';
   recalculate();
   markUnsaved();
   hintFenceType();
+}
+
+function selectWoodRailLength(btn, len) {
+  document.querySelectorAll('#wood-options .height-btn[data-rail]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedWoodRailLength = (len === 16) ? 16 : 8;
+  recalculate();
+  markUnsaved();
+}
+
+function selectWoodPostTop(btn, top) {
+  document.querySelectorAll('#wood-options .height-btn[data-top]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedWoodPostTop = (top === 'gothic') ? 'gothic' : 'flat';
+  recalculate();
+  markUnsaved();
 }
 
 function editFencePrice(e, type) {
@@ -2255,7 +2289,7 @@ function setCustomHeight(value) {
 }
 
 function clearHeightButtons() {
-  document.querySelectorAll('.height-options .height-btn').forEach(function(b) {
+  document.querySelectorAll('.panel-section[data-section="height"] .height-options .height-btn').forEach(function(b) {
     b.classList.remove('active');
   });
 }
@@ -2273,17 +2307,20 @@ const BOM = {
     postSpacing: 8,
     heights: {
       4: {
-        postLength: '4x4x6 PT', postCost: 12, rails: 2, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '4x4x6 PT', postCost: 12, postCostGothic: 15, rails: 2,
+        railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x4 dog ear PT', picketCost: 2.25,
         screwsPerPicket: 4, concreteBags: 2, brackets: 2
       },
       6: {
-        postLength: '4x4x8 PT', postCost: 16, rails: 3, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '4x4x8 PT', postCost: 16, postCostGothic: 19, rails: 3,
+        railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x6 dog ear PT', picketCost: 3,
         screwsPerPicket: 6, concreteBags: 2, brackets: 3
       },
       8: {
-        postLength: '6x6x12 PT', postCost: 42, rails: 4, railDesc: '2x4x8 PT', railCost: 6,
+        postLength: '6x6x12 PT', postCost: 42, rails: 4,
+        railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x8 dog ear PT', picketCost: 5.50,
         screwsPerPicket: 8, concreteBags: 4, brackets: 4
       }
@@ -2629,19 +2666,33 @@ function calculateBOM(feet, fenceType, height) {
 
   if (fenceType === 'wood') {
     const totalPickets = sections * h.pickets;
-    const totalRails = sections * h.rails;
+    const totalRailsPerStick8 = sections * h.rails;
+    const useLong = selectedWoodRailLength === 16;
+    const railSticks = useLong ? Math.ceil(totalRailsPerStick8 / 2) : totalRailsPerStick8;
+    const railDesc = useLong ? (h.railDesc16 || h.railDesc) : h.railDesc;
+    const railCost = useLong
+      ? p('railCost16', h.railCost16 != null ? h.railCost16 : h.railCost * 2)
+      : p('railCost', h.railCost);
     const totalBrackets = sections * h.brackets * 2;
     const totalScrews = totalPickets * h.screwsPerPicket + totalBrackets * 2;
     const screwBoxes = Math.ceil(totalScrews / ex.screwsPerBox);
     const totalConcrete = posts * h.concreteBags;
 
-    var postLabel = heightScale !== 1 ? 'PT posts (' + height + 'ft)' : h.postLength + ' posts';
+    var isFourByFour = (h.postLength || '').indexOf('4x4') === 0;
+    var useGothic = selectedWoodPostTop === 'gothic' && isFourByFour;
+    var postBaseLabel = heightScale !== 1 ? 'PT posts (' + height + 'ft)' : h.postLength + ' posts';
+    var postLabel = useGothic ? postBaseLabel.replace(' posts', ' French Gothic posts') : postBaseLabel;
     var picketLabel = heightScale !== 1 ? 'Dog ear PT pickets (' + height + 'ft)' : h.picketDesc + ' pickets';
-    items.push({ name: postLabel, qty: posts, unit: 'ea', unitCost: Math.round(p('postCost', h.postCost) * heightScale * 100) / 100 });
-    items.push({ name: h.railDesc + ' rails', qty: totalRails, unit: 'ea', unitCost: p('railCost', h.railCost) });
+    var basePostCost = useGothic
+      ? p('postCostGothic', h.postCostGothic != null ? h.postCostGothic : h.postCost + 3)
+      : p('postCost', h.postCost);
+    items.push({ name: postLabel, qty: posts, unit: 'ea', unitCost: Math.round(basePostCost * heightScale * 100) / 100 });
+    items.push({ name: railDesc + ' rails', qty: railSticks, unit: 'ea', unitCost: railCost });
     items.push({ name: picketLabel, qty: totalPickets, unit: 'ea', unitCost: Math.round(p('picketCost', h.picketCost) * heightScale * 100) / 100 });
     items.push({ name: 'Rail brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
-    items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
+    if (!useGothic) {
+      items.push({ name: 'Post caps', qty: posts, unit: 'ea', unitCost: pe('postCapCost', ex.postCapCost) });
+    }
     var cOpt = CONCRETE_OPTIONS[selectedConcreteWeight] || CONCRETE_OPTIONS[50];
     var adjConcrete = Math.ceil(totalConcrete * cOpt.qtyMult);
     items.push({ name: cOpt.label + ' concrete bags', qty: adjConcrete, unit: 'bags', unitCost: pe('concreteBagCost', cOpt.cost) });
@@ -4574,6 +4625,8 @@ function shareView() {
     mm: selectedMulchMaterial,
     md: selectedMulchDepth,
     mv: selectedMulchDelivery,
+    wr: selectedWoodRailLength,
+    wp: selectedWoodPostTop,
     vw: [Math.round(map.getCenter().lat * 1e6) / 1e6, Math.round(map.getCenter().lng * 1e6) / 1e6],
     vz: map.getZoom(),
     _v: 2
@@ -4595,6 +4648,8 @@ function shareView() {
   if (data.mm === 'hardwood') delete data.mm;
   if (data.md === 3) delete data.md;
   if (data.mv === 'bags') delete data.mv;
+  if (data.wr === 16) delete data.wr;
+  if (data.wp === 'flat') delete data.wp;
 
   var jsonStr = JSON.stringify(data);
   var encoded;
@@ -4765,9 +4820,21 @@ function loadFromURL() {
       selectedFence = { type: data.f, price: fenceTypes[data.f] };
       document.querySelectorAll('.fence-type-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.fence-type-btn').forEach(b => {
-        if (b.textContent.toLowerCase().includes(data.f.replace('-', ' '))) b.classList.add('active');
+        if (b.dataset.type === data.f) b.classList.add('active');
       });
+      var sharedWoodOpts = document.getElementById('wood-options');
+      if (sharedWoodOpts) sharedWoodOpts.style.display = (data.f === 'wood') ? '' : 'none';
     }
+
+    // Wood-specific options (defaults: 2x4x16 contractor rail, flat top)
+    selectedWoodRailLength = (data.wr === 8) ? 8 : 16;
+    selectedWoodPostTop = (data.wp === 'gothic') ? 'gothic' : 'flat';
+    document.querySelectorAll('#wood-options .height-btn[data-rail]').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.rail, 10) === selectedWoodRailLength);
+    });
+    document.querySelectorAll('#wood-options .height-btn[data-top]').forEach(b => {
+      b.classList.toggle('active', b.dataset.top === selectedWoodPostTop);
+    });
 
     // Set height
     if (data.h) {
@@ -6160,11 +6227,7 @@ document.addEventListener('keydown', function(e) {
     e.preventDefault();
     showToast(t('toast_screenshot_disabled'));
   }
-  // Ctrl+P (Print)
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
-    e.preventDefault();
-    showToast(t('toast_print_disabled'));
-  }
+  // Ctrl+P intentionally NOT blocked — users print to PDF; the Customer PDF button is also available.
 });
 
 // Block right-click context menu
