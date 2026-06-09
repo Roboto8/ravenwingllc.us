@@ -105,6 +105,10 @@ module.exports.remove = res.wrap(async (event) => {
   const user = auth.getUser(event);
   if (member.GSI1PK === 'USER#' + user.sub) return res.bad("Can't remove yourself");
 
+  // Can't remove the company owner — would orphan the company (no one left who can
+  // grant billing.manage/company.edit and restore admin access).
+  if (member.role === 'owner') return res.bad("Can't remove the company owner");
+
   await db.remove(member.PK, member.SK);
   return res.ok({ removed: true });
 });

@@ -21,10 +21,9 @@ function sanitizeReturnUrl(url) {
   if (!url || typeof url !== 'string') return DEFAULT_RETURN;
   try {
     const parsed = new URL(url);
-    const isAllowed = ALLOWED_ORIGINS.some(function(origin) {
-      return url.startsWith(origin);
-    });
-    return isAllowed ? url : DEFAULT_RETURN;
+    // Match on parsed.origin, not url.startsWith — otherwise
+    // "https://fencetrace.com.evil.com/..." would pass.
+    return ALLOWED_ORIGINS.includes(parsed.origin) ? url : DEFAULT_RETURN;
   } catch (e) {
     return DEFAULT_RETURN;
   }

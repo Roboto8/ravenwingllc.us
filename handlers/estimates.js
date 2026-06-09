@@ -118,13 +118,17 @@ module.exports.update = res.wrap(async (event) => {
   if (!body) return res.bad('Invalid JSON');
   const valErr = validateInput(body);
   if (valErr) return res.bad(valErr);
+  // Note: approvalStatus, shareToken, and approvalHistory are intentionally NOT in this
+  // list. shareToken is server-minted in handlers/approval.js (share); approvalStatus and
+  // approvalHistory are written only by approval.respond. Allowing client writes here
+  // would let an estimates.edit holder mint phishing tokens, self-approve estimates, and
+  // forge customer responses.
   const allowed = [
     'customerName', 'customerPhone', 'customerAddress', 'customerEmail',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
     'fencePoints', 'fenceClosed', 'sections', 'gates', 'addons', 'bom',
     'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
-    'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos',
-    'approvalStatus', 'shareToken', 'approvalHistory'
+    'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos'
   ];
 
   const updates = {};

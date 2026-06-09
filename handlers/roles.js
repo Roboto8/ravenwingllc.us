@@ -176,6 +176,26 @@ module.exports.assign = res.wrap(async (event) => {
   if (!member) return res.notFound('Member not found');
   if (member.role === 'owner') return res.bad('Cannot change owner role');
 
+  // Separation-of-duties: caller may only assign a role whose permissions are a subset
+  // of what the caller already holds. Otherwise a 'team.roles' holder could grant
+  // privileges they themselves lack via a pre-existing role with elevated permissions.
+  const callerPerms = await getUserPermissions(event, companyId);
+  if (callerPerms !== 'owner') {
+    let targetPerms;
+    if (role === 'member') {
+      targetPerms = DEFAULT_MEMBER_ROLE.permissions;
+    } else {
+      const roleRecord = await db.get('COMPANY#' + companyId, 'ROLE#' + role);
+      if (!roleRecord) return res.notFound('Role not found');
+      targetPerms = roleRecord.permissions || [];
+    }
+    const held = new Set(callerPerms);
+    const missing = targetPerms.filter(p => !held.has(p));
+    if (missing.length > 0) {
+      return res.forbidden('Cannot assign a role that grants permissions you do not hold: ' + missing.join(', '));
+    }
+  }
+
   await db.update(member.PK, member.SK, { role });
   return res.ok({ email, role });
 });

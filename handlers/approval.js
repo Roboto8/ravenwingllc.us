@@ -9,6 +9,10 @@ const { notify } = require('./lib/notify');
 const _respondTimestamps = {};
 const RESPOND_RATE_LIMIT_MS = 10000; // 10 seconds
 
+// Caps on attacker-controlled fields to prevent DynamoDB 400KB item-size DoS
+const MAX_MESSAGE_LEN = 2000;
+const MAX_HISTORY_ENTRIES = 50;
+
 // Reset rate limiter (for testing)
 module.exports._resetRateLimit = function() {
   for (const key in _respondTimestamps) delete _respondTimestamps[key];
@@ -116,7 +120,8 @@ module.exports.respond = res.wrap(async (event) => {
   const body = res.parseBody(event);
   if (!body) return res.bad('Invalid JSON');
   const action = body.action;
-  const message = body.message || '';
+  const rawMessage = typeof body.message === 'string' ? body.message : '';
+  const message = rawMessage.slice(0, MAX_MESSAGE_LEN);
 
   if (!['approved', 'changes_requested'].includes(action)) {
     return res.bad('Invalid action. Must be "approved" or "changes_requested".');
@@ -134,6 +139,9 @@ module.exports.respond = res.wrap(async (event) => {
   };
 
   const history = est.approvalHistory || [];
+  if (history.length >= MAX_HISTORY_ENTRIES) {
+    return res.tooMany('Response limit reached for this estimate');
+  }
   history.push(historyEntry);
 
   await db.update(est.PK, est.SK, {

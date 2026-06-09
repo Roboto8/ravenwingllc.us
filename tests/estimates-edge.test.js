@@ -108,7 +108,7 @@ describe('estimates handler - edge cases', () => {
       expect(updateArgs.mulchDelivery).toBe('bulk');
     });
 
-    test('allows updating approvalStatus and shareToken', async () => {
+    test('strips approvalStatus, shareToken, and approvalHistory from client updates (server-only fields)', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.findById.mockResolvedValue(mockEstimate);
       db.update.mockResolvedValue(mockEstimate);
@@ -116,16 +116,21 @@ describe('estimates handler - edge cases', () => {
       await estimates.update({
         pathParameters: { id: 'est-123' },
         body: JSON.stringify({
-          approvalStatus: 'sent',
-          shareToken: 'tok-abc',
-          approvalHistory: [{ action: 'sent', timestamp: '2026-01-01' }]
+          customerName: 'Allowed Field',
+          approvalStatus: 'approved',
+          shareToken: 'attacker-controlled',
+          approvalHistory: [{ action: 'approved', timestamp: '2026-01-01' }]
         })
       });
 
       const updateArgs = db.update.mock.calls[0][2];
-      expect(updateArgs.approvalStatus).toBe('sent');
-      expect(updateArgs.shareToken).toBe('tok-abc');
-      expect(updateArgs.approvalHistory).toHaveLength(1);
+      // The legitimate field passes through
+      expect(updateArgs.customerName).toBe('Allowed Field');
+      // The three server-only fields must be dropped — client must not be able to
+      // mint share tokens, self-approve estimates, or forge approval history.
+      expect(updateArgs.approvalStatus).toBeUndefined();
+      expect(updateArgs.shareToken).toBeUndefined();
+      expect(updateArgs.approvalHistory).toBeUndefined();
     });
 
     test('updatedAt is a valid ISO string', async () => {
