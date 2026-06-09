@@ -43,13 +43,17 @@ module.exports.handler = async (event) => {
       const subscriptionId = data.subscription;
       const companyId = await findCompanyByStripeId(customerId);
       if (companyId && subscriptionId) {
-        // Detect tier from the subscription's price
-        let tier = 'contractor';
+        // Detect tier from the subscription's price. New checkouts are 'pro';
+        // builder/contractor are legacy plans still honored for old subscribers.
+        let tier = 'pro';
         try {
           const sub = await s.subscriptions.retrieve(subscriptionId);
           const priceId = sub.items.data[0].price.id;
           if (priceId === process.env.STRIPE_PRICE_BUILDER) tier = 'builder';
-          else tier = 'contractor';
+          else if (priceId === process.env.STRIPE_PRICE_CONTRACTOR) tier = 'contractor';
+          else if (priceId !== process.env.STRIPE_PRICE_PRO) {
+            console.warn('Unrecognized checkout price, defaulting tier to pro:', priceId);
+          }
         } catch (e) { console.warn('Could not retrieve subscription tier:', e.message); }
         await db.update('COMPANY#' + companyId, 'PROFILE', {
           subscriptionStatus: 'active',

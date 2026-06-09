@@ -156,11 +156,8 @@ module.exports.status = res.wrap(async (event) => {
       const sub = await s.subscriptions.retrieve(company.subscriptionId);
       nextBillingDate = new Date(sub.current_period_end * 1000).toISOString();
       planAmount = sub.items.data[0].price.unit_amount / 100;
-      // Detect tier from price — legacy builder/contractor map to pro
-      const priceId = sub.items.data[0].price.id;
-      if (priceId === process.env.STRIPE_PRICE_PRO) tier = 'pro';
-      else if (priceId === process.env.STRIPE_PRICE_BUILDER) tier = 'pro';
-      else tier = 'pro';
+      // All current and legacy paid prices map to the single 'pro' tier
+      tier = 'pro';
     } catch (e) {
       console.warn('Stripe subscription lookup failed:', e.message);
     }

@@ -259,7 +259,7 @@ describe('webhook handler', () => {
       );
     });
 
-    test('defaults to contractor tier when price does not match', async () => {
+    test('defaults to pro tier when price does not match any known plan', async () => {
       process.env.STRIPE_PRICE_BUILDER = 'price_builder_test';
       const db = require('../handlers/lib/dynamo');
 
@@ -278,11 +278,35 @@ describe('webhook handler', () => {
 
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
-        expect.objectContaining({ tier: 'contractor' })
+        expect.objectContaining({ tier: 'pro' })
       );
     });
 
-    test('defaults to contractor tier when subscription retrieve fails', async () => {
+    test('detects legacy contractor tier from price ID', async () => {
+      process.env.STRIPE_PRICE_CONTRACTOR = 'price_contractor_test';
+      const db = require('../handlers/lib/dynamo');
+
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        items: { data: [{ price: { id: 'price_contractor_test' } }] }
+      });
+
+      mockConstructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: { customer: 'cus_123', subscription: 'sub_legacy_contractor' }
+        }
+      });
+
+      await handler(makeEvent());
+
+      expect(db.update).toHaveBeenCalledWith(
+        'COMPANY#comp-abc', 'PROFILE',
+        expect.objectContaining({ tier: 'contractor' })
+      );
+      delete process.env.STRIPE_PRICE_CONTRACTOR;
+    });
+
+    test('defaults to pro tier when subscription retrieve fails', async () => {
       const db = require('../handlers/lib/dynamo');
 
       mockSubscriptionsRetrieve.mockRejectedValue(new Error('Stripe error'));
@@ -298,7 +322,7 @@ describe('webhook handler', () => {
 
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
-        expect.objectContaining({ tier: 'contractor' })
+        expect.objectContaining({ tier: 'pro' })
       );
     });
 
