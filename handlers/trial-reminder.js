@@ -29,21 +29,21 @@ function buildEmailHtml(name, trialEndDate, unsubscribeUrl) {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #2c2417; line-height: 1.6;">
-  <h2 style="color: #c0622e; margin-bottom: 4px;">Fence<span style="color: #2c2417;">Trace</span></h2>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1c241a; line-height: 1.6;">
+  <h2 style="color: #226d46; margin-bottom: 4px;">Fence<span style="color: #1c241a;">Trace</span></h2>
   <p>Hi ${name},</p>
   <p>Your free trial ends on <strong>${trialEndDate}</strong>.</p>
   <p>After your trial, you'll still be able to view your saved estimates, but you won't be able to create new ones or generate PDFs.</p>
   <p>Subscribe to keep full access — plans start at $29/month and you can cancel anytime.</p>
   <p style="margin: 24px 0;">
-    <a href="https://fencetrace.com" style="background: #c0622e; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">View Plans</a>
+    <a href="https://fencetrace.com" style="background: #226d46; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">View Plans</a>
   </p>
-  <p style="color: #6b6052; font-size: 0.85em;">Questions? Reply to this email or contact <a href="mailto:support@fencetrace.com" style="color: #c0622e;">support@fencetrace.com</a></p>
-  <hr style="border: none; border-top: 1px solid #e8e0d6; margin: 24px 0;">
-  <p style="color: #aaa296; font-size: 0.75em; line-height: 1.5;">
+  <p style="color: #5c6657; font-size: 0.85em;">Questions? Reply to this email or contact <a href="mailto:support@fencetrace.com" style="color: #226d46;">support@fencetrace.com</a></p>
+  <hr style="border: none; border-top: 1px solid #e3e8e0; margin: 24px 0;">
+  <p style="color: #9aa495; font-size: 0.75em; line-height: 1.5;">
     This is a one-time reminder about your trial expiration. You will not receive further marketing emails unless you opt in.<br>
     ${COMPANY_ADDRESS}<br>
-    <a href="${unsubscribeUrl}" style="color: #aaa296;">Unsubscribe from emails</a>
+    <a href="${unsubscribeUrl}" style="color: #9aa495;">Unsubscribe from emails</a>
   </p>
 </body>
 </html>`;

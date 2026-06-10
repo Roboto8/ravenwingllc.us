@@ -1,44 +1,46 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #f5f0eb;
+  --bg: #f6f7f4;
   --surface: #fff;
-  --surface-2: #ede8e2;
-  --border: #d4cdc4;
-  --text: #2c2417;
-  --text-mid: #4a4030;
-  --text-muted: #6b6052;
-  --accent: #c0622e;
-  --accent-hover: #a8521f;
-  --accent-light: rgba(192, 98, 46, 0.08);
-  --green: #2d6e28;
-  --green-light: rgba(61, 139, 55, 0.08);
-  --orange: #d4870e;
-  --red: #b93a2a;
+  --surface-2: #eaeee7;
+  --border: #ccd4c8;
+  --text: #1c241a;
+  --text-mid: #46523f;
+  --text-muted: #5c6657;
+  --accent: #226d46;
+  --accent-hover: #1a5637;
+  --accent-light: rgba(34, 109, 70, 0.08);
+  --cedar: #a05a2c;
+  --green: #2e7d32;
+  --green-light: rgba(46, 125, 50, 0.08);
+  --orange: #c77d11;
+  --red: #b3362a;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, sans-serif;
   --radius: 6px;
-  --shadow-sm: 0 1px 3px rgba(44,36,23,0.06);
-  --shadow-md: 0 4px 16px rgba(44,36,23,0.1);
+  --shadow-sm: 0 1px 3px rgba(28,36,26,0.06);
+  --shadow-md: 0 4px 16px rgba(28,36,26,0.1);
   --min-touch: 44px;
 }
 
 /* Dark mode — auto-detects OS preference */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1a1612;
-    --surface: #252018;
-    --surface-2: #332c22;
-    --border: #4a4030;
-    --text: #e8e2d8;
-    --text-mid: #c4baa8;
-    --text-muted: #9a8e7e;
-    --accent: #d4783e;
-    --accent-hover: #e08a4f;
-    --accent-light: rgba(212, 120, 62, 0.12);
-    --green: #3d9b35;
-    --green-light: rgba(61, 155, 53, 0.12);
-    --orange: #e49a1e;
-    --red: #d44a3a;
+    --bg: #141a14;
+    --surface: #1d251d;
+    --surface-2: #283226;
+    --border: #3c4839;
+    --text: #e2e8e0;
+    --text-mid: #b6c2b1;
+    --text-muted: #8a9687;
+    --accent: #4caf72;
+    --accent-hover: #5fc285;
+    --accent-light: rgba(76, 175, 114, 0.14);
+    --cedar: #c27a4a;
+    --green: #43a047;
+    --green-light: rgba(67, 160, 71, 0.12);
+    --orange: #d99022;
+    --red: #d05043;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
   }
@@ -647,7 +649,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .extra-unit-select { padding: 2px 4px; font-size: 0.8rem; border: 1.5px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); }
 .extra-name-input { flex: 1; padding: 2px 6px; font-size: 0.9rem; border: 1.5px solid var(--accent); border-radius: 4px; background: var(--bg); color: var(--text); }
 .extra-remove-btn { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1; opacity: 0.4; transition: opacity 0.15s; }
-.extra-remove-btn:hover { opacity: 1; color: #b93a2a; }
+.extra-remove-btn:hover { opacity: 1; color: #b3362a; }
 
 /* Gates */
 .gates-list { min-height: 36px; }
@@ -951,7 +953,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   gap: 10px;
   padding: 8px 16px;
   max-width: calc(100vw - 16px);
-  background: rgba(44, 36, 23, 0.95);
+  background: rgba(28, 36, 26, 0.95);
   border: 1.5px solid #ff4444;
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -962,7 +964,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 .selection-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .selection-delete-btn {
-  background: #b93a2a;
+  background: #b3362a;
   color: #fff;
   border: none;
   padding: 6px 16px;
@@ -1016,7 +1018,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   flex-shrink: 0;
   transition: border-color 0.15s, background 0.15s;
 }
-.shape-picker button:hover, .shape-picker button:active { border-color: var(--accent); background: rgba(192, 98, 46, 0.1); }
+.shape-picker button:hover, .shape-picker button:active { border-color: var(--accent); background: rgba(34, 109, 70, 0.1); }
 .shape-picker button svg { width: 24px; height: 24px; stroke: var(--text-muted); }
 .shape-picker button:hover svg, .shape-picker button:active svg { stroke: var(--accent); }
 
@@ -1038,7 +1040,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .segment-label:active { cursor: grabbing; }
 .angle-label { pointer-events: none; z-index: 200 !important; }
 .angle-tag {
-  background: rgba(192, 98, 46, 0.7);
+  background: rgba(34, 109, 70, 0.7);
   color: #fff;
   font-family: var(--font);
   font-size: 9px;
@@ -1051,7 +1053,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 .seg-label {
-  background: rgba(44, 36, 23, 0.5);
+  background: rgba(28, 36, 26, 0.5);
   color: #fff;
   font-family: var(--font);
   font-size: 9px;
@@ -1259,7 +1261,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .modal-overlay {
   position: fixed;
   top: 0; right: 0; bottom: 0; left: 0;
-  background: rgba(44, 36, 23, 0.6);
+  background: rgba(28, 36, 26, 0.6);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -1405,7 +1407,7 @@ body.twa-mode .modal-overlay {
 .drawer-overlay {
   position: fixed;
   top: 0; right: 0; bottom: 0; left: 0;
-  background: rgba(44, 36, 23, 0.4);
+  background: rgba(28, 36, 26, 0.4);
   z-index: 8000;
 }
 .drawer {
@@ -1553,7 +1555,7 @@ body.twa-mode .modal-overlay {
 .onboarding-backdrop {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(44, 36, 23, 0.5);
+  background: rgba(28, 36, 26, 0.5);
 }
 
 .onboarding-step {
@@ -1732,7 +1734,7 @@ body.twa-mode .modal-overlay {
     font-weight: 600;
     position: relative;
     z-index: 1100;
-    -webkit-tap-highlight-color: rgba(192, 98, 46, 0.2);
+    -webkit-tap-highlight-color: rgba(34, 109, 70, 0.2);
     touch-action: manipulation;
   }
   .panel-toggle svg { transition: transform 0.3s ease; }
@@ -1811,7 +1813,7 @@ body.twa-mode .modal-overlay {
   background: var(--accent); color: #fff; font-family: var(--font); font-size: 0.95rem;
   font-weight: 600; cursor: pointer; transition: background 0.15s;
 }
-.qs-dismiss:hover { background: var(--accent-dark, #a8521f); }
+.qs-dismiss:hover { background: var(--accent-dark, #1a5637); }
 
 @media (min-width: 768px) {
   #quickstart-tips { align-items: center; }

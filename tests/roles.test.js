@@ -393,7 +393,7 @@ describe('roles handler', () => {
       const body = JSON.parse(result.body);
 
       const custom = body.roles.find(r => r.name === 'custom');
-      expect(custom.color).toBe('#6b6052');
+      expect(custom.color).toBe('#5c6657');
     });
   });
 

@@ -35,7 +35,7 @@ describe('Integration: Estimate → Approval Flow', () => {
         phone: '555-0001',
         subscriptionStatus: 'active',
         trialEndsAt: '2027-01-01T00:00:00.000Z',
-        accentColor: '#c0622e',
+        accentColor: '#226d46',
         tagline: 'Test Fences'
       },
       {

@@ -1,4 +1,4 @@
-var CACHE_NAME = 'fencetrace-v18';
+var CACHE_NAME = 'fencetrace-v19';
 var TILE_CACHE_NAME = 'fencetrace-tiles-v1';
 var MAX_TILE_CACHE = 2000; // ~200MB of tiles at ~100KB each
 // Only stable, always-revalidated URLs belong here. JS/CSS are referenced with

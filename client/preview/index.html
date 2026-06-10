@@ -21,9 +21,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link href="css/app.css?v=20260610c" rel="stylesheet">
+  <link href="css/app.css?v=20260610d" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#c0622e">
+  <meta name="theme-color" content="#226d46">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.google.com https://*.tile.openstreetmap.org https://server.arcgisonline.com https://*.s3.us-east-1.amazonaws.com https://*.amazonaws.com data: blob:; connect-src 'self' https://*.execute-api.us-east-1.amazonaws.com https://cognito-idp.us-east-1.amazonaws.com https://nominatim.openstreetmap.org https://*.s3.us-east-1.amazonaws.com https://wa.me https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com; frame-src 'none'; object-src 'none'">
@@ -38,18 +38,18 @@
   <!-- Loading Screen -->
   <div id="loading-screen" style="
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: #f5f0eb; z-index: 99999;
+    background: #f6f7f4; z-index: 99999;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   ">
     <img src="annie.svg" alt="Annie" style="width: 140px; height: 140px;">
-    <div style="font-size: 1.8rem; font-weight: 800; color: #2c2417; letter-spacing: -0.03em;">
-      Fence<span style="color: #c0622e;">Trace</span>
+    <div style="font-size: 1.8rem; font-weight: 800; color: #1c241a; letter-spacing: -0.03em;">
+      Fence<span style="color: #226d46;">Trace</span>
     </div>
-    <div style="font-size: 0.8rem; color: #6b6052;">Satellite fence estimates</div>
+    <div style="font-size: 0.8rem; color: #5c6657;">Satellite fence estimates</div>
     <div style="
       width: 28px; height: 28px;
-      border: 3px solid #d4cdc4; border-top-color: #c0622e;
+      border: 3px solid #ccd4c8; border-top-color: #226d46;
       border-radius: 50%;
       animation: fc-spin 0.8s linear infinite;
     "></div>
@@ -801,7 +801,7 @@
           <div id="role-editor" style="display:none;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:10px">
             <div style="display:flex;gap:6px;margin-bottom:8px">
               <input type="text" id="role-name-input" placeholder="Role name" style="flex:1;padding:6px 8px;background:var(--surface);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.82rem">
-              <input type="color" id="role-color-input" value="#6b6052" style="width:36px;height:32px;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;padding:1px">
+              <input type="color" id="role-color-input" value="#5c6657" style="width:36px;height:32px;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;padding:1px">
             </div>
             <div id="role-permissions" style="margin-bottom:8px"></div>
             <div style="display:flex;gap:6px">
@@ -973,12 +973,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="js/i18n.js?v=20260610c"></script>
-  <script src="js/auth.js?v=20260610c"></script>
-  <script src="js/api.js?v=20260610c"></script>
-  <script src="js/regions.js?v=20260610c"></script>
-  <script src="js/app.js?v=20260610c"></script>
-  <script src="js/config.js?v=20260610c"></script>
+  <script src="js/i18n.js?v=20260610d"></script>
+  <script src="js/auth.js?v=20260610d"></script>
+  <script src="js/api.js?v=20260610d"></script>
+  <script src="js/regions.js?v=20260610d"></script>
+  <script src="js/app.js?v=20260610d"></script>
+  <script src="js/config.js?v=20260610d"></script>
   <script>
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
     API.configure(FC_CONFIG.apiUrl);
@@ -1000,7 +1000,7 @@
         if (!banner) {
           banner = document.createElement('div');
           banner.id = 'offline-banner';
-          banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#b93a2a;color:#fff;text-align:center;padding:8px 16px;font-size:0.85rem;font-weight:600;z-index:99998;font-family:var(--font)';
+          banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#b3362a;color:#fff;text-align:center;padding:8px 16px;font-size:0.85rem;font-weight:600;z-index:99998;font-family:var(--font)';
           banner.textContent = 'You are offline — changes will not be saved until connection is restored';
           document.body.appendChild(banner);
         }
@@ -1234,7 +1234,7 @@
 
         if (status.pastDue) {
           document.getElementById('trial-banner').style.display = 'flex';
-          document.getElementById('trial-banner').style.background = '#b93a2a';
+          document.getElementById('trial-banner').style.background = '#b3362a';
           document.getElementById('trial-text').textContent = 'Payment failed — please update your payment method';
           document.getElementById('trial-action-btn').textContent = 'Update Payment';
           document.getElementById('trial-action-btn').onclick = handleManageBilling;
@@ -1585,7 +1585,7 @@
         // Members
         data.members.forEach(function(m) {
           var roleObj = allRoles.find(function(r) { return r.name === m.role; });
-          var roleColor = roleObj ? roleObj.color : '#6b6052';
+          var roleColor = roleObj ? roleObj.color : '#5c6657';
           html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface-2)">';
           html += '<div style="flex:1;min-width:0"><span style="font-weight:600;font-size:0.82rem">' + escapeHtml(m.email) + '</span></div>';
           html += '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">';
@@ -1610,7 +1610,7 @@
         data.invites.forEach(function(inv) {
           html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface-2)">';
           html += '<div><span style="color:var(--text-muted)">' + escapeHtml(inv.email) + '</span>';
-          html += ' <span style="font-size:0.75rem;color:#c0622e;background:rgba(192,98,46,0.1);padding:1px 6px;border-radius:3px">pending</span></div>';
+          html += ' <span style="font-size:0.75rem;color:#226d46;background:rgba(34, 109, 70,0.1);padding:1px 6px;border-radius:3px">pending</span></div>';
           html += '<button class="btn btn-sm" style="font-size:0.7rem;padding:2px 8px" onclick="revokeTeamInvite(\'' + inv.token + '\')">Revoke</button>';
           html += '</div>';
         });
@@ -1744,12 +1744,12 @@
         var role = allRoles.find(function(r) { return r.name === existingName; });
         document.getElementById('role-name-input').value = role ? role.name : '';
         document.getElementById('role-name-input').disabled = role && role.builtIn;
-        document.getElementById('role-color-input').value = role ? role.color : '#6b6052';
+        document.getElementById('role-color-input').value = role ? role.color : '#5c6657';
         renderPermissionToggles(role ? role.permissions : []);
       } else {
         document.getElementById('role-name-input').value = '';
         document.getElementById('role-name-input').disabled = false;
-        document.getElementById('role-color-input').value = '#6b6052';
+        document.getElementById('role-color-input').value = '#5c6657';
         renderPermissionToggles([]);
       }
     }
@@ -2057,8 +2057,8 @@
         body.innerHTML = estimates.map(function(e) {
           var as = e.approvalStatus || 'draft';
           var bLabels = { draft: 'Draft', sent: 'Sent', approved: 'Approved', changes_requested: 'Changes Requested' };
-          var bColors = { draft: '#6b6052', sent: '#1a56db', approved: '#2d6e28', changes_requested: '#d4870e' };
-          var bBgs = { draft: '#ede8e2', sent: '#e8f0fe', approved: 'rgba(61,139,55,0.08)', changes_requested: 'rgba(212,135,14,0.08)' };
+          var bColors = { draft: '#5c6657', sent: '#1a56db', approved: '#2e7d32', changes_requested: '#c77d11' };
+          var bBgs = { draft: '#eaeee7', sent: '#e8f0fe', approved: 'rgba(46, 125, 50,0.08)', changes_requested: 'rgba(212,135,14,0.08)' };
           var badge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-left:6px;background:' + (bBgs[as]||bBgs.draft) + ';color:' + (bColors[as]||bColors.draft) + '">' + (bLabels[as]||as) + '</span>';
           return '' +
           '<div class="est-list-item">' +
@@ -2406,10 +2406,10 @@
         document.getElementById('rpt-avg').textContent = '$' + data.averageEstimateValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
         // Status pills
-        var statusColors = { draft: '#6b6052', sent: '#1a56db', approved: '#2d6e28', declined: '#b91c1c', changes_requested: '#d4870e' };
+        var statusColors = { draft: '#5c6657', sent: '#1a56db', approved: '#2e7d32', declined: '#b91c1c', changes_requested: '#c77d11' };
         var statusHtml = '';
         Object.keys(data.estimatesByStatus).forEach(function(s) {
-          var color = statusColors[s] || '#6b6052';
+          var color = statusColors[s] || '#5c6657';
           statusHtml += '<span style="background:' + color + '15;color:' + color + ';padding:4px 10px;border-radius:12px;font-size:0.78rem;font-weight:600">' + s + ': ' + data.estimatesByStatus[s] + '</span>';
         });
         document.getElementById('rpt-status').innerHTML = statusHtml || '<span style="color:var(--text-muted);font-size:0.82rem">No data</span>';
@@ -2646,7 +2646,7 @@
       // Origin-aware so the snippet works (and is testable) on dev too
       var link = window.location.origin + '/?ref=' + co.id;
       el.value = '<a href="' + link + '" target="_blank" rel="noopener" ' +
-        'style="display:inline-block;background:#c0622e;color:#ffffff;padding:12px 22px;' +
+        'style="display:inline-block;background:#226d46;color:#ffffff;padding:12px 22px;' +
         'border-radius:8px;font-weight:700;font-family:sans-serif;text-decoration:none">' +
         'Get an Instant Fence Quote</a>';
       el.dataset.link = link;
@@ -2746,22 +2746,22 @@
   </script>
 
   <!-- Cookie/Storage Consent -->
-  <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:10000;background:var(--text,#2c2417);color:#ddd;padding:12px 20px;font-size:0.8rem;font-family:var(--font,Inter,sans-serif)">
+  <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:10000;background:var(--text,#1c241a);color:#ddd;padding:12px 20px;font-size:0.8rem;font-family:var(--font,Inter,sans-serif)">
     <div style="max-width:800px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span style="flex:1;min-width:200px">We use local storage to save your preferences and keep you logged in. No tracking cookies. <a href="privacy.html" style="color:var(--accent,#c0622e)">Privacy Policy</a></span>
-      <button onclick="localStorage.setItem('fc_cookie_ok','1');document.getElementById('cookie-banner').style.display='none'" style="background:var(--accent,#c0622e);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;white-space:nowrap">Got it</button>
+      <span style="flex:1;min-width:200px">We use local storage to save your preferences and keep you logged in. No tracking cookies. <a href="privacy.html" style="color:var(--accent,#226d46)">Privacy Policy</a></span>
+      <button onclick="localStorage.setItem('fc_cookie_ok','1');document.getElementById('cookie-banner').style.display='none'" style="background:var(--accent,#226d46);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;white-space:nowrap">Got it</button>
     </div>
   </div>
   <!-- Cookie banner is gated by maybeShowCookieBanner() — shown only after onboarding is dismissed -->
 
   <!-- First-run price book setup prompt: shown once to logged-in users who
        have no labor/markup rates saved. Big buttons, plain words. -->
-  <div id="pb-setup-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9500;background:var(--bg,#f5f0eb);border:2px solid var(--accent,#c0622e);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.25);padding:16px;max-width:430px;width:calc(100% - 24px);font-family:var(--font,Inter,sans-serif)">
-    <p style="font-size:1rem;font-weight:700;color:var(--text,#2c2417);margin-bottom:4px">Set your prices once &mdash; every estimate uses them</p>
-    <p style="font-size:0.88rem;color:var(--text-mid,#4a4030);margin-bottom:12px">Add your material costs and labor rates. Takes about 2 minutes, and you can change them anytime.</p>
+  <div id="pb-setup-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9500;background:var(--bg,#f6f7f4);border:2px solid var(--accent,#226d46);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.25);padding:16px;max-width:430px;width:calc(100% - 24px);font-family:var(--font,Inter,sans-serif)">
+    <p style="font-size:1rem;font-weight:700;color:var(--text,#1c241a);margin-bottom:4px">Set your prices once &mdash; every estimate uses them</p>
+    <p style="font-size:0.88rem;color:var(--text-mid,#46523f);margin-bottom:12px">Add your material costs and labor rates. Takes about 2 minutes, and you can change them anytime.</p>
     <div style="display:flex;gap:8px">
-      <button onclick="pbSetupGo()" style="flex:1;padding:14px;background:var(--accent,#c0622e);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer">Set My Prices</button>
-      <button onclick="pbSetupLater()" style="padding:14px 18px;background:transparent;color:var(--text-mid,#4a4030);border:1.5px solid var(--border,#d4cdc4);border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer">Later</button>
+      <button onclick="pbSetupGo()" style="flex:1;padding:14px;background:var(--accent,#226d46);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer">Set My Prices</button>
+      <button onclick="pbSetupLater()" style="padding:14px 18px;background:transparent;color:var(--text-mid,#46523f);border:1.5px solid var(--border,#ccd4c8);border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer">Later</button>
     </div>
   </div>
 

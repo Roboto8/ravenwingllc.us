@@ -98,7 +98,7 @@ describe('roles handler - branch coverage', () => {
 
       const custom = body.roles.find(r => r.name === 'norole');
       expect(custom.permissions).toEqual([]);
-      expect(custom.color).toBe('#6b6052');
+      expect(custom.color).toBe('#5c6657');
       expect(custom.builtIn).toBe(false);
     });
   });

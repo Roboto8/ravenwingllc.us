@@ -187,7 +187,7 @@ describe('approval handler - edge cases', () => {
       }]);
       db.get.mockResolvedValue({
         name: 'Acme Fencing',
-        accentColor: '#c0622e',
+        accentColor: '#226d46',
         tagline: 'Best fences',
         phone: '555-1234'
       });
