@@ -528,10 +528,59 @@ function calculateMulchBOM(areaSqFt, materialType, depthInches, options) {
   return { items: filtered, materialTotal: Math.round(materialTotal), cubicYards: Math.round(cubicYards * 10) / 10 };
 }
 
+// === Contractor totals: labor + markup + job minimum ===
+// Pure mirror of the price-book money math in app.js
+// (pricebookNumber / updateContractorSummary). Keep the two in sync.
+function pricebookNumber(pricebook, key) {
+  var v = pricebook ? pricebook[key] : undefined;
+  return (typeof v === 'number' && isFinite(v) && v >= 0) ? v : undefined;
+}
+
+// laborPerFt resolution order: explicit per-job value > labor.<type>.<height>
+// > labor.default > 0.
+function resolveLaborRate(pricebook, fenceType, height, perJobValue) {
+  if (typeof perJobValue === 'number' && isFinite(perJobValue) && perJobValue > 0) return perJobValue;
+  var v = pricebookNumber(pricebook, 'labor.' + fenceType + '.' + height);
+  if (v === undefined) v = pricebookNumber(pricebook, 'labor.default');
+  return v === undefined ? 0 : v;
+}
+
+function computeContractorTotals(opts) {
+  var pricebook = opts.pricebook || {};
+  var subtotal = opts.subtotal || 0;
+  var feet = opts.feet || 0;
+  var gateCount = opts.gateCount || 0;
+  var laborPerFt = resolveLaborRate(pricebook, opts.fenceType, opts.height, opts.laborPerFt);
+  var markupPct = (typeof opts.markupPct === 'number' && isFinite(opts.markupPct) && opts.markupPct > 0)
+    ? opts.markupPct
+    : (pricebookNumber(pricebook, 'markup.percent') || 0);
+  var gateLabor = pricebookNumber(pricebook, 'labor.gate') || 0;
+  var laborCost = Math.round(feet * laborPerFt + gateCount * gateLabor);
+  var markupAmt = Math.round(subtotal * markupPct / 100);
+  var customerPrice = Math.round(subtotal + laborCost + markupAmt);
+  var profit = laborCost + markupAmt;
+  var marginPct = customerPrice > 0 ? Math.round(profit / customerPrice * 100) : 0;
+  var jobMin = pricebookNumber(pricebook, 'markup.jobMin') || 0;
+  return {
+    laborPerFt: laborPerFt,
+    laborCost: laborCost,
+    markupPct: markupPct,
+    markupAmt: markupAmt,
+    customerPrice: customerPrice,
+    profit: profit,
+    marginPct: marginPct,
+    jobMin: jobMin,
+    belowMinimum: jobMin > 0 && customerPrice > 0 && customerPrice < jobMin
+  };
+}
+
 module.exports = {
   BOM,
   MULCH,
   calculateBOM,
+  pricebookNumber,
+  resolveLaborRate,
+  computeContractorTotals,
   calculateMulchBOM,
   calculatePolygonArea,
   calculatePolygonPerimeter,
