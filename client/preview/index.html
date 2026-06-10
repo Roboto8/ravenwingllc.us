@@ -195,6 +195,29 @@
     </div>
   </div>
 
+  <!-- Website-widget mode (?ref=COMPANY_ID): homeowner arrives from a contractor's site -->
+  <div id="ref-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9500;background:var(--accent);color:#fff;padding:8px 14px;align-items:center;justify-content:center;gap:12px;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <span>Free instant estimate for <b id="ref-company-name"></b></span>
+    <button onclick="openLeadModal()" style="background:#fff;color:var(--accent);border:none;padding:7px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;white-space:nowrap">Send my estimate</button>
+  </div>
+
+  <div class="modal-overlay" id="lead-modal" style="display:none">
+    <div class="modal" style="max-width:430px">
+      <h2 class="modal-title">Send your estimate</h2>
+      <p class="modal-sub">Your fence sketch and details go straight to <b id="lead-company-name"></b> for a firm quote.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:14px 0">
+        <input id="lead-name" placeholder="Your name *" maxlength="200" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:0.9rem">
+        <input id="lead-phone" placeholder="Phone" maxlength="200" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:0.9rem">
+        <input id="lead-email" placeholder="Email" type="email" maxlength="200" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:0.9rem">
+        <input id="lead-address" placeholder="Property address" maxlength="200" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:0.9rem">
+        <textarea id="lead-notes" placeholder="Anything else? Gates, pets, timeline..." maxlength="1000" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:0.9rem;min-height:56px;resize:vertical;font-family:var(--font)"></textarea>
+      </div>
+      <button class="btn btn-full" id="lead-submit-btn" onclick="submitWebsiteLead()">Send it over</button>
+      <p style="font-size:0.72rem;color:var(--text-muted);margin-top:10px">Only <span id="lead-company-name2"></span> receives this. FenceTrace never shares or sells your info.</p>
+      <p class="auth-switch" style="margin-top:8px"><a href="#" onclick="document.getElementById('lead-modal').style.display='none'; return false;">Cancel</a></p>
+    </div>
+  </div>
+
   <nav class="nav">
     <div class="nav-left">
       <a href="/" class="nav-brand" style="text-decoration:none;color:inherit">Fence<span class="accent">Trace</span></a>
@@ -711,6 +734,7 @@
         <button class="acct-tab active" onclick="switchAcctTab('account')">Account</button>
         <button class="acct-tab" onclick="switchAcctTab('team')">Team</button>
         <button class="acct-tab" onclick="switchAcctTab('pricing')">Pricing</button>
+        <button class="acct-tab" onclick="switchAcctTab('website')">Website</button>
         <button class="acct-tab" onclick="switchAcctTab('shortcuts')">Shortcuts</button>
       </div>
 
@@ -841,6 +865,16 @@
       </div>
 
       <!-- Tab: Shortcuts -->
+      <div class="acct-tab-content" id="acct-tab-website">
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Instant-Quote Button</p>
+        <p class="empty-state" style="font-size:0.8rem;margin-bottom:10px">Put this button on your website. Homeowners sketch their own fence and the lead lands in your Estimates — yours alone, no per-lead fee, and you get a notification.</p>
+        <textarea id="embed-snippet" readonly onclick="this.select()" style="width:100%;min-height:96px;padding:8px;font-family:monospace;font-size:0.7rem;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-sm btn-outline" onclick="copyEmbedSnippet()">Copy snippet</button>
+          <button class="btn btn-sm btn-outline" onclick="copyEmbedLink()">Copy plain link</button>
+        </div>
+        <p class="empty-state" style="font-size:0.72rem;margin-top:10px">No website? Share the plain link anywhere — Facebook page, Google Business profile, text messages.</p>
+      </div>
       <div class="acct-tab-content" id="acct-tab-shortcuts">
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Keyboard Shortcuts</p>
         <div class="shortcuts-list">
@@ -1488,6 +1522,7 @@
       renderPricebook();
       loadRoles();
       loadTeamList();
+      renderEmbedSnippet();
 
       try {
         var status = await API.getStatus();
@@ -2537,6 +2572,84 @@
       // Any init error — fall back to guest mode
       showGuestUI();
       showOnboarding();
+    }
+
+    // === Website-Widget Lead Capture (?ref=COMPANY_ID) ===
+    var _refCompany = null;
+
+    async function initRefMode() {
+      var ref = new URLSearchParams(window.location.search).get('ref');
+      if (!ref || !/^[A-Za-z0-9_-]{8,64}$/.test(ref)) return;
+      try {
+        _refCompany = await API.getPublicCompany(ref);
+      } catch (e) { return; } // bad ref — behave like a normal visit
+      document.getElementById('ref-company-name').textContent = _refCompany.name;
+      document.getElementById('lead-company-name').textContent = _refCompany.name;
+      document.getElementById('lead-company-name2').textContent = _refCompany.name;
+      document.getElementById('ref-banner').style.display = 'flex';
+    }
+    initRefMode();
+
+    function openLeadModal() {
+      var feet = parseInt((document.getElementById('total-feet').textContent || '0').replace(/,/g, ''), 10) || 0;
+      if (!feet) { showToast('Draw your fence on the map first — then send it'); return; }
+      document.getElementById('lead-modal').style.display = 'flex';
+      document.getElementById('lead-name').focus();
+    }
+
+    async function submitWebsiteLead() {
+      if (!_refCompany) return;
+      var name = document.getElementById('lead-name').value.trim();
+      var phone = document.getElementById('lead-phone').value.trim();
+      var email = document.getElementById('lead-email').value.trim();
+      if (!name) { showToast('Please enter your name'); return; }
+      if (!phone && !email) { showToast('Please add a phone number or email'); return; }
+      var btn = document.getElementById('lead-submit-btn');
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        await API.submitLead({
+          companyId: _refCompany.id,
+          name: name,
+          phone: phone,
+          email: email,
+          address: document.getElementById('lead-address').value.trim(),
+          notes: document.getElementById('lead-notes').value.trim(),
+          totalFeet: parseInt((document.getElementById('total-feet').textContent || '0').replace(/,/g, ''), 10) || 0,
+          totalCost: parseFloat((document.getElementById('sum-total').textContent || '0').replace(/[$,]/g, '')) || 0,
+          fenceType: (document.getElementById('sum-type').textContent || 'wood').toLowerCase(),
+          fenceHeight: parseInt(document.getElementById('sum-height').textContent, 10) || 6
+        });
+        document.getElementById('lead-modal').style.display = 'none';
+        showToast('Sent! ' + _refCompany.name + ' will be in touch.');
+      } catch (e) {
+        showToast('Could not send: ' + e.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Send it over';
+      }
+    }
+
+    // Contractor side: embed snippet in Account > Website
+    function renderEmbedSnippet() {
+      var co = window._ftCompany;
+      var el = document.getElementById('embed-snippet');
+      if (!el) return;
+      if (!co || !co.id) { el.value = 'Sign in to get your embed snippet.'; return; }
+      var link = 'https://fencetrace.com/?ref=' + co.id;
+      el.value = '<a href="' + link + '" target="_blank" rel="noopener" ' +
+        'style="display:inline-block;background:#c0622e;color:#ffffff;padding:12px 22px;' +
+        'border-radius:8px;font-weight:700;font-family:sans-serif;text-decoration:none">' +
+        'Get an Instant Fence Quote</a>';
+      el.dataset.link = link;
+    }
+
+    function copyEmbedSnippet() {
+      var el = document.getElementById('embed-snippet');
+      navigator.clipboard.writeText(el.value).then(function () { showToast('Snippet copied'); });
+    }
+
+    function copyEmbedLink() {
+      var el = document.getElementById('embed-snippet');
+      navigator.clipboard.writeText(el.dataset.link || '').then(function () { showToast('Link copied'); });
     }
 
     // === Hamburger Nav Overflow Toggle ===

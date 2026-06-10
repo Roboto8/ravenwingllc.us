@@ -111,6 +111,24 @@ const API = {
     return data;
   },
 
+  // Public (no auth) — website-widget lead capture (?ref=COMPANY_ID flow)
+  async getPublicCompany(id) {
+    var resp = await this._fetchWithRetry(this.baseUrl + '/api/public/company/' + encodeURIComponent(id), {});
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+  },
+  async submitLead(payload) {
+    var resp = await this._fetchWithRetry(this.baseUrl + '/api/public/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+  },
+
   // Photos
   getPhotoUploadUrl(estId, filename, contentType) {
     return this._fetch('/api/estimates/' + estId + '/photos', {

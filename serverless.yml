@@ -318,6 +318,20 @@ functions:
           path: /api/public/estimate/{token}/respond
           method: POST
 
+  getPublicCompany:
+    handler: handlers/leads.getPublicCompany
+    events:
+      - httpApi:
+          path: /api/public/company/{id}
+          method: GET
+
+  createPublicLead:
+    handler: handlers/leads.createLead
+    events:
+      - httpApi:
+          path: /api/public/lead
+          method: POST
+
   billingCheckout:
     handler: handlers/billing.checkout
     events:
