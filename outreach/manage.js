@@ -81,13 +81,21 @@ function b64url(s) {
   return Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// Non-ASCII header values (em-dashes in subjects) must be RFC 2047 encoded
+// or Gmail renders mojibake like "Ã¢Â€Â".
+function encodeHeader(value) {
+  return /[^\x20-\x7e]/.test(value)
+    ? '=?UTF-8?B?' + Buffer.from(value, 'utf8').toString('base64') + '?='
+    : value;
+}
+
 // multipart/alternative: plain text + light branded HTML (see build-body.js)
 function mime({ to, subject, body, inReplyTo, references }) {
   const boundary = 'ft' + Math.random().toString(36).slice(2);
   const html = htmlWrap(body);
   const lines = [
     'To: ' + to,
-    'Subject: ' + subject,
+    'Subject: ' + encodeHeader(subject),
     'MIME-Version: 1.0',
     'Content-Type: multipart/alternative; boundary="' + boundary + '"',
   ];
