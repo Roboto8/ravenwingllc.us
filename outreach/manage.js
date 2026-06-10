@@ -1,0 +1,329 @@
+// FenceTrace outreach manager — Gmail (direct API) + Claude Opus 4.8.
+//
+//   node outreach/manage.js auth        one-time Google OAuth (needs google-credentials.json)
+//   node outreach/manage.js status      pipeline table: who's drafted/sent/replied
+//   node outreach/manage.js send        send next batch from your Gmail (default 5; --batch N)
+//   node outreach/manage.js send --dry  preview what WOULD send
+//   node outreach/manage.js scan        pull replies, classify with Claude, draft responses
+//   node outreach/manage.js followups   draft follow-ups for no-reply prospects (--days N, default 5)
+//
+// State lives in outreach/crm.json. Replies are CLASSIFIED and DRAFTED only —
+// nothing outbound ever goes without you pressing send, except the `send`
+// command itself, which is explicit.
+//
+// Requires: ANTHROPIC_API_KEY env var (scan/followups), Google OAuth (all gmail ops).
+// Gmail auth files (gitignored): outreach/google-credentials.json (from Google
+// Cloud Console: APIs & Services > Credentials > OAuth client ID > Desktop app,
+// with the Gmail API enabled) and outreach/google-token.json (created by `auth`).
+
+const fs = require('fs');
+const path = require('path');
+const { buildBody, htmlWrap } = require('./build-body');
+
+const DIR = __dirname;
+const CREDENTIALS_PATH = path.join(DIR, 'google-credentials.json');
+const TOKEN_PATH = path.join(DIR, 'google-token.json');
+const CRM_PATH = path.join(DIR, 'crm.json');
+const PROSPECTS = JSON.parse(fs.readFileSync(path.join(DIR, 'prospects.json'), 'utf8'));
+const SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
+
+const CLAUDE_MODEL = 'claude-opus-4-8';
+
+// ---------- state ----------
+function loadCrm() {
+  return fs.existsSync(CRM_PATH) ? JSON.parse(fs.readFileSync(CRM_PATH, 'utf8')) : {};
+}
+function saveCrm(crm) {
+  fs.writeFileSync(CRM_PATH, JSON.stringify(crm, null, 2));
+}
+function rec(crm, email) {
+  if (!crm[email]) {
+    const p = PROSPECTS.find((x) => x.to === email);
+    crm[email] = { company: p ? p.company : email, status: 'new', history: [] };
+  }
+  return crm[email];
+}
+function note(r, text) {
+  r.history.push(new Date().toISOString().slice(0, 16) + ' ' + text);
+}
+
+// ---------- gmail ----------
+async function gmailClient() {
+  const { google } = require('googleapis');
+  if (fs.existsSync(TOKEN_PATH)) {
+    const auth = google.auth.fromJSON(JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8')));
+    return google.gmail({ version: 'v1', auth });
+  }
+  throw new Error('Not authorized. Run: node outreach/manage.js auth');
+}
+
+async function doAuth() {
+  if (!fs.existsSync(CREDENTIALS_PATH)) {
+    console.error('Missing ' + CREDENTIALS_PATH);
+    console.error('Create an OAuth "Desktop app" client in Google Cloud Console');
+    console.error('(enable the Gmail API first) and save the JSON there.');
+    process.exit(1);
+  }
+  const { authenticate } = require('@google-cloud/local-auth');
+  const client = await authenticate({ scopes: SCOPES, keyfilePath: CREDENTIALS_PATH });
+  const keys = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
+  const key = keys.installed || keys.web;
+  fs.writeFileSync(TOKEN_PATH, JSON.stringify({
+    type: 'authorized_user',
+    client_id: key.client_id,
+    client_secret: key.client_secret,
+    refresh_token: client.credentials.refresh_token,
+  }, null, 2));
+  console.log('Authorized. Token saved to ' + TOKEN_PATH);
+}
+
+function b64url(s) {
+  return Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// multipart/alternative: plain text + light branded HTML (see build-body.js)
+function mime({ to, subject, body, inReplyTo, references }) {
+  const boundary = 'ft' + Math.random().toString(36).slice(2);
+  const html = htmlWrap(body);
+  const lines = [
+    'To: ' + to,
+    'Subject: ' + subject,
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/alternative; boundary="' + boundary + '"',
+  ];
+  if (inReplyTo) lines.push('In-Reply-To: ' + inReplyTo);
+  if (references) lines.push('References: ' + references);
+  lines.push(
+    '',
+    '--' + boundary,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Buffer.from(body, 'utf8').toString('base64'),
+    '--' + boundary,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Buffer.from(html, 'utf8').toString('base64'),
+    '--' + boundary + '--'
+  );
+  return b64url(lines.join('\r\n'));
+}
+
+function header(msg, name) {
+  const h = (msg.payload.headers || []).find((x) => x.name.toLowerCase() === name.toLowerCase());
+  return h ? h.value : '';
+}
+
+function plainText(payload) {
+  if (payload.mimeType === 'text/plain' && payload.body && payload.body.data) {
+    return Buffer.from(payload.body.data, 'base64').toString('utf8');
+  }
+  for (const part of payload.parts || []) {
+    const t = plainText(part);
+    if (t) return t;
+  }
+  return '';
+}
+
+// ---------- claude ----------
+function claude() {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('Set ANTHROPIC_API_KEY first.');
+    process.exit(1);
+  }
+  const Anthropic = require('@anthropic-ai/sdk');
+  return new Anthropic();
+}
+
+const CLASSIFY_SCHEMA = {
+  type: 'object',
+  properties: {
+    category: {
+      type: 'string',
+      enum: ['interested', 'question', 'objection', 'not_interested', 'opt_out', 'auto_reply', 'bounce', 'other'],
+    },
+    summary: { type: 'string', description: 'One sentence: what they said.' },
+    needs_reply: { type: 'boolean' },
+  },
+  required: ['category', 'summary', 'needs_reply'],
+  additionalProperties: false,
+};
+
+async function classify(ai, company, outbound, reply) {
+  const resp = await ai.messages.create({
+    model: CLAUDE_MODEL,
+    max_tokens: 1024,
+    output_config: { format: { type: 'json_schema', schema: CLASSIFY_SCHEMA } },
+    messages: [{
+      role: 'user',
+      content: 'Classify this reply to a cold outreach email about FenceTrace (fence-estimating software).\n\n' +
+        'Prospect: ' + company + '\n\nOriginal email:\n' + outbound + '\n\nTheir reply:\n' + reply,
+    }],
+  });
+  return JSON.parse(resp.content.find((b) => b.type === 'text').text);
+}
+
+const REPLY_SYSTEM = [
+  'You draft replies for Todd, the solo founder of FenceTrace (fencetrace.com),',
+  'responding to fence-company owners who answered his cold outreach. Voice:',
+  'plain, brief, no hype, like one tradesman emailing another. Facts you may use:',
+  '- Free Starter plan: 2 estimates/month, INCLUDES a custom price book (their',
+  '  material costs, labor rates, markup, job minimum).',
+  '- Pro is $29/month: unlimited estimates, customer approvals via link, job',
+  '  site photos, PDF export. Month to month, cancel anytime, no contract.',
+  '- Estimates come from drawing the fence line on a satellite photo; full bill',
+  '  of materials (posts, rails, pickets, concrete); profit shown before sending.',
+  '- Leads are never shared; there are no per-lead fees.',
+  '- Onboarding is over email: if they send their prices/rates, Todd loads their',
+  '  price book for them. Do NOT offer phone calls.',
+  '- There is NO website-embed widget yet. Never promise one.',
+  'Rules: answer their actual question first. Keep it under 120 words. No links',
+  'unless they asked how to try it (then https://fencetrace.com). Do NOT include',
+  'a sign-off or signature — it is appended automatically. Output ONLY the email',
+  'body text, no subject line.',
+].join('\n');
+
+async function draftReply(ai, company, outbound, reply) {
+  const resp = await ai.messages.create({
+    model: CLAUDE_MODEL,
+    max_tokens: 2000,
+    thinking: { type: 'adaptive' },
+    system: REPLY_SYSTEM,
+    messages: [{
+      role: 'user',
+      content: 'Prospect: ' + company + '\n\nMy original email:\n' + outbound + '\n\nTheir reply:\n' + reply + '\n\nDraft my response.',
+    }],
+  });
+  return resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+}
+
+// ---------- commands ----------
+async function cmdStatus() {
+  const crm = loadCrm();
+  const pad = (s, n) => String(s).padEnd(n);
+  console.log(pad('STATUS', 18) + pad('PROSPECT', 44) + 'LAST EVENT');
+  for (const p of PROSPECTS) {
+    const r = crm[p.to] || { status: 'new', history: [] };
+    console.log(pad(r.status, 18) + pad(p.company.slice(0, 42), 44) + (r.history[r.history.length - 1] || ''));
+  }
+}
+
+async function cmdSend(args) {
+  const dry = args.includes('--dry');
+  const bi = args.indexOf('--batch');
+  const batchSize = bi > -1 ? parseInt(args[bi + 1], 10) || 5 : 5;
+  const crm = loadCrm();
+  const pending = PROSPECTS.filter((p) => {
+    const s = (crm[p.to] || {}).status;
+    return !s || s === 'new' || s === 'drafted';
+  }).slice(0, batchSize);
+  if (!pending.length) return console.log('Nothing pending.');
+  const gmail = dry ? null : await gmailClient();
+  for (const p of pending) {
+    const body = buildBody(p);
+    console.log('\n--- ' + p.company + ' <' + p.to + '> — "' + p.subject + '"');
+    if (dry) { console.log(body.split('\n').slice(0, 3).join('\n') + '\n...'); continue; }
+    await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw: mime({ to: p.to, subject: p.subject, body }) },
+    });
+    const r = rec(crm, p.to);
+    r.status = 'sent';
+    r.sentAt = new Date().toISOString();
+    note(r, 'sent round-1 email');
+    saveCrm(crm);
+    console.log('sent ✓');
+    await new Promise((res) => setTimeout(res, 5000));
+  }
+  if (!dry) console.log('\nBatch done. Run again tomorrow for the next ' + batchSize + '.');
+}
+
+async function cmdScan() {
+  const gmail = await gmailClient();
+  const ai = claude();
+  const crm = loadCrm();
+  for (const p of PROSPECTS) {
+    const r = rec(crm, p.to);
+    if (r.status === 'opted_out') continue;
+    const res = await gmail.users.threads.list({ userId: 'me', q: 'from:' + p.to });
+    for (const t of res.data.threads || []) {
+      const thread = await gmail.users.threads.get({ userId: 'me', id: t.id, format: 'full' });
+      const msgs = thread.data.messages || [];
+      const inbound = msgs.filter((m) => header(m, 'From').includes(p.to) && !(r.seenMessages || []).includes(m.id));
+      if (!inbound.length) continue;
+      const latest = inbound[inbound.length - 1];
+      const replyText = plainText(latest.payload).slice(0, 4000);
+      const outbound = buildBody(p);
+      const cls = await classify(ai, p.company, outbound, replyText);
+      r.seenMessages = (r.seenMessages || []).concat(inbound.map((m) => m.id));
+      r.status = cls.category === 'opt_out' || cls.category === 'not_interested' ? 'opted_out' : cls.category;
+      note(r, 'reply (' + cls.category + '): ' + cls.summary);
+      console.log('\n' + p.company + ' → ' + cls.category.toUpperCase() + ': ' + cls.summary);
+      if (cls.needs_reply && cls.category !== 'opt_out' && cls.category !== 'not_interested') {
+        const body = (await draftReply(ai, p.company, outbound, replyText)) + '\n\nTodd\nFenceTrace';
+        const subj = header(latest, 'Subject');
+        await gmail.users.drafts.create({
+          userId: 'me',
+          requestBody: {
+            message: {
+              threadId: t.id,
+              raw: mime({
+                to: p.to,
+                subject: /^re:/i.test(subj) ? subj : 'Re: ' + subj,
+                body,
+                inReplyTo: header(latest, 'Message-ID'),
+                references: header(latest, 'Message-ID'),
+              }),
+            },
+          },
+        });
+        note(r, 'response drafted — review in Gmail Drafts');
+        console.log('  ↳ reply drafted (review in Gmail Drafts)');
+      }
+      saveCrm(crm);
+    }
+  }
+  console.log('\nScan complete.');
+}
+
+async function cmdFollowups(args) {
+  const di = args.indexOf('--days');
+  const days = di > -1 ? parseInt(args[di + 1], 10) || 5 : 5;
+  const gmail = await gmailClient();
+  const crm = loadCrm();
+  const due = PROSPECTS.filter((p) => {
+    const r = crm[p.to];
+    return r && r.status === 'sent' && r.sentAt && !r.followupAt &&
+      (Date.now() - new Date(r.sentAt).getTime()) / 86400000 >= days;
+  });
+  if (!due.length) return console.log('No follow-ups due.');
+  for (const p of due) {
+    const body = 'Hi ' + (p.name || 'there') + ',\n\n' +
+      'Quick follow-up on my note from last week about FenceTrace — satellite\n' +
+      'fence estimates priced from your own price book, with your profit visible\n' +
+      'before the quote goes out.\n\n' +
+      'If the timing is wrong, no worries at all. If you want to kick the tires,\n' +
+      'it takes about two minutes: https://fencetrace.com\n\nTodd\nFenceTrace';
+    await gmail.users.drafts.create({
+      userId: 'me',
+      requestBody: { message: { raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body }) } },
+    });
+    const r = rec(crm, p.to);
+    r.followupAt = new Date().toISOString();
+    note(r, 'follow-up drafted — review in Gmail Drafts');
+    saveCrm(crm);
+    console.log('follow-up drafted: ' + p.company);
+  }
+}
+
+// ---------- main ----------
+(async () => {
+  const [cmd, ...args] = process.argv.slice(2);
+  if (cmd === 'auth') return doAuth();
+  if (cmd === 'status') return cmdStatus();
+  if (cmd === 'send') return cmdSend(args);
+  if (cmd === 'scan') return cmdScan();
+  if (cmd === 'followups') return cmdFollowups(args);
+  console.log('Usage: node outreach/manage.js <auth|status|send [--dry] [--batch N]|scan|followups [--days N]>');
+})().catch((err) => { console.error(err.message); process.exit(1); });
