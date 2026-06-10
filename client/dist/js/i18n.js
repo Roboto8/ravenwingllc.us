@@ -280,6 +280,8 @@ var I18N = {
     onboard_step3_title: 'Review your estimate and share it',
     onboard_step3_desc: 'Pick materials, add extras, then share or save your estimate as a PDF.',
     onboard_next: 'Next',
+    onboard_title: 'Welcome to FenceTrace',
+    onboard_desc: 'Search an address, tap the map to trace the fence, and your estimate builds itself.',
     onboard_got_it: 'Got it',
 
     // -- Drone overlay --
@@ -662,6 +664,8 @@ var I18N = {
     onboard_step3_title: 'Revisa tu estimacion y compartela',
     onboard_step3_desc: 'Elige materiales, agrega extras, luego comparte o guarda tu estimacion como PDF.',
     onboard_next: 'Siguiente',
+    onboard_title: 'Bienvenido a FenceTrace',
+    onboard_desc: 'Busque una dirección, toque el mapa para trazar la cerca y el presupuesto se calcula solo.',
     onboard_got_it: 'Entendido',
 
     // -- Drone overlay --
@@ -1044,6 +1048,8 @@ var I18N = {
     onboard_step3_title: 'Bekijk je offerte en deel deze',
     onboard_step3_desc: 'Kies materialen, voeg extra\'s toe, deel of sla je offerte op als PDF.',
     onboard_next: 'Volgende',
+    onboard_title: 'Welkom bij FenceTrace',
+    onboard_desc: 'Zoek een adres, tik op de kaart om de schutting te tekenen en de offerte bouwt zichzelf op.',
     onboard_got_it: 'Begrepen',
 
     // -- Drone overlay --
@@ -1426,6 +1432,8 @@ var I18N = {
     onboard_step3_title: 'Consultez votre devis et partagez-le',
     onboard_step3_desc: 'Choisissez les materiaux, ajoutez des supplements, puis partagez ou enregistrez votre devis en PDF.',
     onboard_next: 'Suivant',
+    onboard_title: 'Bienvenue sur FenceTrace',
+    onboard_desc: 'Recherchez une adresse, touchez la carte pour tracer la clôture et le devis se calcule tout seul.',
     onboard_got_it: 'Compris',
 
     // -- Drone overlay --
@@ -1808,6 +1816,8 @@ var I18N = {
     onboard_step3_title: 'Ueberpruefen Sie Ihr Angebot und teilen Sie es',
     onboard_step3_desc: 'Waehlen Sie Materialien, fuegen Sie Extras hinzu, dann teilen oder speichern Sie Ihr Angebot als PDF.',
     onboard_next: 'Weiter',
+    onboard_title: 'Willkommen bei FenceTrace',
+    onboard_desc: 'Adresse suchen, auf die Karte tippen, um den Zaun zu zeichnen – das Angebot erstellt sich von selbst.',
     onboard_got_it: 'Verstanden',
 
     // -- Drone overlay --
@@ -2190,6 +2200,8 @@ var I18N = {
     onboard_step3_title: 'Revise seu orcamento e compartilhe',
     onboard_step3_desc: 'Escolha materiais, adicione extras, depois compartilhe ou salve seu orcamento como PDF.',
     onboard_next: 'Proximo',
+    onboard_title: 'Bem-vindo ao FenceTrace',
+    onboard_desc: 'Pesquise um endereço, toque no mapa para traçar a cerca e o orçamento se monta sozinho.',
     onboard_got_it: 'Entendi',
 
     // -- Drone overlay --

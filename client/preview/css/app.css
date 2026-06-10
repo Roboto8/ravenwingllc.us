@@ -1652,7 +1652,15 @@ body.twa-mode .modal-overlay {
 }
 
 .onboarding-next {
-  float: right;
+  /* Was float:right — the floated button escaped the card's background and
+     was invisible against the dark backdrop. Full-width is also a far
+     better tap target for this audience. */
+  float: none;
+  display: block;
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  min-height: 48px;
 }
 
 /* === RESPONSIVE === */

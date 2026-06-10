@@ -568,8 +568,12 @@ function initMap() {
     zoomControl: false
   });
 
-  // If no shared link or saved data, try to center on user's location
-  if (usingDefault && navigator.geolocation) {
+  // If no shared link or saved data, try to center on user's location —
+  // but NOT on the very first visit: the demo estimate is about to load
+  // there, and a browser permission popup over the welcome card (plus the
+  // map yanking away from the demo fence mid-look) is a terrible first
+  // impression. Returning users keep the convenience.
+  if (usingDefault && navigator.geolocation && localStorage.getItem('fc_visited')) {
     navigator.geolocation.getCurrentPosition(function(pos) {
       map.setView([pos.coords.latitude, pos.coords.longitude], 18, { animate: true });
     }, function() {}, { timeout: 5000, maximumAge: 300000 });
@@ -6328,6 +6332,16 @@ function dismissHint() {
 
 function showHint(id, text, anchorEl, position) {
   if (isHintSeen(id)) return;
+  // One message at a time: while the welcome card, sample-estimate banner,
+  // cookie banner, or price book prompt is up, hold hints back entirely
+  // (not marked seen — they'll fire on the next natural trigger).
+  // (style.display check only — these are position:fixed, so offsetParent
+  // is always null even when visible.)
+  var blockers = ['onboarding-overlay', 'demo-banner', 'cookie-banner', 'pb-setup-banner'];
+  for (var i = 0; i < blockers.length; i++) {
+    var el = document.getElementById(blockers[i]);
+    if (el && el.style.display !== 'none') return;
+  }
   if (activeHint) dismissHint();
 
   activeHint = id;
@@ -6947,19 +6961,39 @@ function resetEstimateAndClearAutosave() {
   if (_origResetEstimate) _origResetEstimate();
 }
 
-// First visit: load demo estimate so visitors see the product immediately
+// First visit: load demo estimate so visitors see the product immediately.
+// The "sample estimate" banner waits for the welcome card to be dismissed —
+// one message at a time (see onboardFinish).
+function demoTryItYourself() {
+  var b = document.getElementById('demo-banner');
+  if (b) b.remove();
+  resetEstimate();
+  // Drop them straight into the real flow: open + focus the address search.
+  var bar = document.getElementById('search-bar');
+  if (bar && bar.classList.contains('collapsed')) toggleSearch();
+  else { var inp = document.getElementById('address-input'); if (inp) inp.focus(); }
+}
+
+function showDemoBanner() {
+  if (document.getElementById('demo-banner')) return;
+  window._pendingDemoBanner = false;
+  var banner = document.createElement('div');
+  banner.id = 'demo-banner';
+  banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--text,#2c2417);color:#fff;padding:14px 20px;border-radius:12px;font-family:var(--font,Inter,sans-serif);font-size:0.95rem;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:calc(100% - 24px)';
+  banner.innerHTML = '<span>This is a <b>sample estimate</b></span>' +
+    '<button onclick="demoTryItYourself()" style="background:#c0622e;color:#fff;border:none;padding:12px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;white-space:nowrap">Try My Address</button>' +
+    '<button onclick="this.parentElement.remove()" aria-label="Dismiss" style="background:none;border:none;color:#999;cursor:pointer;font-size:22px;padding:6px">&times;</button>';
+  document.body.appendChild(banner);
+}
+
 if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL && !localStorage.getItem('fc_visited')) {
   localStorage.setItem('fc_visited', '1');
   loadDemo(1);
-  // Show "Try it yourself" banner after demo loads
+  window._pendingDemoBanner = true;
   setTimeout(function() {
-    var banner = document.createElement('div');
-    banner.id = 'demo-banner';
-    banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--text,#2c2417);color:#fff;padding:12px 20px;border-radius:12px;font-family:var(--font,Inter,sans-serif);font-size:0.9rem;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
-    banner.innerHTML = '<span>This is a sample estimate</span>' +
-      '<button onclick="resetEstimate(); document.getElementById(\'demo-banner\').remove()" style="background:#c0622e;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;white-space:nowrap">Try It Yourself</button>' +
-      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#999;cursor:pointer;font-size:18px">&times;</button>';
-    document.body.appendChild(banner);
+    var onboarding = document.getElementById('onboarding-overlay');
+    var onboardingVisible = onboarding && onboarding.style.display !== 'none';
+    if (window._pendingDemoBanner && !onboardingVisible) showDemoBanner();
   }, 2000);
 } else if (fencePoints.length === 0 && !_hadSharedURL) {
   hintFirstVisit();
