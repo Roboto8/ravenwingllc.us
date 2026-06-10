@@ -232,13 +232,14 @@ async function cmdSend(args) {
     const body = buildBody(p);
     console.log('\n--- ' + p.company + ' <' + p.to + '> — "' + p.subject + '"');
     if (dry) { console.log(body.split('\n').slice(0, 3).join('\n') + '\n...'); continue; }
-    await gmail.users.messages.send({
+    const sent = await gmail.users.messages.send({
       userId: 'me',
       requestBody: { raw: mime({ to: p.to, subject: p.subject, body }) },
     });
     const r = rec(crm, p.to);
     r.status = 'sent';
     r.sentAt = new Date().toISOString();
+    r.threadId = sent.data.threadId;
     note(r, 'sent round-1 email');
     saveCrm(crm);
     console.log('sent ✓');
@@ -325,6 +326,104 @@ async function cmdFollowups(args) {
   }
 }
 
+// ---------- agent ----------
+// Autonomous runner for the scheduler. Anti-spam invariants:
+//   * sends ONLY Tue/Wed/Thu, ONLY 7:00-8:59am in the PROSPECT's time zone
+//   * hard cap: 5 outbound emails per calendar day, total
+//   * one round-1 email per prospect ever; at most ONE follow-up after 5+
+//     quiet days; replied / opted-out / bounced prospects are never touched
+//   * Claude-drafted replies are NEVER auto-sent (scan leaves drafts)
+const DAILY_CAP = 5;
+const SEND_DAYS = [2, 3, 4]; // Tue, Wed, Thu
+const FOLLOWUP_DAYS = 5;
+
+function localHour(tz) {
+  return parseInt(new Date().toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }), 10);
+}
+
+function sentTodayCount(crm) {
+  const today = new Date().toISOString().slice(0, 10);
+  return Object.values(crm).filter((r) =>
+    (r.sentAt || '').startsWith(today) || (r.followupSentAt || '').startsWith(today)
+  ).length;
+}
+
+async function cmdAgent() {
+  const stamp = new Date().toISOString().slice(0, 16);
+  console.log('[' + stamp + '] agent run');
+  const crm = loadCrm();
+  const day = new Date().getDay();
+  let budget = DAILY_CAP - sentTodayCount(crm);
+
+  if (SEND_DAYS.includes(day) && budget > 0) {
+    const gmail = await gmailClient();
+
+    // Round-1 sends, only to prospects currently in their 7-9am window
+    const fresh = PROSPECTS.filter((p) => {
+      const s = (crm[p.to] || {}).status;
+      const h = localHour(p.tz || 'America/New_York');
+      return (!s || s === 'new') && h >= 7 && h < 9;
+    }).slice(0, budget);
+    for (const p of fresh) {
+      const body = buildBody(p);
+      const sent = await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw: mime({ to: p.to, subject: p.subject, body }) },
+      });
+      const r = rec(crm, p.to);
+      r.status = 'sent';
+      r.sentAt = new Date().toISOString();
+      r.threadId = sent.data.threadId;
+      note(r, 'agent sent round-1 email');
+      saveCrm(crm);
+      budget--;
+      console.log('  sent round-1: ' + p.company);
+      await new Promise((res) => setTimeout(res, 5000));
+    }
+
+    // One follow-up max, 5+ quiet days, same local-morning window
+    const due = PROSPECTS.filter((p) => {
+      const r = crm[p.to];
+      const h = localHour(p.tz || 'America/New_York');
+      return budget > 0 && r && r.status === 'sent' && r.sentAt && !r.followupSentAt && !r.followupAt &&
+        (Date.now() - new Date(r.sentAt).getTime()) / 86400000 >= FOLLOWUP_DAYS && h >= 7 && h < 9;
+    }).slice(0, budget);
+    for (const p of due) {
+      const body = 'Hi ' + (p.name || 'there') + ',\n\n' +
+        'Quick follow-up on my note from last week about FenceTrace — satellite\n' +
+        'fence estimates priced from your own price book, with your profit visible\n' +
+        'before the quote goes out.\n\n' +
+        'If the timing is wrong, no worries at all. If you want to kick the tires,\n' +
+        'it takes about two minutes: https://fencetrace.com\n\nTodd\nFenceTrace' +
+        '\n\nP.S. If you\'d rather not hear from me, just reply "no thanks" and that\'s the end of it.';
+      const r = rec(crm, p.to);
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: {
+          raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body }),
+          threadId: r.threadId,
+        },
+      });
+      r.followupSentAt = new Date().toISOString();
+      note(r, 'agent sent follow-up (final touch)');
+      saveCrm(crm);
+      budget--;
+      console.log('  sent follow-up: ' + p.company);
+      await new Promise((res) => setTimeout(res, 5000));
+    }
+    if (!fresh.length && !due.length) console.log('  nothing in send window');
+  } else {
+    console.log('  no sends (day/cap rules) — scan only');
+  }
+
+  // Always scan for replies; Claude drafts go to Gmail Drafts for review
+  if (process.env.ANTHROPIC_API_KEY) {
+    await cmdScan();
+  } else {
+    console.log('  scan skipped: ANTHROPIC_API_KEY not set');
+  }
+}
+
 // ---------- main ----------
 (async () => {
   const [cmd, ...args] = process.argv.slice(2);
@@ -333,5 +432,6 @@ async function cmdFollowups(args) {
   if (cmd === 'send') return cmdSend(args);
   if (cmd === 'scan') return cmdScan();
   if (cmd === 'followups') return cmdFollowups(args);
-  console.log('Usage: node outreach/manage.js <auth|status|send [--dry] [--batch N]|scan|followups [--days N]>');
+  if (cmd === 'agent') return cmdAgent();
+  console.log('Usage: node outreach/manage.js <auth|status|send [--dry] [--batch N]|scan|followups [--days N]|agent>');
 })().catch((err) => { console.error(err.message); process.exit(1); });
