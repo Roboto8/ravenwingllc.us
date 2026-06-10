@@ -68,6 +68,18 @@ describe('Free tier estimate limit', () => {
     expect(result.statusCode).toBe(201);
   });
 
+  test('does not count website-widget leads toward Free limit', async () => {
+    auth.getCompanyId.mockResolvedValue('comp-1');
+    db.get.mockResolvedValue(freeCompany);
+    db.put.mockResolvedValue({});
+    // 1 self-created estimate + 5 incoming widget leads this month — still under the cap
+    const items = makeEstimates(6).map((e, i) => (i === 0 ? e : { ...e, source: 'website-widget' }));
+    db.query.mockResolvedValue({ items, nextKey: null });
+
+    const result = await estimates.create(makeCreateEvent());
+    expect(result.statusCode).toBe(201);
+  });
+
   test('does not count deleted estimates toward Free limit', async () => {
     auth.getCompanyId.mockResolvedValue('comp-1');
     db.get.mockResolvedValue(freeCompany);

@@ -37,7 +37,9 @@ module.exports.create = res.wrap(async (event) => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-    const thisMonth = items.filter(i => i.status !== 'deleted' && i.createdAt >= monthStart);
+    // Incoming website-widget leads never count against the allowance —
+    // the cap is on estimates the contractor creates, not leads they receive.
+    const thisMonth = items.filter(i => i.status !== 'deleted' && i.source !== 'website-widget' && i.createdAt >= monthStart);
     // Base limit 2 + share bonus (1 if shared this month)
     const nowMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     const freeLimit = 2 + (company.shareBonusMonth === nowMonth ? 1 : 0);
