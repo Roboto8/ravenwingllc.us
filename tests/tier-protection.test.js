@@ -354,7 +354,7 @@ describe('Tier protection — frontend requireTier validation', () => {
     expect(result.starterExists).toBe(true);
     expect(result.proExists).toBe(true);
     expect(result.starterText).toContain('Starter');
-    expect(result.proText).toContain('$4.99');
+    expect(result.proText).toContain('$29');
     await page.close();
   }, 20000);
 });
