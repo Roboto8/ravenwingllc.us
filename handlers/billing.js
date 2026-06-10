@@ -3,6 +3,7 @@ const auth = require('./lib/auth');
 const res = require('./lib/response');
 const { checkPermission } = require('./roles');
 const getStripe = require('./lib/stripe');
+const { countBillableSince } = require('./lib/quota');
 
 // In-memory rate limit: companyId -> last checkout timestamp
 const _checkoutTimestamps = {};
@@ -169,9 +170,8 @@ module.exports.status = res.wrap(async (event) => {
   if (isFree) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
     // Website-widget leads are excluded — receiving leads never burns the allowance
-    estimatesUsed = items.filter(i => i.status !== 'deleted' && i.source !== 'website-widget' && i.createdAt >= monthStart).length;
+    estimatesUsed = await countBillableSince(db, companyId, monthStart);
     // Base limit 2 + share bonus
     const nowMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     estimateLimit = 2 + (company.shareBonusMonth === nowMonth ? 1 : 0);

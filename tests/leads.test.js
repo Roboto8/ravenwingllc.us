@@ -132,6 +132,15 @@ describe('leads handler', () => {
       }));
     });
 
+    test('failed validation does not consume the rate-limit slot', async () => {
+      db.get.mockResolvedValue(mockCompany);
+      db.put.mockResolvedValue({});
+      const bad = await leads.createLead(leadEvent({ name: '' }));
+      const good = await leads.createLead(leadEvent());
+      expect(bad.statusCode).toBe(400);
+      expect(good.statusCode).toBe(200);
+    });
+
     test('rate limits rapid submissions per company', async () => {
       db.get.mockResolvedValue(mockCompany);
       db.put.mockResolvedValue({});

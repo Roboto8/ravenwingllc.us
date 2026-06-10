@@ -3,6 +3,7 @@ const auth = require('./lib/auth');
 const res = require('./lib/response');
 const crypto = require('crypto');
 const { checkPermission } = require('./roles');
+const { countBillableSince } = require('./lib/quota');
 
 module.exports.list = res.wrap(async (event) => {
   const companyId = await auth.getCompanyId(event, db);
@@ -36,14 +37,11 @@ module.exports.create = res.wrap(async (event) => {
   if (!isPaid && (tier === 'free' || !['pro', 'builder', 'contractor'].includes(tier))) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const { items } = await db.query('COMPANY#' + companyId, 'EST#', 50);
-    // Incoming website-widget leads never count against the allowance —
-    // the cap is on estimates the contractor creates, not leads they receive.
-    const thisMonth = items.filter(i => i.status !== 'deleted' && i.source !== 'website-widget' && i.createdAt >= monthStart);
+    const usedThisMonth = await countBillableSince(db, companyId, monthStart);
     // Base limit 2 + share bonus (1 if shared this month)
     const nowMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     const freeLimit = 2 + (company.shareBonusMonth === nowMonth ? 1 : 0);
-    if (thisMonth.length >= freeLimit) {
+    if (usedThisMonth >= freeLimit) {
       const msg = freeLimit === 2
         ? 'Starter plan limit reached (2 estimates/month). Share an estimate for +1 bonus, or upgrade to Pro for unlimited.'
         : 'Starter plan limit reached (' + freeLimit + ' estimates/month). Upgrade to Pro for unlimited.';
@@ -90,6 +88,12 @@ module.exports.create = res.wrap(async (event) => {
     createdAt: now,
     updatedAt: now
   };
+  // Preserve lead identity on restore (undo-delete recreates via this path);
+  // without it a restored widget lead would start counting against the cap.
+  if (body.source === 'website-widget') {
+    item.source = 'website-widget';
+    if (body.leadNotes) item.leadNotes = String(body.leadNotes).slice(0, 1000);
+  }
   Object.assign(item, deriveMarketFields(item));
 
   await db.put(item);
@@ -148,7 +152,11 @@ module.exports.update = res.wrap(async (event) => {
     if (updates.status === 'won' && !est.wonAt) updates.wonAt = updates.updatedAt;
     if (updates.status === 'lost' && !est.lostAt) updates.lostAt = updates.updatedAt;
   }
-  Object.assign(updates, deriveMarketFields({ ...est, ...updates }));
+  // Widget leads carry homeowner-sketched numbers, not real quotes — never
+  // mint market-rollup fields from them, even after the contractor edits.
+  if (est.source !== 'website-widget') {
+    Object.assign(updates, deriveMarketFields({ ...est, ...updates }));
+  }
 
   const updated = await db.update(est.PK, est.SK, updates);
   return res.ok(stripKeys(updated));

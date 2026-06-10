@@ -36,6 +36,7 @@ function rollup(estimates, now = new Date()) {
 
   for (const est of estimates) {
     if (!est || est.status === 'deleted') continue;
+    if (est.source === 'website-widget') continue; // homeowner sketches must not pollute market data
     if (!est.regionKey || !est.createdAt) continue;
     const month = est.createdAt.slice(0, 7); // yyyy-mm
     const fenceType = est.fenceType || 'unknown';

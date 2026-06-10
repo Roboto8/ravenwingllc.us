@@ -185,7 +185,10 @@ const REPLY_SYSTEM = [
   '- Leads are never shared; there are no per-lead fees.',
   '- Onboarding is over email: if they send their prices/rates, Todd loads their',
   '  price book for them. Do NOT offer phone calls.',
-  '- There is NO website-embed widget yet. Never promise one.',
+  '- Website widget: in Account > Website there is a copy-paste button snippet',
+  '  for their own site. Homeowners sketch their fence and the lead lands in the',
+  '  contractor FenceTrace estimates list with a notification. Works on every plan,',
+  '  including free, and incoming leads never count against the Starter limit.',
   'Rules: answer their actual question first. Keep it under 120 words. No links',
   'unless they asked how to try it (then https://fencetrace.com). Do NOT include',
   'a sign-off or signature — it is appended automatically. Output ONLY the email',
@@ -303,7 +306,7 @@ async function cmdFollowups(args) {
   const crm = loadCrm();
   const due = PROSPECTS.filter((p) => {
     const r = crm[p.to];
-    return r && r.status === 'sent' && r.sentAt && !r.followupAt &&
+    return r && r.status === 'sent' && r.sentAt && !r.followupAt && !r.followupSentAt &&
       (Date.now() - new Date(r.sentAt).getTime()) / 86400000 >= days;
   });
   if (!due.length) return console.log('No follow-ups due.');

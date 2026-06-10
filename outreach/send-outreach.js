@@ -11,6 +11,16 @@
 //
 // PREREQ: fencetrace.com DKIM must be verified in SES before the first send
 // (see outreach/README.md) or Gmail-hosted recipients will junk-folder it.
+// DISABLED: superseded by outreach/manage.js (the Gmail agent). The two
+// pipelines track sent-state in different files (sent-log.json vs crm.json),
+// so running this would re-email prospects the agent already contacted and
+// ignore opt-outs recorded in crm.json. Reconcile crm.json manually and pass
+// --force only if you truly need the SES path.
+if (!process.argv.includes('--force')) {
+  console.error('send-outreach.js is disabled — use `node outreach/manage.js send` (see header comment).');
+  process.exit(1);
+}
+
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const fs = require('fs');
 const path = require('path');

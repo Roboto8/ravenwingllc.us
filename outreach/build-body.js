@@ -44,7 +44,12 @@ function htmlWrap(body) {
     content = content.slice(0, -('\n\n' + ADDRESS).length);
     addr = ADDRESS;
   }
-  const [main, ps] = content.split('\n\nP.S. ');
+  // Split on the LAST P.S. — the appended opt-out. A body containing its own
+  // earlier P.S. (prospect overrides, Claude-drafted replies) keeps it in the
+  // main paragraphs, and the compliance opt-out always lands in the footer.
+  const psIdx = content.lastIndexOf('\n\nP.S. ');
+  const main = psIdx > -1 ? content.slice(0, psIdx) : content;
+  const ps = psIdx > -1 ? content.slice(psIdx + '\n\nP.S. '.length) : undefined;
   const sigIdx = main.lastIndexOf('\n\nTodd\nFenceTrace');
   const text = sigIdx > -1 ? main.slice(0, sigIdx) : main;
   const paras = text.split(/\n\n/).map(function (para) {

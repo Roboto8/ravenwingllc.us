@@ -40,14 +40,11 @@ module.exports.createLead = res.wrap(async (event) => {
   const companyId = body.companyId;
   if (!companyId || !ID_RE.test(companyId)) return res.bad('Invalid company id');
 
-  // Rate limit per company to keep widget abuse off the contractor's list
+  // Rate-limit check only — the slot is consumed AFTER validation succeeds,
+  // so a homeowner fixing a form error isn't locked out by their own 400.
   const now = Date.now();
   if (_leadTimestamps[companyId] && now - _leadTimestamps[companyId] < RATE_LIMIT_MS) {
     return res.tooMany('Please wait a moment before submitting again');
-  }
-  _leadTimestamps[companyId] = now;
-  for (const key in _leadTimestamps) {
-    if (now - _leadTimestamps[key] > RATE_LIMIT_MS * 12) delete _leadTimestamps[key];
   }
 
   const company = await db.get('COMPANY#' + companyId, 'PROFILE');
@@ -70,6 +67,12 @@ module.exports.createLead = res.wrap(async (event) => {
   const totalCost = Math.max(0, Math.min(10000000, Number(body.totalCost) || 0));
   const fenceType = String(body.fenceType || 'wood').slice(0, 32);
   const fenceHeight = Math.max(0, Math.min(20, Number(body.fenceHeight) || 6));
+
+  // Validation passed — now consume the rate-limit slot
+  _leadTimestamps[companyId] = now;
+  for (const key in _leadTimestamps) {
+    if (now - _leadTimestamps[key] > RATE_LIMIT_MS * 12) delete _leadTimestamps[key];
+  }
 
   const id = crypto.randomUUID();
   const iso = new Date().toISOString();
@@ -100,12 +103,16 @@ module.exports.createLead = res.wrap(async (event) => {
   };
   await db.put(item);
 
+  // The notification is currently the only surface showing email + notes,
+  // so carry the full contact picture here.
+  const contact = [phone, email].filter(Boolean).join(' / ');
   await notify(db, companyId, {
     type: 'lead',
     title: 'New website lead',
     message: name + ' requested a quote' +
       (totalFeet ? ' — ~' + Math.round(totalFeet) + ' ft of ' + fenceType + ' fence' : '') +
-      (phone ? ' — ' + phone : email ? ' — ' + email : ''),
+      (contact ? ' — ' + contact : '') +
+      (notes ? ' — "' + notes.slice(0, 140) + '"' : ''),
     link: '/estimates/' + id,
   });
 

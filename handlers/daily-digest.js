@@ -52,6 +52,7 @@ function aggregate(items, now = new Date()) {
       else m.freeOrCanceled++;
     } else if (typeof it.SK === 'string' && it.SK.startsWith('EST#')) {
       if (it.status === 'deleted') continue;
+      if (it.source === 'website-widget') continue; // leads ≠ created estimates
       m.estimatesTotal++;
       const created = it.createdAt ? new Date(it.createdAt).getTime() : 0;
       if (created >= monthStart) m.estimatesMonth++;
