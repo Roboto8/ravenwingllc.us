@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { buildBody, htmlWrap } = require('./build-body');
+const { buildBody, htmlWrap, ADDRESS } = require('./build-body');
 
 const DIR = __dirname;
 const CREDENTIALS_PATH = path.join(DIR, 'google-credentials.json');
@@ -270,7 +270,7 @@ async function cmdScan() {
       note(r, 'reply (' + cls.category + '): ' + cls.summary);
       console.log('\n' + p.company + ' → ' + cls.category.toUpperCase() + ': ' + cls.summary);
       if (cls.needs_reply && cls.category !== 'opt_out' && cls.category !== 'not_interested') {
-        const body = (await draftReply(ai, p.company, outbound, replyText)) + '\n\nTodd\nFenceTrace';
+        const body = (await draftReply(ai, p.company, outbound, replyText)) + '\n\nTodd\nFenceTrace\n\n' + ADDRESS;
         const subj = header(latest, 'Subject');
         await gmail.users.drafts.create({
           userId: 'me',
@@ -313,7 +313,7 @@ async function cmdFollowups(args) {
       'fence estimates priced from your own price book, with your profit visible\n' +
       'before the quote goes out.\n\n' +
       'If the timing is wrong, no worries at all. If you want to kick the tires,\n' +
-      'it takes about two minutes: https://fencetrace.com\n\nTodd\nFenceTrace';
+      'it takes about two minutes: https://fencetrace.com\n\nTodd\nFenceTrace\n\n' + ADDRESS;
     await gmail.users.drafts.create({
       userId: 'me',
       requestBody: { message: { raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body }) } },
@@ -395,7 +395,8 @@ async function cmdAgent() {
         'before the quote goes out.\n\n' +
         'If the timing is wrong, no worries at all. If you want to kick the tires,\n' +
         'it takes about two minutes: https://fencetrace.com\n\nTodd\nFenceTrace' +
-        '\n\nP.S. If you\'d rather not hear from me, just reply "no thanks" and that\'s the end of it.';
+        '\n\nP.S. If you\'d rather not hear from me, just reply "no thanks" and that\'s the end of it.' +
+        '\n\n' + ADDRESS;
       const r = rec(crm, p.to);
       await gmail.users.messages.send({
         userId: 'me',

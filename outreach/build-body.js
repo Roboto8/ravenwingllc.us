@@ -2,6 +2,8 @@
 // Used by send-outreach.js (SES), manage.js (Gmail), and the compose-link page.
 const SIGNATURE = '\n\nTodd\nFenceTrace';
 const OPT_OUT = "\n\nP.S. If you'd rather not hear from me, just reply \"no thanks\" and that's the end of it.";
+// CAN-SPAM requires a valid physical postal address in every commercial email.
+const ADDRESS = 'FenceTrace · 8115 Judith Ln Unit 2008, Mechanicsville, VA 23116';
 
 const TEMPLATE = [
   'Quick math most fence guys have done the hard way: a $60 shared lead, sold',
@@ -23,7 +25,7 @@ const TEMPLATE = [
 function buildBody(p) {
   const greeting = 'Hi ' + (p.name || 'there') + ',';
   const core = p.bodyOverride || (p.opener + '\n\n' + TEMPLATE);
-  return greeting + '\n\n' + core + SIGNATURE + OPT_OUT;
+  return greeting + '\n\n' + core + SIGNATURE + OPT_OUT + '\n\n' + ADDRESS;
 }
 
 // Light HTML version of the same copy — clean typography, branded signature,
@@ -36,7 +38,13 @@ function escapeHtml(s) {
 // htmlWrap takes any plain body whose text ends with the "Todd / FenceTrace"
 // signature (and optional P.S.) and renders it with the styled signature.
 function htmlWrap(body) {
-  const [main, ps] = body.split('\n\nP.S. ');
+  let addr = '';
+  let content = body;
+  if (content.endsWith('\n\n' + ADDRESS)) {
+    content = content.slice(0, -('\n\n' + ADDRESS).length);
+    addr = ADDRESS;
+  }
+  const [main, ps] = content.split('\n\nP.S. ');
   const sigIdx = main.lastIndexOf('\n\nTodd\nFenceTrace');
   const text = sigIdx > -1 ? main.slice(0, sigIdx) : main;
   const paras = text.split(/\n\n/).map(function (para) {
@@ -55,6 +63,7 @@ function htmlWrap(body) {
     '<span style="color:#c0622e;font-weight:700;letter-spacing:0.3px">FenceTrace</span><br>',
     '<a href="https://fencetrace.com" style="color:#6b6052;font-size:13px;text-decoration:none">fencetrace.com</a></p>',
     ps ? '<p style="margin:20px 0 0;font-size:13px;color:#6b6052">P.S. ' + escapeHtml(ps).replace(/\n/g, ' ') + '</p>' : '',
+    addr ? '<p style="margin:18px 0 0;font-size:11px;color:#9a9087">' + escapeHtml(addr) + '</p>' : '',
     '</div></body></html>',
   ].join('\n');
 }
@@ -63,4 +72,4 @@ function buildHtmlBody(p) {
   return htmlWrap(buildBody(p));
 }
 
-module.exports = { SIGNATURE, OPT_OUT, TEMPLATE, buildBody, buildHtmlBody, htmlWrap, escapeHtml };
+module.exports = { SIGNATURE, OPT_OUT, TEMPLATE, ADDRESS, buildBody, buildHtmlBody, htmlWrap, escapeHtml };
