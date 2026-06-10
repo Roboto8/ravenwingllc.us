@@ -648,9 +648,9 @@
             <p class="empty-state" style="font-size:0.75rem;margin-bottom:8px">These costs are visible only to you — hidden from customer shares and PDFs.</p>
             <div class="form-group" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
               <span style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap">Labor $/ft</span>
-              <input type="number" id="markup-labor" min="0" step="0.50" value="0" onchange="recalculate()" style="width:70px;padding:4px 6px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px">
+              <input type="number" id="markup-labor" min="0" step="0.50" value="0" onchange="this.dataset.userSet='1';recalculate()" style="width:70px;padding:4px 6px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px">
               <span style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap">Markup %</span>
-              <input type="number" id="markup-percent" min="0" max="200" step="5" value="0" onchange="recalculate()" style="width:60px;padding:4px 6px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px">
+              <input type="number" id="markup-percent" min="0" max="200" step="5" value="0" onchange="this.dataset.userSet='1';recalculate()" style="width:60px;padding:4px 6px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px">
             </div>
             <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:4px 0;color:var(--text-mid)" id="markup-labor-row" class="summary-row">
               <span>Labor</span>
@@ -668,6 +668,8 @@
               <span>Your Profit</span>
               <span id="sum-profit">$0</span>
             </div>
+            <div id="job-min-warning" style="display:none;font-size:0.78rem;font-weight:600;color:var(--red);padding:4px 0"></div>
+            <p class="empty-state" style="font-size:0.72rem;margin-top:6px">Defaults come from your <a href="#" onclick="showAccountPanel();switchAcctTab('pricing');return false" style="color:var(--accent)">price book</a> — set labor rates once, tweak per job.</p>
           </div>
         </div>
 
@@ -806,6 +808,28 @@
           </select>
         </div>
         <div id="pricebook-list" style="max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
+
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px;margin-top:16px">Labor &amp; Markup</p>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">New estimates start from these rates — you can still adjust any single job.</p>
+        <div id="pricebook-globals">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.8rem">
+            <span style="flex:1;color:var(--text-mid)">Default labor ($/ft, all fences)</span>
+            <input type="number" step="0.25" min="0" placeholder="0.00" data-key="labor.default" style="width:72px;padding:4px 6px;background:var(--bg);border:1.5px solid var(--border);border-radius:3px;color:var(--text);font-size:0.8rem;text-align:right">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.8rem">
+            <span style="flex:1;color:var(--text-mid)">Gate install labor ($/gate)</span>
+            <input type="number" step="1" min="0" placeholder="0" data-key="labor.gate" style="width:72px;padding:4px 6px;background:var(--bg);border:1.5px solid var(--border);border-radius:3px;color:var(--text);font-size:0.8rem;text-align:right">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.8rem">
+            <span style="flex:1;color:var(--text-mid)">Default markup (%)</span>
+            <input type="number" step="1" min="0" max="200" placeholder="0" data-key="markup.percent" style="width:72px;padding:4px 6px;background:var(--bg);border:1.5px solid var(--border);border-radius:3px;color:var(--text);font-size:0.8rem;text-align:right">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:0.8rem">
+            <span style="flex:1;color:var(--text-mid)">Minimum job total ($)</span>
+            <input type="number" step="50" min="0" placeholder="none" data-key="markup.jobMin" style="width:72px;padding:4px 6px;background:var(--bg);border:1.5px solid var(--border);border-radius:3px;color:var(--text);font-size:0.8rem;text-align:right">
+          </div>
+        </div>
+
         <div style="display:flex;gap:6px">
           <button class="btn btn-sm btn-outline" onclick="savePricebook()">Save Prices</button>
           <button class="btn btn-sm btn-outline" onclick="resetPricebook()">Reset to Defaults</button>
@@ -915,7 +939,7 @@
   <script src="js/auth.js?v=20260320"></script>
   <script src="js/api.js?v=20260320"></script>
   <script src="js/regions.js?v=20260320"></script>
-  <script src="js/app.js?v=20260320"></script>
+  <script src="js/app.js?v=20260610"></script>
   <script src="js/config.js?v=20260320"></script>
   <script>
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
@@ -1224,6 +1248,12 @@
       // Init region dropdown on main panel and update per-foot prices
       initRegionSelect();
       updateFencePricesForRegion();
+      // Price book labor/markup rates flow into the per-job inputs now that
+      // the company pricebook is loaded.
+      if (typeof applyPricebookDefaults === 'function') {
+        applyPricebookDefaults();
+        if (typeof recalculate === 'function') recalculate();
+      }
 
       // Show onboarding for first-time users
       showOnboarding();
@@ -1311,11 +1341,29 @@
         html += '</div>';
       });
 
+      // Labor rate for THIS fence type + height (falls back to labor.default
+      // at estimate time when unset).
+      var laborKey = 'labor.' + type + '.' + height;
+      var laborVal = companyPricebook[laborKey] !== undefined ? companyPricebook[laborKey] : '';
+      var laborFallback = companyPricebook['labor.default'] !== undefined ? companyPricebook['labor.default'] : 0;
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;margin-bottom:4px;font-size:0.8rem;border-top:1px solid var(--border);padding-top:8px">';
+      html += '<span style="flex:1;color:var(--text-mid)">Labor ($/ft) for this fence</span>';
+      html += '<span style="color:var(--text-muted);font-size:0.72rem;min-width:50px;text-align:right">$' + Number(laborFallback).toFixed(2) + '</span>';
+      html += '<input type="number" step="0.25" min="0" placeholder="$' + Number(laborFallback).toFixed(2) + '" value="' + laborVal + '" data-key="' + laborKey + '" ';
+      html += 'style="width:72px;padding:4px 6px;background:var(--bg);border:1.5px solid var(--border);border-radius:3px;color:var(--text);font-size:0.8rem;text-align:right">';
+      html += '</div>';
+
       document.getElementById('pricebook-list').innerHTML = html;
+
+      // Populate the global labor/markup inputs from the saved price book
+      document.querySelectorAll('#pricebook-globals input[data-key]').forEach(function(inp) {
+        var v = companyPricebook[inp.dataset.key];
+        inp.value = v !== undefined ? v : '';
+      });
     }
 
     function savePricebook() {
-      var inputs = document.querySelectorAll('#pricebook-list input[data-key]');
+      var inputs = document.querySelectorAll('#pricebook-list input[data-key], #pricebook-globals input[data-key]');
       inputs.forEach(function(inp) {
         var key = inp.dataset.key;
         var val = inp.value.trim();

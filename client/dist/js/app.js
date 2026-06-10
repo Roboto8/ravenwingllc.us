@@ -4346,6 +4346,62 @@ function toggleMulchEnabled(on) {
   recalculate();
 }
 
+// === Price book labor & markup ===
+// (Pure math mirrored in bom.js computeContractorTotals for tests.)
+function pricebookNumber(key) {
+  var pb = (typeof companyPricebook !== 'undefined') ? companyPricebook : {};
+  var v = pb[key];
+  return (typeof v === 'number' && isFinite(v) && v >= 0) ? v : undefined;
+}
+
+// Fill the per-job labor/markup inputs from the price book unless the
+// contractor typed a value for THIS job (dataset.userSet) — saved rates are
+// starting points, never handcuffs.
+function applyPricebookDefaults() {
+  var laborEl = document.getElementById('markup-labor');
+  var pctEl = document.getElementById('markup-percent');
+  if (laborEl && !laborEl.dataset.userSet && !(parseFloat(laborEl.value) > 0)) {
+    var rate = pricebookNumber('labor.' + selectedFence.type + '.' + selectedHeight);
+    if (rate === undefined) rate = pricebookNumber('labor.default');
+    if (rate !== undefined) laborEl.value = rate;
+  }
+  if (pctEl && !pctEl.dataset.userSet && !(parseFloat(pctEl.value) > 0)) {
+    var pct = pricebookNumber('markup.percent');
+    if (pct !== undefined) pctEl.value = pct;
+  }
+}
+
+// One source of truth for the contractor money panel: labor (per-ft +
+// per-gate), markup, customer price, profit with margin %, and the
+// job-minimum warning. Called for both the quick total and the post-BOM
+// adjusted total so the two paths can't drift.
+function updateContractorSummary(subtotal, feet, gateCount) {
+  var laborPerFt = parseFloat(document.getElementById('markup-labor').value) || 0;
+  var markupPct = parseFloat(document.getElementById('markup-percent').value) || 0;
+  var gateLabor = pricebookNumber('labor.gate') || 0;
+  var laborCost = Math.round(feet * laborPerFt + gateCount * gateLabor);
+  var markupAmt = Math.round(subtotal * markupPct / 100);
+  var customerPrice = Math.round(subtotal + laborCost + markupAmt);
+  var profit = laborCost + markupAmt;
+  var marginPct = customerPrice > 0 ? Math.round(profit / customerPrice * 100) : 0;
+
+  document.getElementById('markup-labor-row').style.display = laborCost > 0 ? 'flex' : 'none';
+  document.getElementById('sum-labor').textContent = '$' + laborCost.toLocaleString();
+  document.getElementById('markup-markup-row').style.display = markupAmt > 0 ? 'flex' : 'none';
+  document.getElementById('sum-markup').textContent = '$' + markupAmt.toLocaleString();
+  document.getElementById('sum-customer-price').textContent = '$' + customerPrice.toLocaleString();
+  document.getElementById('sum-profit').textContent = '$' + profit.toLocaleString() + (profit > 0 ? ' (' + marginPct + '% margin)' : '');
+
+  var warnEl = document.getElementById('job-min-warning');
+  if (warnEl) {
+    var jobMin = pricebookNumber('markup.jobMin');
+    var below = jobMin !== undefined && jobMin > 0 && customerPrice > 0 && customerPrice < jobMin;
+    warnEl.style.display = below ? 'block' : 'none';
+    if (below) warnEl.textContent = '⚠ Below your $' + jobMin.toLocaleString() + ' job minimum';
+  }
+  return customerPrice;
+}
+
 function recalculate() {
   const feet = updateFootage();
   // Scale price/ft based on height (6ft is baseline)
@@ -4395,20 +4451,12 @@ function recalculate() {
 
   document.getElementById('sum-total').textContent = '$' + Math.round(total).toLocaleString();
 
-  // Contractor markup
+  // Contractor labor + markup. Defaults flow from the price book
+  // (labor.<type>.<height>, markup.percent); per-job edits override.
+  applyPricebookDefaults();
   var laborPerFt = parseFloat(document.getElementById('markup-labor').value) || 0;
   var markupPct = parseFloat(document.getElementById('markup-percent').value) || 0;
-  var laborCost = Math.round(feet * laborPerFt);
-  var markupAmt = Math.round(total * markupPct / 100);
-  var customerPrice = total + laborCost + markupAmt;
-  var profit = laborCost + markupAmt;
-
-  document.getElementById('markup-labor-row').style.display = laborCost > 0 ? 'flex' : 'none';
-  document.getElementById('sum-labor').textContent = '$' + laborCost.toLocaleString();
-  document.getElementById('markup-markup-row').style.display = markupAmt > 0 ? 'flex' : 'none';
-  document.getElementById('sum-markup').textContent = '$' + markupAmt.toLocaleString();
-  document.getElementById('sum-customer-price').textContent = '$' + Math.round(customerPrice).toLocaleString();
-  document.getElementById('sum-profit').textContent = '$' + profit.toLocaleString();
+  updateContractorSummary(total, feet, gates.length);
 
   // Auto-save to localStorage
   try {
@@ -4476,12 +4524,8 @@ function recalculate() {
       document.getElementById('mulch-total').textContent = '$' + Math.round(mulchBomTotal).toLocaleString();
     }
     document.getElementById('sum-total').textContent = '$' + Math.round(adjTotal).toLocaleString();
-    // Update contractor markup with adjusted total
-    var adjLaborCost = Math.round(feet * (parseFloat(document.getElementById('markup-labor').value) || 0));
-    var adjMarkupAmt = Math.round(adjTotal * (parseFloat(document.getElementById('markup-percent').value) || 0) / 100);
-    var adjCustomerPrice = adjTotal + adjLaborCost + adjMarkupAmt;
-    document.getElementById('sum-customer-price').textContent = '$' + Math.round(adjCustomerPrice).toLocaleString();
-    document.getElementById('sum-profit').textContent = '$' + (adjLaborCost + adjMarkupAmt).toLocaleString();
+    // Update contractor money panel with the adjusted (BOM-true) total
+    updateContractorSummary(adjTotal, feet, gates.length);
   }
 
   // Update mulch area labels (bag counts change with depth/material)

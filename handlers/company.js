@@ -60,11 +60,27 @@ module.exports.update = res.wrap(async (event) => {
     }
   }
 
-  // Validate pricebook size
+  // Validate pricebook size + shape. The pricebook is a flat map of dotted
+  // keys to numbers: material overrides ('wood.6.postCost'), labor rates
+  // ('labor.wood.6', 'labor.gate'), markup rules ('markup.percent',
+  // 'markup.jobMin'). Quotes are money — reject anything that isn't a finite
+  // non-negative number so one bad client write can't NaN every estimate the
+  // contractor sends afterward.
   if (updates.pricebook !== undefined) {
     try {
+      if (typeof updates.pricebook !== 'object' || updates.pricebook === null || Array.isArray(updates.pricebook)) {
+        return res.bad('Invalid pricebook data');
+      }
       if (JSON.stringify(updates.pricebook).length > 10000) {
         return res.bad('Pricebook data is too large');
+      }
+      const entries = Object.entries(updates.pricebook);
+      if (entries.length > 500) return res.bad('Too many pricebook entries (max 500)');
+      for (const [k, v] of entries) {
+        if (k.length > 64) return res.bad('Pricebook key too long: ' + k.slice(0, 64));
+        if (typeof v !== 'number' || !isFinite(v) || v < 0 || v > 1000000) {
+          return res.bad('Pricebook value for "' + k + '" must be a number between 0 and 1,000,000');
+        }
       }
     } catch (e) {
       return res.bad('Invalid pricebook data');
