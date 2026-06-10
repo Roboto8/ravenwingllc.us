@@ -81,8 +81,9 @@ Paste-safe in any shell (PowerShell or bash), from the repo root:
 aws route53 change-resource-record-sets --hosted-zone-id Z034210220UJFLSY9V2RP --change-batch file://outreach/dkim-records.json
 ```
 
-Then check until this says SUCCESS (usually < 30 min) — until then, product
-email from todd@fencetrace.com is unsigned:
+Then check until this says SUCCESS (usually < 30 min) — until then, the APP's
+email (trial reminders + daily digest, from noreply@fencetrace.com via SES)
+is unsigned. Outreach is unaffected: it sends from portertoddc@gmail.com.
 
 ```sh
 aws sesv2 get-email-identity --email-identity fencetrace.com --region us-east-1 --query DkimAttributes.Status --output text
