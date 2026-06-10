@@ -17,7 +17,7 @@ const path = require('path');
 
 const FROM = 'Todd at FenceTrace <todd@fencetrace.com>';
 const REPLY_TO = 'portertoddc@gmail.com';
-const SIGNATURE = '\n\nTodd\nRavenWing LLC\n804-210-9125';
+const SIGNATURE = '\n\nTodd\nRavenWing LLC';
 const OPT_OUT = "\n\nP.S. If you'd rather not hear from me, just reply \"no thanks\" and that's the end of it.";
 
 const TEMPLATE = [
@@ -31,8 +31,8 @@ const TEMPLATE = [
   'aren\'t shared with anyone, and there\'s no per-lead fee. You also see your',
   'profit on every job before you send the quote.',
   '',
-  'It\'s month to month, no contract, and I\'ll set it up with you on a call —',
-  'about 30 minutes, free.',
+  'It\'s month to month, no contract, and if you\'d like a hand loading your',
+  'prices, just reply — I\'ll set your price book up for you.',
   '',
   'Worth a look? Two-minute try: https://fencetrace.com',
 ].join('\n');
