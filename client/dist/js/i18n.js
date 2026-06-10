@@ -39,6 +39,12 @@ var I18N = {
     tool_open: 'Open',
     tool_undo: 'Undo',
     tool_clear: 'Clear',
+    tool_redo: 'Redo',
+    tool_shapes: 'Mulch Shapes',
+    tool_gap: 'Gap',
+    tool_delete: 'Delete',
+    notes_title: 'Site Notes',
+    section_bagsize: 'Concrete Bag Size',
     footage_label: 'Total',
     footage_unit: 'ft',
 
@@ -181,7 +187,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Required',
     trial_subscribe_msg: 'Upgrade to create unlimited estimates.',
     trial_subscribe_btn: 'Upgrade',
-    trial_subscribe_price: 'Upgrade — Builder $15/mo',
+    trial_subscribe_price: 'Upgrade — Pro $4.99/mo',
     estimates_remaining: '{n} estimates remaining this month',
 
     // -- Account modal --
@@ -423,6 +429,12 @@ var I18N = {
     tool_open: 'Abrir',
     tool_undo: 'Deshacer',
     tool_clear: 'Limpiar',
+    tool_redo: 'Rehacer',
+    tool_shapes: 'Formas de Mantillo',
+    tool_gap: 'Hueco',
+    tool_delete: 'Eliminar',
+    notes_title: 'Notas del Sitio',
+    section_bagsize: 'Tamano de Bolsa de Concreto',
     footage_label: 'Total',
     footage_unit: 'pies',
 
@@ -565,7 +577,7 @@ var I18N = {
     upgrade_needed: 'Mejora Requerida',
     trial_subscribe_msg: 'Mejora para crear estimaciones ilimitadas.',
     trial_subscribe_btn: 'Mejorar',
-    trial_subscribe_price: 'Mejorar — Builder $15/mes',
+    trial_subscribe_price: 'Mejorar — Pro $4.99/mes',
     estimates_remaining: '{n} estimaciones restantes este mes',
 
     // -- Account modal --
@@ -807,6 +819,12 @@ var I18N = {
     tool_open: 'Openen',
     tool_undo: 'Ongedaan',
     tool_clear: 'Wissen',
+    tool_redo: 'Opnieuw',
+    tool_shapes: 'Mulchvormen',
+    tool_gap: 'Opening',
+    tool_delete: 'Verwijderen',
+    notes_title: 'Terreinnotities',
+    section_bagsize: 'Betonzakformaat',
     footage_label: 'Totaal',
     footage_unit: 'ft',
 
@@ -949,7 +967,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Vereist',
     trial_subscribe_msg: 'Upgrade voor onbeperkte offertes.',
     trial_subscribe_btn: 'Upgraden',
-    trial_subscribe_price: 'Upgraden — Builder $15/mnd',
+    trial_subscribe_price: 'Upgraden — Pro $4.99/mnd',
     estimates_remaining: '{n} offertes resterend deze maand',
 
     // -- Account modal --
@@ -1191,6 +1209,12 @@ var I18N = {
     tool_open: 'Ouvrir',
     tool_undo: 'Annuler',
     tool_clear: 'Effacer',
+    tool_redo: 'Retablir',
+    tool_shapes: 'Formes de Paillis',
+    tool_gap: 'Ecart',
+    tool_delete: 'Supprimer',
+    notes_title: 'Notes de Chantier',
+    section_bagsize: 'Taille de Sac de Beton',
     footage_label: 'Total',
     footage_unit: 'pi',
 
@@ -1333,7 +1357,7 @@ var I18N = {
     upgrade_needed: 'Mise a Niveau Requise',
     trial_subscribe_msg: 'Passez a un forfait superieur pour des devis illimites.',
     trial_subscribe_btn: 'Mettre a Niveau',
-    trial_subscribe_price: 'Mettre a Niveau — Builder $15/mois',
+    trial_subscribe_price: 'Mettre a Niveau — Pro $4.99/mois',
     estimates_remaining: '{n} devis restants ce mois',
 
     // -- Account modal --
@@ -1575,6 +1599,12 @@ var I18N = {
     tool_open: 'Oeffnen',
     tool_undo: 'Rueckgaengig',
     tool_clear: 'Loeschen',
+    tool_redo: 'Wiederholen',
+    tool_shapes: 'Mulchformen',
+    tool_gap: 'Luecke',
+    tool_delete: 'Entfernen',
+    notes_title: 'Standortnotizen',
+    section_bagsize: 'Betonsack-Groesse',
     footage_label: 'Gesamt',
     footage_unit: 'ft',
 
@@ -1717,7 +1747,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Erforderlich',
     trial_subscribe_msg: 'Upgraden Sie fuer unbegrenzte Angebote.',
     trial_subscribe_btn: 'Upgraden',
-    trial_subscribe_price: 'Upgraden — Builder $15/Monat',
+    trial_subscribe_price: 'Upgraden — Pro $4.99/Monat',
     estimates_remaining: '{n} Angebote diesen Monat verbleibend',
 
     // -- Account modal --
@@ -1959,6 +1989,12 @@ var I18N = {
     tool_open: 'Abrir',
     tool_undo: 'Desfazer',
     tool_clear: 'Limpar',
+    tool_redo: 'Refazer',
+    tool_shapes: 'Formas de Cobertura',
+    tool_gap: 'Lacuna',
+    tool_delete: 'Excluir',
+    notes_title: 'Notas do Local',
+    section_bagsize: 'Tamanho do Saco de Concreto',
     footage_label: 'Total',
     footage_unit: 'pes',
 
@@ -2101,7 +2137,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Necessario',
     trial_subscribe_msg: 'Faca upgrade para orcamentos ilimitados.',
     trial_subscribe_btn: 'Upgrade',
-    trial_subscribe_price: 'Upgrade — Builder $15/mes',
+    trial_subscribe_price: 'Upgrade — Pro $4.99/mes',
     estimates_remaining: '{n} orcamentos restantes este mes',
 
     // -- Account modal --

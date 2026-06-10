@@ -6151,6 +6151,15 @@ function loadDemo(scenario) {
       if (stainExtra) stainExtra.on = true;
       renderExtras();
 
+      // Sample contractor rates so the demo shows the profit math, not $0.
+      // Skipped if the visitor already set their own numbers.
+      var demoLabor = document.getElementById('markup-labor');
+      var demoMarkup = document.getElementById('markup-percent');
+      if (demoLabor && !demoLabor.dataset.userSet && !(parseFloat(demoLabor.value) > 0)) demoLabor.value = 12;
+      if (demoMarkup && !demoMarkup.dataset.userSet && !(parseFloat(demoMarkup.value) > 0)) demoMarkup.value = 20;
+      var markupTitle = document.querySelector('[data-section="markup"] .section-title');
+      if (markupTitle && markupTitle.classList.contains('collapsed') && typeof toggleSection === 'function') toggleSection(markupTitle);
+
       recalculate();
       showToast('Demo loaded: Wood privacy fence — Johnson backyard');
     }, 1000);
