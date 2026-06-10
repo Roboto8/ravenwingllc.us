@@ -9,3 +9,7 @@ android/node_modules/
 .env
 .env.*
 .env.local
+
+# Gmail OAuth secrets (outreach manager)
+outreach/google-credentials.json
+outreach/google-token.json
