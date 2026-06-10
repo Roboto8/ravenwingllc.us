@@ -88,6 +88,7 @@ module.exports.create = res.wrap(async (event) => {
     createdAt: now,
     updatedAt: now
   };
+  Object.assign(item, deriveMarketFields(item));
 
   await db.put(item);
   return res.created(stripKeys(item));
@@ -128,7 +129,8 @@ module.exports.update = res.wrap(async (event) => {
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
     'fencePoints', 'fenceClosed', 'sections', 'gates', 'addons', 'bom',
     'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
-    'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos'
+    'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos',
+    'finalPrice', 'lostReason'
   ];
 
   const updates = {};
@@ -136,6 +138,15 @@ module.exports.update = res.wrap(async (event) => {
     if (body[key] !== undefined) updates[key] = body[key];
   }
   updates.updatedAt = new Date().toISOString();
+
+  // Outcome tracking for the market-data corpus: stamp transitions
+  // server-side so time-to-close and win rates are trustworthy.
+  if (updates.status && updates.status !== est.status) {
+    if (updates.status === 'sent' && !est.sentAt) updates.sentAt = updates.updatedAt;
+    if (updates.status === 'won' && !est.wonAt) updates.wonAt = updates.updatedAt;
+    if (updates.status === 'lost' && !est.lostAt) updates.lostAt = updates.updatedAt;
+  }
+  Object.assign(updates, deriveMarketFields({ ...est, ...updates }));
 
   const updated = await db.update(est.PK, est.SK, updates);
   return res.ok(stripKeys(updated));
@@ -276,10 +287,44 @@ function validateInput(body) {
     return 'Invalid approval status';
   }
   if (body.status !== undefined) {
-    const validEstStatuses = ['draft', 'sent', 'approved', 'declined', 'deleted'];
+    const validEstStatuses = ['draft', 'sent', 'approved', 'declined', 'deleted', 'won', 'lost'];
     if (!validEstStatuses.includes(body.status)) return 'Invalid status';
   }
+  if (body.finalPrice !== undefined) {
+    if (typeof body.finalPrice !== 'number' || !isFinite(body.finalPrice) ||
+        body.finalPrice < 0 || body.finalPrice > 10000000) {
+      return 'Invalid finalPrice';
+    }
+  }
+  if (body.lostReason !== undefined) {
+    if (typeof body.lostReason !== 'string' || body.lostReason.length > 500) {
+      return 'Invalid lostReason';
+    }
+  }
   return null;
+}
+
+// ---- Market-data derivation (the pricing-benchmark corpus) ----
+// regionKey: fence centroid snapped to a 0.1° grid (~7 miles). Coarse enough
+// that aggregates can't identify a property, fine enough for "fences near
+// you" benchmarks. pricePerFoot is stored denormalized so the nightly rollup
+// never has to re-derive it from drifting client math.
+function deriveMarketFields(est) {
+  const out = {};
+  const pts = Array.isArray(est.fencePoints)
+    ? est.fencePoints.filter(p => Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number')
+    : [];
+  if (pts.length) {
+    const lat = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+    const lng = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    out.regionKey = lat.toFixed(1) + ',' + lng.toFixed(1);
+  }
+  const feet = Number(est.totalFeet);
+  const cost = Number(est.totalCost);
+  if (feet > 0 && cost > 0) {
+    out.pricePerFoot = Math.round((cost / feet) * 100) / 100;
+  }
+  return out;
 }
 
 function canCreate(company) {

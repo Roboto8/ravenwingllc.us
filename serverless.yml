@@ -440,6 +440,17 @@ functions:
           rate: cron(0 10 * * ? *)
           enabled: true
 
+  marketRollup:
+    handler: handlers/market-rollup.handler
+    timeout: 120
+    events:
+      # Nightly, before the 10:00 UTC owner digest, so future digest versions
+      # can read fresh aggregates. Builds anonymized regional pricing
+      # benchmarks (MARKET#<regionKey> items) from estimate outcomes.
+      - schedule:
+          rate: cron(0 9 * * ? *)
+          enabled: true
+
   stripeWebhook:
     handler: handlers/webhook.handler
     events:
