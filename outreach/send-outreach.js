@@ -11,7 +11,7 @@
 //
 // PREREQ: fencetrace.com DKIM must be verified in SES before the first send
 // (see outreach/README.md) or Gmail-hosted recipients will junk-folder it.
-const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const fs = require('fs');
 const path = require('path');
 
@@ -57,16 +57,16 @@ async function main() {
   const batch = pending.slice(0, batchSize);
   console.log(`${prospects.length} prospects, ${pending.length} unsent, batch of ${batch.length}${send ? '' : ' (DRY RUN — pass --send to send)'}`);
 
-  const ses = new SESv2Client({ region: 'us-east-1' });
+  const ses = new SESClient({ region: 'us-east-1' });
   for (const p of batch) {
     const body = buildBody(p);
     console.log(`\n--- ${p.company} <${p.to}> — "${p.subject}"`);
     if (!send) { console.log(body.split('\n').slice(0, 4).join('\n') + '\n...'); continue; }
     await ses.send(new SendEmailCommand({
-      FromEmailAddress: FROM,
+      Source: FROM,
       ReplyToAddresses: [REPLY_TO],
       Destination: { ToAddresses: [p.to] },
-      Content: { Simple: { Subject: { Data: p.subject }, Body: { Text: { Data: body } } } },
+      Message: { Subject: { Data: p.subject }, Body: { Text: { Data: body } } },
     }));
     log[p.to] = { company: p.company, sentAt: new Date().toISOString(), subject: p.subject };
     fs.writeFileSync(logPath, JSON.stringify(log, null, 2));
