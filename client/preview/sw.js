@@ -1,17 +1,14 @@
-var CACHE_NAME = 'fencetrace-v17';
+var CACHE_NAME = 'fencetrace-v18';
 var TILE_CACHE_NAME = 'fencetrace-tiles-v1';
 var MAX_TILE_CACHE = 2000; // ~200MB of tiles at ~100KB each
+// Only stable, always-revalidated URLs belong here. JS/CSS are referenced with
+// ?v= cache-busters and served with a 1-year immutable Cache-Control, so
+// precaching their BARE paths would pull (possibly year-old) copies out of the
+// browser's HTTP cache. The runtime network-first handler caches the real
+// versioned URLs on first load, which keeps offline working.
 var STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/css/app.css',
-  '/css/style.css',
-  '/js/app.js',
-  '/js/api.js',
-  '/js/auth.js',
-  '/js/bom.js',
-  '/js/i18n.js',
-  '/js/regions.js',
   '/manifest.json',
   '/icon-192.svg',
   '/icon-512.svg',
@@ -78,7 +75,9 @@ self.addEventListener('fetch', function(e) {
       }
       return response;
     }).catch(function() {
-      return caches.match(e.request);
+      // ignoreSearch: a cached /js/app.js?v=OLD still beats a blank screen
+      // when offline after a version bump.
+      return caches.match(e.request, { ignoreSearch: true });
     })
   );
 });

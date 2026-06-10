@@ -11,6 +11,80 @@ custom:
   client:
     bucketName: ${self:custom.bucketMap.${sls:stage}}
     distributionFolder: ${self:custom.folderMap.${sls:stage}}
+    # Explicit Cache-Control per asset class. Without it S3 serves no header
+    # and browsers cache heuristically (stale HTML/CSS under new deploys; on
+    # skullbash the same gap produced an infinite reload loop with the SW).
+    # Exact-file keys only: serverless-finch folder keys must end with the OS
+    # path separator and glob keys mis-match backslash paths, so neither is
+    # reliable when deploying from Windows. When adding a NEW js/css/html
+    # file, add its key here too (and reference js/css with a fresh ?v=).
+    objectHeaders:
+      ALL_OBJECTS:
+        - name: Cache-Control
+          value: public, max-age=86400
+      index.html:
+        - name: Cache-Control
+          value: no-cache
+      landing.html:
+        - name: Cache-Control
+          value: no-cache
+      approve.html:
+        - name: Cache-Control
+          value: no-cache
+      terms.html:
+        - name: Cache-Control
+          value: no-cache
+      privacy.html:
+        - name: Cache-Control
+          value: no-cache
+      refund.html:
+        - name: Cache-Control
+          value: no-cache
+      eula.html:
+        - name: Cache-Control
+          value: no-cache
+      sw.js:
+        - name: Cache-Control
+          value: no-cache
+      manifest.json:
+        - name: Cache-Control
+          value: no-cache
+      robots.txt:
+        - name: Cache-Control
+          value: no-cache
+      sitemap.xml:
+        - name: Cache-Control
+          value: no-cache
+      .well-known/assetlinks.json:
+        - name: Cache-Control
+          value: no-cache
+      js/app.js:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      js/api.js:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      js/auth.js:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      js/bom.js:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      js/config.js:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      js/i18n.js:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      js/regions.js:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      css/app.css:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
+      css/style.css:
+        - name: Cache-Control
+          value: public, max-age=31536000, immutable
   tableName: fencecalc-${sls:stage}
   assetsBucket: fencecalc-assets-${sls:stage}
 
