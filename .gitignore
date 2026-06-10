@@ -13,3 +13,4 @@ android/node_modules/
 # Gmail OAuth secrets (outreach manager)
 outreach/google-credentials.json
 outreach/google-token.json
+outreach/scan.log
