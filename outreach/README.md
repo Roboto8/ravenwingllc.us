@@ -75,16 +75,17 @@ SES has DKIM enabled but the DNS records are NOT in Route53 yet (status:
 PENDING as of tonight; Claude's automode is not permitted to modify prod
 DNS). Run this once, by hand:
 
-```sh
-aws route53 change-resource-record-sets --hosted-zone-id Z034210220UJFLSY9V2RP \
-  --change-batch '{"Changes":[
-    {"Action":"UPSERT","ResourceRecordSet":{"Name":"43ogbwuij72wwudhkal4mccmfbtol43l._domainkey.fencetrace.com","Type":"CNAME","TTL":300,"ResourceRecords":[{"Value":"43ogbwuij72wwudhkal4mccmfbtol43l.dkim.amazonses.com"}]}},
-    {"Action":"UPSERT","ResourceRecordSet":{"Name":"akr36p4d6ur4mzufrloe3usxv4jt3lyi._domainkey.fencetrace.com","Type":"CNAME","TTL":300,"ResourceRecords":[{"Value":"akr36p4d6ur4mzufrloe3usxv4jt3lyi.dkim.amazonses.com"}]}},
-    {"Action":"UPSERT","ResourceRecordSet":{"Name":"klcdwuejsh3jrklhw5eeeh7ltqcsgg4z._domainkey.fencetrace.com","Type":"CNAME","TTL":300,"ResourceRecords":[{"Value":"klcdwuejsh3jrklhw5eeeh7ltqcsgg4z.dkim.amazonses.com"}]}}]}'
+Paste-safe in any shell (PowerShell or bash), from the repo root:
 
-# Until this says SUCCESS, product email from todd@fencetrace.com is unsigned:
-aws sesv2 get-email-identity --email-identity fencetrace.com --region us-east-1 \
-  --query 'DkimAttributes.Status'
+```sh
+aws route53 change-resource-record-sets --hosted-zone-id Z034210220UJFLSY9V2RP --change-batch file://outreach/dkim-records.json
+```
+
+Then check until this says SUCCESS (usually < 30 min) — until then, product
+email from todd@fencetrace.com is unsigned:
+
+```sh
+aws sesv2 get-email-identity --email-identity fencetrace.com --region us-east-1 --query DkimAttributes.Status --output text
 ```
 
 This matters for the app's own email (approvals, notifications), not the

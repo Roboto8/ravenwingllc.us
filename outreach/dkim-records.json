@@ -1,0 +1,7 @@
+{
+  "Changes": [
+    { "Action": "UPSERT", "ResourceRecordSet": { "Name": "43ogbwuij72wwudhkal4mccmfbtol43l._domainkey.fencetrace.com", "Type": "CNAME", "TTL": 300, "ResourceRecords": [{ "Value": "43ogbwuij72wwudhkal4mccmfbtol43l.dkim.amazonses.com" }] } },
+    { "Action": "UPSERT", "ResourceRecordSet": { "Name": "akr36p4d6ur4mzufrloe3usxv4jt3lyi._domainkey.fencetrace.com", "Type": "CNAME", "TTL": 300, "ResourceRecords": [{ "Value": "akr36p4d6ur4mzufrloe3usxv4jt3lyi.dkim.amazonses.com" }] } },
+    { "Action": "UPSERT", "ResourceRecordSet": { "Name": "klcdwuejsh3jrklhw5eeeh7ltqcsgg4z._domainkey.fencetrace.com", "Type": "CNAME", "TTL": 300, "ResourceRecords": [{ "Value": "klcdwuejsh3jrklhw5eeeh7ltqcsgg4z.dkim.amazonses.com" }] } }
+  ]
+}
