@@ -17,7 +17,7 @@ const path = require('path');
 
 const FROM = 'Todd at FenceTrace <todd@fencetrace.com>';
 const REPLY_TO = 'portertoddc@gmail.com';
-const SIGNATURE = '\n\nTodd\nRavenWing LLC';
+const SIGNATURE = '\n\nTodd\nFenceTrace';
 const OPT_OUT = "\n\nP.S. If you'd rather not hear from me, just reply \"no thanks\" and that's the end of it.";
 
 const TEMPLATE = [
