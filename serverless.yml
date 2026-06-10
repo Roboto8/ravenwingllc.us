@@ -43,6 +43,9 @@ custom:
       eula.html:
         - name: Cache-Control
           value: no-cache
+      compare-fence-lead-costs.html:
+        - name: Cache-Control
+          value: no-cache
       sw.js:
         - name: Cache-Control
           value: no-cache

@@ -1254,6 +1254,8 @@
         applyPricebookDefaults();
         if (typeof recalculate === 'function') recalculate();
       }
+      // Delayed so it never competes with the onboarding tour.
+      setTimeout(maybePromptPricebookSetup, 5000);
 
       // Show onboarding for first-time users
       showOnboarding();
@@ -1395,6 +1397,36 @@
       renderPricebook();
       recalculate();
       showToast('Prices reset to regional defaults');
+    }
+
+    // First-run nudge: contractors who never open the Pricing tab never get
+    // accurate quotes — so after login, if no labor/markup rates are saved
+    // and they haven't dismissed it, walk them to the price book once.
+    function maybePromptPricebookSetup() {
+      try {
+        if (typeof Auth === 'undefined' || !Auth.isLoggedIn()) return;
+        if (localStorage.getItem('fc_pb_prompt_done')) return;
+        for (var k in companyPricebook) {
+          if (k.indexOf('labor.') === 0 || k.indexOf('markup.') === 0) return;
+        }
+        var el = document.getElementById('pb-setup-banner');
+        if (el) el.style.display = 'block';
+      } catch (e) { /* never block the app over a nudge */ }
+    }
+
+    function pbSetupGo() {
+      localStorage.setItem('fc_pb_prompt_done', '1');
+      var el = document.getElementById('pb-setup-banner');
+      if (el) el.style.display = 'none';
+      showAccountPanel();
+      switchAcctTab('pricing');
+      if (typeof renderPricebook === 'function') renderPricebook();
+    }
+
+    function pbSetupLater() {
+      localStorage.setItem('fc_pb_prompt_done', '1');
+      var el = document.getElementById('pb-setup-banner');
+      if (el) el.style.display = 'none';
     }
 
     // Get effective pricing for BOM calculations (regional + pricebook overrides)
@@ -2576,6 +2608,17 @@
     </div>
   </div>
   <!-- Cookie banner is gated by maybeShowCookieBanner() — shown only after onboarding is dismissed -->
+
+  <!-- First-run price book setup prompt: shown once to logged-in users who
+       have no labor/markup rates saved. Big buttons, plain words. -->
+  <div id="pb-setup-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9500;background:var(--bg,#f5f0eb);border:2px solid var(--accent,#c0622e);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.25);padding:16px;max-width:430px;width:calc(100% - 24px);font-family:var(--font,Inter,sans-serif)">
+    <p style="font-size:1rem;font-weight:700;color:var(--text,#2c2417);margin-bottom:4px">Set your prices once &mdash; every estimate uses them</p>
+    <p style="font-size:0.88rem;color:var(--text-mid,#4a4030);margin-bottom:12px">Add your material costs and labor rates. Takes about 2 minutes, and you can change them anytime.</p>
+    <div style="display:flex;gap:8px">
+      <button onclick="pbSetupGo()" style="flex:1;padding:14px;background:var(--accent,#c0622e);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer">Set My Prices</button>
+      <button onclick="pbSetupLater()" style="padding:14px 18px;background:transparent;color:var(--text-mid,#4a4030);border:1.5px solid var(--border,#d4cdc4);border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer">Later</button>
+    </div>
+  </div>
 
 </body>
 </html>
