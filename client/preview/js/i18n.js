@@ -187,7 +187,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Required',
     trial_subscribe_msg: 'Upgrade to create unlimited estimates.',
     trial_subscribe_btn: 'Upgrade',
-    trial_subscribe_price: 'Upgrade — Pro $4.99/mo',
+    trial_subscribe_price: 'Upgrade — Pro $29/mo',
     estimates_remaining: '{n} estimates remaining this month',
 
     // -- Account modal --
@@ -577,7 +577,7 @@ var I18N = {
     upgrade_needed: 'Mejora Requerida',
     trial_subscribe_msg: 'Mejora para crear estimaciones ilimitadas.',
     trial_subscribe_btn: 'Mejorar',
-    trial_subscribe_price: 'Mejorar — Pro $4.99/mes',
+    trial_subscribe_price: 'Mejorar — Pro $29/mes',
     estimates_remaining: '{n} estimaciones restantes este mes',
 
     // -- Account modal --
@@ -967,7 +967,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Vereist',
     trial_subscribe_msg: 'Upgrade voor onbeperkte offertes.',
     trial_subscribe_btn: 'Upgraden',
-    trial_subscribe_price: 'Upgraden — Pro $4.99/mnd',
+    trial_subscribe_price: 'Upgraden — Pro $29/mnd',
     estimates_remaining: '{n} offertes resterend deze maand',
 
     // -- Account modal --
@@ -1357,7 +1357,7 @@ var I18N = {
     upgrade_needed: 'Mise a Niveau Requise',
     trial_subscribe_msg: 'Passez a un forfait superieur pour des devis illimites.',
     trial_subscribe_btn: 'Mettre a Niveau',
-    trial_subscribe_price: 'Mettre a Niveau — Pro $4.99/mois',
+    trial_subscribe_price: 'Mettre a Niveau — Pro $29/mois',
     estimates_remaining: '{n} devis restants ce mois',
 
     // -- Account modal --
@@ -1747,7 +1747,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Erforderlich',
     trial_subscribe_msg: 'Upgraden Sie fuer unbegrenzte Angebote.',
     trial_subscribe_btn: 'Upgraden',
-    trial_subscribe_price: 'Upgraden — Pro $4.99/Monat',
+    trial_subscribe_price: 'Upgraden — Pro $29/Monat',
     estimates_remaining: '{n} Angebote diesen Monat verbleibend',
 
     // -- Account modal --
@@ -2137,7 +2137,7 @@ var I18N = {
     upgrade_needed: 'Upgrade Necessario',
     trial_subscribe_msg: 'Faca upgrade para orcamentos ilimitados.',
     trial_subscribe_btn: 'Upgrade',
-    trial_subscribe_price: 'Upgrade — Pro $4.99/mes',
+    trial_subscribe_price: 'Upgrade — Pro $29/mes',
     estimates_remaining: '{n} orcamentos restantes este mes',
 
     // -- Account modal --
