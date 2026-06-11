@@ -1518,7 +1518,7 @@
           var n = Number(String(cells[i]).replace(/\$/g, ''));
           if (isFinite(n) && String(cells[i]).match(/\d/)) { val = n; break; }
         }
-        if (key && val !== null && validVal(val)) entries[key] = val;
+        if (key && val !== null && validVal(val) && Object.keys(entries).length < 500) entries[key] = val; // 500 = server-side pricebook entry cap
         else if (/\d/.test(line) && (/[A-Za-z]\w*\.[A-Za-z0-9]/.test(line) || /cost|price|labor|markup|perfoot/i.test(line))) skipped++;
       });
       return { entries: entries, count: Object.keys(entries).length, skipped: skipped };

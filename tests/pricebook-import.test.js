@@ -65,6 +65,13 @@ describe('parsePricebookText', () => {
     expect(r.skipped).toBe(2);
   });
 
+  test('caps imported entries at the server limit (500)', () => {
+    const lines = [];
+    for (let i = 0; i < 600; i++) lines.push('labor.k' + i + ' 5');
+    const r = parsePricebookText(lines.join('\n'));
+    expect(r.count).toBe(500);
+  });
+
   test('empty / prose-only input returns zero without errors', () => {
     expect(parsePricebookText('').count).toBe(0);
     expect(parsePricebookText('hello world').count).toBe(0);
