@@ -677,6 +677,43 @@ function parsePricebookText(text) {
   return { entries: entries, count: Object.keys(entries).length, skipped: skipped };
 }
 
+// === Material-list paste parser (compare worksheet) ===
+// Pure mirror of parseMaterialListText in app.js — keep the two in sync.
+function parseMaterialListText(text) {
+  var rows = [];
+  var skipped = 0;
+  var HEADERS = { item: 1, name: 1, material: 1, description: 1, 'price-book field': 1 };
+  if (!text || !String(text).trim()) return { rows: rows, skipped: 0 };
+  String(text).split(/\r?\n/).forEach(function(line) {
+    if (rows.length >= 50) return; // server cap on manualBom entries
+    var t = line.replace(/^\s*\|/, '').replace(/\|\s*$/, '').trim();
+    if (!t || /^[-|:\s]+$/.test(t)) return; // blank / md separator rows
+    var name = null, qty = null, unitCost = null;
+    var cells = t.split(/[|,\t]+/).map(function(c) { return c.trim(); }).filter(Boolean);
+    if (cells.length >= 2) {
+      name = cells[0];
+      for (var i = 1; i < cells.length; i++) {
+        var n = Number(String(cells[i]).replace(/[$x×\s]/gi, ''));
+        if (!isFinite(n) || !/\d/.test(cells[i])) continue;
+        if (qty === null) { qty = n; } else { unitCost = n; break; }
+      }
+    }
+    if (qty === null) {
+      var m = t.match(/^(.*?)\s+[x×]?\s*(\d+(?:\.\d+)?)(?:\s+\$?(\d+(?:\.\d+)?))?\s*$/i);
+      if (m && m[1]) { name = m[1].trim(); qty = Number(m[2]); unitCost = m[3] != null ? Number(m[3]) : unitCost; }
+    }
+    if (name && HEADERS[name.toLowerCase()]) return; // header row, not an error
+    var validQty = qty !== null && isFinite(qty) && qty > 0 && qty <= 10000;
+    var validCost = unitCost === null || (isFinite(unitCost) && unitCost >= 0 && unitCost <= 1000000);
+    if (name && name.length <= 200 && validQty && validCost) {
+      rows.push({ name: name, qty: qty, unitCost: unitCost === null ? 0 : unitCost });
+    } else if (/\d/.test(t)) {
+      skipped++;
+    }
+  });
+  return { rows: rows, skipped: skipped };
+}
+
 module.exports = {
   BOM,
   MULCH,
@@ -697,5 +734,6 @@ module.exports = {
   customItemsTotal,
   normalizeBomName,
   compareManualBom,
-  parsePricebookText
+  parsePricebookText,
+  parseMaterialListText
 };

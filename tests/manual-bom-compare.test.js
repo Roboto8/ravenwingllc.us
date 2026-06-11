@@ -1,6 +1,54 @@
 // Manual BOM compare — the contractor-private worksheet matcher
 // (mirror of app.js compareManualBom; compare-only, never feeds totals)
-const { normalizeBomName, compareManualBom } = require('../client/dist/js/bom');
+const { normalizeBomName, compareManualBom, parseMaterialListText } = require('../client/dist/js/bom');
+
+describe('parseMaterialListText (compare worksheet paste)', () => {
+  test('plain "name x20" and "name qty price" lines', () => {
+    const r = parseMaterialListText('4x4x8 posts x20\npickets 300 2.38\nconcrete bags 45');
+    expect(r.rows).toEqual([
+      { name: '4x4x8 posts', qty: 20, unitCost: 0 },
+      { name: 'pickets', qty: 300, unitCost: 2.38 },
+      { name: 'concrete bags', qty: 45, unitCost: 0 }
+    ]);
+    expect(r.skipped).toBe(0);
+  });
+
+  test('CSV with price and the app\'s own export shape (name,qty,unit,cost,total)', () => {
+    const r = parseMaterialListText('2x4x16 rails, 29, 13.88\n4x4x8 line posts,18,ea,9.98,179.64');
+    expect(r.rows[0]).toEqual({ name: '2x4x16 rails', qty: 29, unitCost: 13.88 });
+    expect(r.rows[1]).toEqual({ name: '4x4x8 line posts', qty: 18, unitCost: 9.98 });
+  });
+
+  test('markdown table with header and separator rows', () => {
+    const r = parseMaterialListText([
+      '| Item | Qty | Price |',
+      '|------|----:|------:|',
+      '| dog-ear pickets | 323 | $2.38 |',
+      '| post caps | 20 | 7.98 |'
+    ].join('\n'));
+    expect(r.rows).toEqual([
+      { name: 'dog-ear pickets', qty: 323, unitCost: 2.38 },
+      { name: 'post caps', qty: 20, unitCost: 7.98 }
+    ]);
+    expect(r.skipped).toBe(0);
+  });
+
+  test('caps at 50 rows and validates ranges', () => {
+    const lines = [];
+    for (let i = 0; i < 60; i++) lines.push('item' + i + ' 5');
+    const r = parseMaterialListText(lines.join('\n'));
+    expect(r.rows.length).toBe(50);
+    const bad = parseMaterialListText('thing 50000\nother 5 2000000');
+    expect(bad.rows.length).toBe(0);
+    expect(bad.skipped).toBe(2);
+  });
+
+  test('empty and prose input degrade safely', () => {
+    expect(parseMaterialListText('').rows).toEqual([]);
+    expect(parseMaterialListText('no numbers here').rows).toEqual([]);
+    expect(parseMaterialListText(null).rows).toEqual([]);
+  });
+});
 
 describe('normalizeBomName', () => {
   test('lowercases, strips punctuation, collapses whitespace', () => {

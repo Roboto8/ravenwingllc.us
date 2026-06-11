@@ -635,10 +635,23 @@
             <div id="bom-compare" style="display:none;margin-top:8px">
               <p class="empty-state" style="font-size:0.72rem;margin:0 0 6px">Enter what you'd buy for this job — quantities are matched against FenceTrace's count. Only you see this; it never changes the estimate.</p>
               <div id="manual-bom-list"></div>
-              <button class="add-custom-btn" onclick="addManualBomItem()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                <span>Add item</span>
-              </button>
+              <div style="display:flex;gap:6px">
+                <button class="add-custom-btn" onclick="addManualBomItem()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                  <span>Add item</span>
+                </button>
+                <button class="add-custom-btn" onclick="toggleCompareImport()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+                  <span>Paste list</span>
+                </button>
+              </div>
+              <div id="compare-import" style="display:none;margin-top:6px">
+                <textarea id="compare-import-text" rows="5" style="width:100%;padding:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;font-family:monospace" placeholder="4x4x8 posts x20&#10;pickets, 300, 2.38&#10;concrete bags 45"></textarea>
+                <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+                  <button class="btn btn-sm" onclick="applyCompareImport()">Add to list</button>
+                  <span id="compare-import-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
+                </div>
+              </div>
               <div id="manual-bom-summary" style="font-size:0.78rem;margin-top:6px"></div>
             </div>
           </div>
