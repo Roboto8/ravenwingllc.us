@@ -637,6 +637,46 @@ function compareManualBom(manualItems, bomItems) {
   return { rows: rows, manualTotal: Math.round(manualTotal * 100) / 100, unmatchedComputed: unmatchedComputed };
 }
 
+// === Price-paste import parser ===
+// Pure mirror of parsePricebookText in index.html — keep the two in sync.
+// Accepts a JSON object, markdown table rows, "key value" / key=value / CSV
+// lines; only well-formed pricebook keys and sane numbers survive.
+function parsePricebookText(text) {
+  // Null prototype: pasted text can't pollute via __proto__/constructor keys
+  var entries = Object.create(null);
+  var skipped = 0;
+  var keyRe = /^(?:[a-z][a-z-]*\.(?:extra\.[A-Za-z][A-Za-z0-9]*|\d+\.[A-Za-z][A-Za-z0-9]*)|labor\.[A-Za-z0-9.-]+|markup\.[A-Za-z]+|perFoot\.[a-z-]+)$/;
+  function validKey(k) { return typeof k === 'string' && k.length <= 64 && keyRe.test(k); }
+  function validVal(v) { var n = Number(v); return isFinite(n) && n >= 0 && n <= 1000000; }
+  if (!text || !String(text).trim()) return { entries: entries, count: 0, skipped: 0 };
+  try {
+    var obj = JSON.parse(text);
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      Object.keys(obj).forEach(function(k) {
+        if (validKey(k) && validVal(obj[k])) entries[k] = Number(obj[k]);
+        else skipped++;
+      });
+      return { entries: entries, count: Object.keys(entries).length, skipped: skipped };
+    }
+  } catch (e) { /* not JSON — fall through to line parsing */ }
+  String(text).split(/\r?\n/).forEach(function(line) {
+    var cells = line.split(/[|,\t=:\s]+/).map(function(c) { return c.trim(); }).filter(Boolean);
+    if (!cells.length) return;
+    var key = null, val = null;
+    for (var i = 0; i < cells.length; i++) {
+      if (key === null) {
+        if (validKey(cells[i])) key = cells[i];
+        continue;
+      }
+      var n = Number(String(cells[i]).replace(/\$/g, ''));
+      if (isFinite(n) && String(cells[i]).match(/\d/)) { val = n; break; }
+    }
+    if (key && val !== null && validVal(val)) entries[key] = val;
+    else if (/\d/.test(line) && (/[A-Za-z]\w*\.[A-Za-z0-9]/.test(line) || /cost|price|labor|markup|perfoot/i.test(line))) skipped++;
+  });
+  return { entries: entries, count: Object.keys(entries).length, skipped: skipped };
+}
+
 module.exports = {
   BOM,
   MULCH,
@@ -656,5 +696,6 @@ module.exports = {
   decodeEstimate,
   customItemsTotal,
   normalizeBomName,
-  compareManualBom
+  compareManualBom,
+  parsePricebookText
 };

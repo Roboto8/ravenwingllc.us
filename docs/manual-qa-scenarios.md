@@ -9,7 +9,12 @@ itself. Each scenario also exercises one of the 2026-06-11 fixes.
 Trace real yards near you — your own street works. Your browser is already
 excluded from analytics if you visited `?internal=1`.
 
-## Step 0 — Load this price book (Account → Pricing, or tap prices in the BOM)
+## Step 0 — Load this price book
+
+Account → Pricing → **Import (paste)** → paste the wood table below verbatim
+(markdown and all — the parser reads it) → Apply. It should report
+"Imported 10 prices". The chain-link/vinyl/labor lines further down paste the
+same way as plain `key value` lines.
 
 Wood (6 ft keys unless noted):
 
