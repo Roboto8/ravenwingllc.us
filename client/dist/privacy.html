@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // Internal-traffic kill switch: open any page once with ?internal=1 to
+    // permanently exclude this browser from analytics (?internal=0 re-enables).
+    // Non-production hosts (dev bucket, localhost) never send analytics.
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get('internal');
+        if (q === '1') localStorage.setItem('fc_internal', '1');
+        if (q === '0') localStorage.removeItem('fc_internal');
+        if (localStorage.getItem('fc_internal') === '1' || (location.hostname !== 'fencetrace.com' && location.hostname !== 'www.fencetrace.com')) {
+          window['ga-disable-G-JWN3TZB9P5'] = true;
+        }
+      } catch (e) {}
+    })();
+  </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWN3TZB9P5"></script>
   <script>
@@ -11,7 +26,7 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy — FenceTrace</title>
+  <title>Privacy Policy â€” FenceTrace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">

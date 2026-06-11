@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // Internal-traffic kill switch: open any page once with ?internal=1 to
+    // permanently exclude this browser from analytics (?internal=0 re-enables).
+    // Non-production hosts (dev bucket, localhost) never send analytics.
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get('internal');
+        if (q === '1') localStorage.setItem('fc_internal', '1');
+        if (q === '0') localStorage.removeItem('fc_internal');
+        if (localStorage.getItem('fc_internal') === '1' || (location.hostname !== 'fencetrace.com' && location.hostname !== 'www.fencetrace.com')) {
+          window['ga-disable-G-JWN3TZB9P5'] = true;
+        }
+      } catch (e) {}
+    })();
+  </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWN3TZB9P5"></script>
   <script>
@@ -12,7 +27,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>What Fence Leads Really Cost in 2026 | FenceTrace</title>
-  <meta name="description" content="Fence contractors pay $35–$100+ per shared lead on Angi, HomeAdvisor, and Thumbtack — split with 3–8 competitors, with half ghosting. Here's the math, and the alternative: instant estimates from your own price book, with leads that stay yours alone.">
+  <meta name="description" content="Fence contractors pay $35â€“$100+ per shared lead on Angi, HomeAdvisor, and Thumbtack â€” split with 3â€“8 competitors, with half ghosting. Here's the math, and the alternative: instant estimates from your own price book, with leads that stay yours alone.">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://fencetrace.com/compare-fence-lead-costs.html">
 
@@ -20,14 +35,14 @@
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://fencetrace.com/compare-fence-lead-costs.html">
   <meta property="og:title" content="What Fence Leads Really Cost in 2026">
-  <meta property="og:description" content="Fence contractors pay $35–$100+ per shared lead, split with 3–8 competitors. Here's the math — and what a flat-rate instant estimate tool changes.">
+  <meta property="og:description" content="Fence contractors pay $35â€“$100+ per shared lead, split with 3â€“8 competitors. Here's the math â€” and what a flat-rate instant estimate tool changes.">
   <meta property="og:image" content="https://fencetrace.com/icon-512.png">
   <meta property="og:site_name" content="FenceTrace">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="What Fence Leads Really Cost in 2026">
-  <meta name="twitter:description" content="The real per-job math on shared leads — and the flat-rate alternative.">
+  <meta name="twitter:description" content="The real per-job math on shared leads â€” and the flat-rate alternative.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,9 +89,9 @@
 
   <h2>The sticker price isn't the real price</h2>
   <p>A fence lead from the big platforms typically runs <strong>$35&ndash;$100+</strong>. That sounds survivable next to a $4,000&ndash;$12,000 fence job. But the sticker price isn't what you actually pay, because:</p>
-  <p><strong>1. The same lead is sold to 3&ndash;8 contractors.</strong> You're not buying a customer — you're buying a spot in a bidding war that starts the moment everyone's phone buzzes.</p>
+  <p><strong>1. The same lead is sold to 3&ndash;8 contractors.</strong> You're not buying a customer â€” you're buying a spot in a bidding war that starts the moment everyone's phone buzzes.</p>
   <p><strong>2. Around half never answer.</strong> Many homeowners fill out the form expecting an instant price, get a wall of phone calls instead, and go quiet.</p>
-  <p><strong>3. You pay either way.</strong> Win or lose, ghost or no-show — the charge stands.</p>
+  <p><strong>3. You pay either way.</strong> Win or lose, ghost or no-show â€” the charge stands.</p>
 
   <h2>The real math</h2>
   <table>

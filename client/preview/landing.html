@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // Internal-traffic kill switch: open any page once with ?internal=1 to
+    // permanently exclude this browser from analytics (?internal=0 re-enables).
+    // Non-production hosts (dev bucket, localhost) never send analytics.
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get('internal');
+        if (q === '1') localStorage.setItem('fc_internal', '1');
+        if (q === '0') localStorage.removeItem('fc_internal');
+        if (localStorage.getItem('fc_internal') === '1' || (location.hostname !== 'fencetrace.com' && location.hostname !== 'www.fencetrace.com')) {
+          window['ga-disable-G-JWN3TZB9P5'] = true;
+        }
+      } catch (e) {}
+    })();
+  </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWN3TZB9P5"></script>
   <script>
@@ -11,8 +26,8 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FenceTrace — Fence Estimating Software for Contractors | Satellite BOM Tool</title>
-  <meta name="description" content="FenceTrace is fence estimating software that lets contractors draw fence lines on satellite imagery and instantly generate a detailed bill of materials. Wood, vinyl, chain link, aluminum, iron — plus mulch estimating. Every post, rail, picket, bolt, and concrete bag. Try it free.">
+  <title>FenceTrace â€” Fence Estimating Software for Contractors | Satellite BOM Tool</title>
+  <meta name="description" content="FenceTrace is fence estimating software that lets contractors draw fence lines on satellite imagery and instantly generate a detailed bill of materials. Wood, vinyl, chain link, aluminum, iron â€” plus mulch estimating. Every post, rail, picket, bolt, and concrete bag. Try it free.">
   <meta name="keywords" content="fence estimating software, fence calculator, fence bid tool, fence contractor software, mulch calculator, landscape estimating, fence material calculator, fence cost calculator, bill of materials, satellite fence estimating">
   <meta name="author" content="RavenWing LLC">
   <link rel="canonical" href="https://fencetrace.com/landing.html">
@@ -20,14 +35,14 @@
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://fencetrace.com/">
-  <meta property="og:title" content="FenceTrace — Fence Estimates in 60 Seconds">
+  <meta property="og:title" content="FenceTrace â€” Fence Estimates in 60 Seconds">
   <meta property="og:description" content="Draw fence lines on satellite imagery. Get an instant bill of materials with every post, rail, picket, bolt, and concrete bag. 5 fence types, mulch estimating, customer approval workflow. Built for fence contractors.">
   <meta property="og:image" content="https://fencetrace.com/icon-512.png">
   <meta property="og:site_name" content="FenceTrace">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FenceTrace — Fence Estimating Software">
+  <meta name="twitter:title" content="FenceTrace â€” Fence Estimating Software">
   <meta name="twitter:description" content="Satellite fence estimates with full BOM. Mulch calculator included. Built for fence contractors.">
   <meta name="twitter:image" content="https://fencetrace.com/icon-512.png">
 
@@ -96,7 +111,7 @@
         "name": "Does FenceTrace work on mobile?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. FenceTrace works on desktop, tablet, and phone. You can draw estimates on your phone right from the job site, or use a laptop at your desk. No app download required — it runs in any modern browser."
+          "text": "Yes. FenceTrace works on desktop, tablet, and phone. You can draw estimates on your phone right from the job site, or use a laptop at your desk. No app download required â€” it runs in any modern browser."
         }
       },
       {
@@ -158,7 +173,7 @@
 
     a { color: inherit; text-decoration: none; }
 
-    /* ── Nav ── */
+    /* â”€â”€ Nav â”€â”€ */
     .site-nav {
       position: fixed;
       top: 0;
@@ -218,7 +233,7 @@
 
     .nav-cta:hover { background: var(--accent-hover); }
 
-    /* ── Hero ── */
+    /* â”€â”€ Hero â”€â”€ */
     .hero {
       padding: 140px 24px 80px;
       text-align: center;
@@ -305,7 +320,7 @@
       background: var(--surface);
     }
 
-    /* ── App mockup ── */
+    /* â”€â”€ App mockup â”€â”€ */
     .hero-mockup {
       max-width: 960px;
       margin: 0 auto;
@@ -440,7 +455,7 @@
       font-weight: 600;
     }
 
-    /* ── Section styles ── */
+    /* â”€â”€ Section styles â”€â”€ */
     .section-label {
       display: inline-block;
       font-size: 0.78rem;
@@ -467,7 +482,7 @@
       margin-bottom: 48px;
     }
 
-    /* ── Features ── */
+    /* â”€â”€ Features â”€â”€ */
     .features {
       padding: 80px 24px;
       max-width: 1120px;
@@ -539,7 +554,7 @@
       margin-bottom: 10px;
     }
 
-    /* ── How it works ── */
+    /* â”€â”€ How it works â”€â”€ */
     .how-it-works {
       padding: 80px 24px;
       background: var(--surface);
@@ -594,7 +609,7 @@
       line-height: 1.6;
     }
 
-    /* ── Pricing ── */
+    /* â”€â”€ Pricing â”€â”€ */
     .pricing {
       padding: 80px 24px;
       max-width: 1120px;
@@ -733,7 +748,7 @@
       margin-top: 24px;
     }
 
-    /* ── FAQ ── */
+    /* â”€â”€ FAQ â”€â”€ */
     .faq {
       padding: 80px 24px;
       background: var(--surface);
@@ -801,7 +816,7 @@
       line-height: 1.65;
     }
 
-    /* ── CTA ── */
+    /* â”€â”€ CTA â”€â”€ */
     .cta-section {
       padding: 80px 24px;
       text-align: center;
@@ -826,7 +841,7 @@
       line-height: 1.6;
     }
 
-    /* ── Footer ── */
+    /* â”€â”€ Footer â”€â”€ */
     .site-footer {
       padding: 40px 24px;
       border-top: 1px solid var(--border);
@@ -869,7 +884,7 @@
 
     .footer-links a:hover { color: var(--text); }
 
-    /* ── Responsive ── */
+    /* â”€â”€ Responsive â”€â”€ */
     @media (max-width: 900px) {
       .features-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1097,7 +1112,7 @@
   <section class="pricing" id="pricing">
     <div class="section-label">Pricing</div>
     <h2 class="section-heading">Simple pricing, no surprises</h2>
-    <p class="section-sub" style="margin-left:auto;margin-right:auto;">Start free with 2 estimates/month. Upgrade to Pro for unlimited — just $29/mo.</p>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;">Start free with 2 estimates/month. Upgrade to Pro for unlimited â€” just $29/mo.</p>
 
     <div class="pricing-grid">
       <!-- Starter -->

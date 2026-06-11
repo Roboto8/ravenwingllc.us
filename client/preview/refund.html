@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // Internal-traffic kill switch: open any page once with ?internal=1 to
+    // permanently exclude this browser from analytics (?internal=0 re-enables).
+    // Non-production hosts (dev bucket, localhost) never send analytics.
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get('internal');
+        if (q === '1') localStorage.setItem('fc_internal', '1');
+        if (q === '0') localStorage.removeItem('fc_internal');
+        if (localStorage.getItem('fc_internal') === '1' || (location.hostname !== 'fencetrace.com' && location.hostname !== 'www.fencetrace.com')) {
+          window['ga-disable-G-JWN3TZB9P5'] = true;
+        }
+      } catch (e) {}
+    })();
+  </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWN3TZB9P5"></script>
   <script>
@@ -11,7 +26,7 @@
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Refund Policy — FenceTrace</title>
+  <title>Refund Policy â€” FenceTrace</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -32,7 +47,7 @@
     <p class="date">Effective: March 18, 2026</p>
 
     <h2>Starter Plan</h2>
-    <p>All new accounts start on the free Starter plan, which includes 2 estimates per month — no credit card required. Share an estimate to unlock a bonus third estimate each month. You can upgrade to a paid plan anytime for unlimited estimates and additional features.</p>
+    <p>All new accounts start on the free Starter plan, which includes 2 estimates per month â€” no credit card required. Share an estimate to unlock a bonus third estimate each month. You can upgrade to a paid plan anytime for unlimited estimates and additional features.</p>
 
     <h2>Monthly Subscriptions</h2>
     <p>FenceTrace subscriptions are billed monthly. You can cancel your subscription at any time from your Account settings. When you cancel:</p>
