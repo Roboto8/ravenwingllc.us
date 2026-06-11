@@ -395,15 +395,28 @@
       }).join('');
     }
 
-    // Addons
+    // Addons — current estimates store an ARRAY of {id, name, unit, price};
+    // estimates saved before that change have the legacy {removal: true, ...} object.
     const addonLabels = { removal: 'Old Fence Removal', permit: 'Permit Fee', stain: 'Stain/Seal' };
     if (est.addons) {
-      const activeAddons = Object.keys(est.addons).filter(function(k) { return est.addons[k]; });
-      if (activeAddons.length > 0) {
-        document.getElementById('addons-card').style.display = 'block';
-        document.getElementById('addons-list').innerHTML = activeAddons.map(function(k) {
+      var addonRows = [];
+      if (Array.isArray(est.addons)) {
+        addonRows = est.addons.filter(function(a) { return a && (a.name || a.id); }).map(function(a) {
+          var label = a.name || addonLabels[a.id] || a.id;
+          var price = typeof a.price === 'number' ? a.price : parseFloat(a.price) || 0;
+          var value = '$' + price.toLocaleString('en-US');
+          if (a.unit === 'ft') value += '/ft';
+          else if (a.unit === 'post') value += '/post';
+          return '<div class="detail-row"><span class="label">' + escapeHtml(label) + '</span><span class="value">' + escapeHtml(value) + '</span></div>';
+        });
+      } else {
+        addonRows = Object.keys(est.addons).filter(function(k) { return est.addons[k]; }).map(function(k) {
           return '<div class="detail-row"><span class="label">' + escapeHtml(addonLabels[k] || k) + '</span><span class="value">Included</span></div>';
-        }).join('');
+        });
+      }
+      if (addonRows.length > 0) {
+        document.getElementById('addons-card').style.display = 'block';
+        document.getElementById('addons-list').innerHTML = addonRows.join('');
       }
     }
 

@@ -85,6 +85,12 @@ function loadExtras() {
 }
 var extras = loadExtras();
 
+// Canonical numeric totals, set wherever the DOM summary is written.
+// Anything persisted (saved estimates, widget leads) MUST read these instead
+// of parsing the formatted DOM text — toLocaleString separators and metric
+// display units corrupt parsed values (e.g. "1.234,56" -> 1.23).
+var computedTotals = { customerTotal: 0, feet: 0 };
+
 function saveExtrasPricing() {
   localStorage.setItem('fc_extras', JSON.stringify(extras.map(function(e) { return { id: e.id, name: e.name, unit: e.unit, price: e.price }; })));
 }
@@ -1830,6 +1836,7 @@ function updateFootage() {
   // Save current section before aggregating
   saveActiveSection();
   var totalFeet = getTotalFootageAllSections();
+  computedTotals.feet = Math.round(totalFeet); // always feet, regardless of display unit
   document.getElementById('total-feet').textContent = fmtLenVal(totalFeet).toLocaleString();
   var unitLabel = document.getElementById('total-feet-unit');
   if (unitLabel) unitLabel.textContent = fmtLenUnit();
@@ -3044,19 +3051,21 @@ function exportBomEmail() {
 }
 
 // === Custom Line Items ===
+// ids are interpolated into inline on* handlers, so they must be quoted
+// strings there and compared as strings here (UUIDs are not valid JS tokens)
 function addCustomItem() {
-  customItems.push({ id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + Math.random(), name: '', qty: 1, unitCost: 0 });
+  customItems.push({ id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2), name: '', qty: 1, unitCost: 0 });
   renderCustomItems();
 }
 
 function removeCustomItem(id) {
-  customItems = customItems.filter(i => i.id !== id);
+  customItems = customItems.filter(i => String(i.id) !== String(id));
   renderCustomItems();
   recalculate();
 }
 
 function updateCustomItem(id, field, value) {
-  const item = customItems.find(i => i.id === id);
+  const item = customItems.find(i => String(i.id) === String(id));
   if (item) {
     item[field] = field === 'name' ? value : parseFloat(value) || 0;
     recalculate();
@@ -3071,10 +3080,10 @@ function renderCustomItems() {
   }
   container.innerHTML = customItems.map(i => `
     <div class="custom-item">
-      <input type="text" placeholder="Item name" value="${escapeHtml(i.name)}" onchange="updateCustomItem(${i.id},'name',this.value)" class="ci-name">
-      <input type="number" placeholder="Qty" value="${i.qty}" onchange="updateCustomItem(${i.id},'qty',this.value)" class="ci-qty">
-      <span class="ci-dollar">$<input type="number" placeholder="0" value="${i.unitCost}" onchange="updateCustomItem(${i.id},'unitCost',this.value)" class="ci-cost"></span>
-      <button class="gate-remove" onclick="removeCustomItem(${i.id})">&times;</button>
+      <input type="text" placeholder="Item name" value="${escapeHtml(i.name)}" onchange="updateCustomItem('${i.id}','name',this.value)" class="ci-name">
+      <input type="number" placeholder="Qty" value="${i.qty}" onchange="updateCustomItem('${i.id}','qty',this.value)" class="ci-qty">
+      <span class="ci-dollar">$<input type="number" placeholder="0" value="${i.unitCost}" onchange="updateCustomItem('${i.id}','unitCost',this.value)" class="ci-cost"></span>
+      <button class="gate-remove" onclick="removeCustomItem('${i.id}')">&times;</button>
     </div>
   `).join('');
 }
@@ -4453,6 +4462,7 @@ function recalculate() {
   document.getElementById('row-custom').style.display = customTotal > 0 ? 'flex' : 'none';
   document.getElementById('sum-custom').textContent = '$' + Math.round(customTotal).toLocaleString();
 
+  computedTotals.customerTotal = Math.round(total);
   document.getElementById('sum-total').textContent = '$' + Math.round(total).toLocaleString();
 
   // Contractor labor + markup. Defaults flow from the price book
@@ -4527,6 +4537,7 @@ function recalculate() {
       document.getElementById('sum-mulch').textContent = '$' + Math.round(mulchBomTotal).toLocaleString();
       document.getElementById('mulch-total').textContent = '$' + Math.round(mulchBomTotal).toLocaleString();
     }
+    computedTotals.customerTotal = Math.round(adjTotal);
     document.getElementById('sum-total').textContent = '$' + Math.round(adjTotal).toLocaleString();
     // Update contractor money panel with the adjusted (BOM-true) total
     updateContractorSummary(adjTotal, feet, gates.length);
@@ -5504,7 +5515,7 @@ async function generatePDF(mode) {
   var custName = document.getElementById('cust-name').value || 'Customer';
   var custPhone = document.getElementById('cust-phone').value;
   var custAddr = document.getElementById('cust-address').value;
-  var feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
+  var feet = computedTotals.feet;
   var fType = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1).replace('-', ' ');
   var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   var estNum = 'FC-' + Date.now().toString(36).toUpperCase().slice(-6);
@@ -6065,6 +6076,7 @@ function resetEstimate() {
   recalculate();
 
   // Force zero display after recalculate (BOM returns 1 post at 0 feet)
+  computedTotals.customerTotal = 0;
   document.getElementById('sum-total').textContent = '$0';
   document.getElementById('sum-fence').textContent = '$0';
   document.getElementById('bom-total').textContent = '$0';
@@ -6498,7 +6510,7 @@ function hintFenceType() {
 }
 
 function hintAfter50Feet() {
-  var feet = parseInt((document.getElementById('total-feet').textContent || '0').replace(/,/g, '')) || 0;
+  var feet = computedTotals.feet;
   if (feet >= 50) {
     var firstLabel = document.querySelector('.seg-label');
     if (firstLabel) showHint('fifty_feet', t('hint_fifty_feet'), firstLabel, 'above');

@@ -17,21 +17,21 @@ module.exports.handler = async (event) => {
     return { statusCode: 400, body: 'Invalid signature' };
   }
 
-  // Idempotency: skip events already processed
+  // Idempotency: atomically claim the event id. The claim must be released if
+  // processing fails — otherwise Stripe's retry would be skipped and a failed
+  // event (e.g. checkout.session.completed) would be dropped forever.
   const eventId = stripeEvent.id;
   if (eventId) {
-    const existing = await db.get('WEBHOOK', eventId);
-    if (existing) {
-      console.log('Skipping already-processed webhook event:', eventId);
-      return { statusCode: 200, body: 'already processed' };
-    }
-    // Record event with TTL (24 hours from now)
-    await db.put({
+    const claimed = await db.putIfNotExists({
       PK: 'WEBHOOK',
       SK: eventId,
       processedAt: new Date().toISOString(),
-      ttl: Math.floor(Date.now() / 1000) + 86400
+      expiresAt: Math.floor(Date.now() / 1000) + 86400 // table TTL attribute
     });
+    if (!claimed) {
+      console.log('Skipping already-processed webhook event:', eventId);
+      return { statusCode: 200, body: 'already processed' };
+    }
   }
 
   const data = stripeEvent.data.object;
@@ -168,6 +168,12 @@ module.exports.handler = async (event) => {
   }
   } catch (err) {
     console.error('Webhook DB error for event ' + stripeEvent.type + ':', err.message);
+    // Release the idempotency claim so Stripe's retry can reprocess the event
+    if (eventId) {
+      try { await db.remove('WEBHOOK', eventId); } catch (e) {
+        console.error('Failed to release webhook claim ' + eventId + ':', e.message);
+      }
+    }
     return { statusCode: 500, body: 'Internal error' };
   }
 

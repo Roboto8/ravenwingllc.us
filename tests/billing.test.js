@@ -2,6 +2,7 @@ jest.mock('../handlers/lib/dynamo', () => ({
   get: jest.fn(),
   put: jest.fn(),
   update: jest.fn(),
+  updateIfNotSet: jest.fn().mockResolvedValue({}),
   query: jest.fn(),
   findById: jest.fn(),
   queryGSI: jest.fn()
@@ -20,7 +21,8 @@ jest.mock('../handlers/roles', () => ({
 // Mock stripe
 const mockStripe = {
   customers: {
-    create: jest.fn()
+    create: jest.fn(),
+    del: jest.fn()
   },
   checkout: {
     sessions: {
@@ -111,12 +113,33 @@ describe('billing handler', () => {
           metadata: expect.objectContaining({ companyId: 'comp-1' })
         })
       );
-      expect(db.update).toHaveBeenCalledWith(
+      expect(db.updateIfNotSet).toHaveBeenCalledWith(
         'COMPANY#comp-1', 'PROFILE',
-        { stripeCustomerId: 'cus_new', GSI1PK: 'STRIPE#cus_new', GSI1SK: 'PROFILE' }
+        { stripeCustomerId: 'cus_new', GSI1PK: 'STRIPE#cus_new', GSI1SK: 'PROFILE' },
+        'stripeCustomerId'
       );
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({ customer: 'cus_new' })
+      );
+    });
+
+    test('concurrent checkout race: loser reuses winning customer and deletes its own', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      // First read has no customer; conditional attach loses; re-read shows the winner
+      db.get
+        .mockResolvedValueOnce(companyWithoutStripe)
+        .mockResolvedValueOnce({ ...companyWithoutStripe, stripeCustomerId: 'cus_winner' });
+      db.updateIfNotSet.mockResolvedValue(null); // condition failed — another request won
+      mockStripe.customers.create.mockResolvedValue({ id: 'cus_loser' });
+      mockStripe.customers.del.mockResolvedValue({});
+      mockStripe.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe.com/x' });
+
+      const result = await billing.checkout({ body: JSON.stringify({}) });
+
+      expect(result.statusCode).toBe(200);
+      expect(mockStripe.customers.del).toHaveBeenCalledWith('cus_loser');
+      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({ customer: 'cus_winner' })
       );
     });
 

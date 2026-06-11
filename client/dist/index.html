@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link href="css/app.css?v=20260610c" rel="stylesheet">
+  <link href="css/app.css?v=20260611a" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#c0622e">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -973,12 +973,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="js/i18n.js?v=20260610c"></script>
-  <script src="js/auth.js?v=20260610c"></script>
-  <script src="js/api.js?v=20260610c"></script>
-  <script src="js/regions.js?v=20260610c"></script>
-  <script src="js/app.js?v=20260610c"></script>
-  <script src="js/config.js?v=20260610c"></script>
+  <script src="js/i18n.js?v=20260611a"></script>
+  <script src="js/auth.js?v=20260611a"></script>
+  <script src="js/api.js?v=20260611a"></script>
+  <script src="js/regions.js?v=20260611a"></script>
+  <script src="js/app.js?v=20260611a"></script>
+  <script src="js/config.js?v=20260611a"></script>
   <script>
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
     API.configure(FC_CONFIG.apiUrl);
@@ -1930,7 +1930,9 @@
     // === Save/Load Estimates ===
     async function saveEstimate() {
       if (!requireAuth('save estimates')) return;
-      const feet = parseInt(document.getElementById('total-feet').textContent.replace(/,/g, '')) || 0;
+      // Read numeric state, never the formatted DOM (locale separators +
+      // metric display corrupt parsed values — meters saved as feet, 1000x off)
+      const feet = computedTotals.feet;
       if (feet === 0 && mulchAreas.length === 0) return showToast('Draw a fence or mulch area first');
 
       const bom = calculateBOM(feet, selectedFence.type, selectedHeight);
@@ -1972,7 +1974,7 @@
           mulchDelivery: selectedMulchDelivery,
           bom: bom ? bom.items : [],
           totalFeet: feet,
-          totalCost: parseFloat(document.getElementById('sum-total').textContent.replace(/[^0-9.\-]/g, '')) || 0,
+          totalCost: computedTotals.customerTotal,
           materialsCost: bom ? bom.materialTotal : 0,
           droneOverlay: droneOverlayData ? { bounds: droneOverlayData.bounds } : null
         });
@@ -2093,7 +2095,10 @@
     async function undoDelete() {
       if (!lastDeletedEstimate) return;
       try {
-        await API.createEstimate(lastDeletedEstimate);
+        // Restore flips the soft-deleted item back instead of re-creating it:
+        // re-creating left the original in trash AND consumed the Starter cap
+        // (the server ignores client-supplied source on create).
+        await API.restoreEstimate(lastDeletedEstimate.id);
         lastDeletedEstimate = null;
         clearTimeout(undoTimeout);
         hideUndoToast();
@@ -2243,6 +2248,7 @@
         activeEstimateId = est.id;
         activeEstimatePhotos = est.photos || [];
         renderPhotoGrid();
+        refreshPhotoUrls();
 
         recalculate();
 
@@ -2264,6 +2270,7 @@
     // === Photos ===
     var activeEstimateId = null;
     var activeEstimatePhotos = [];
+    var activeEstimatePhotoUrls = {}; // key -> short-lived presigned GET url
 
     function renderPhotoGrid() {
       var grid = document.getElementById('photo-grid');
@@ -2277,18 +2284,31 @@
       }
 
       countEl.textContent = '(' + activeEstimatePhotos.length + ')';
-      var bucket = FC_CONFIG.assetsBucket || '';
-      var region = 'us-east-1';
       grid.innerHTML = activeEstimatePhotos.map(function(p) {
-        // Photo keys are user-writable via estimate update; HTML-escape them before injecting
-        // into the src attribute, and URI-encode each path segment to neutralise quote/bracket bytes.
-        var safeKey = String(p.key || '').split('/').map(encodeURIComponent).join('/');
-        var thumbUrl = 'https://' + bucket + '.s3.' + region + '.amazonaws.com/' + safeKey;
-        return '<div style="position:relative;aspect-ratio:1;border-radius:4px;overflow:hidden;background:var(--surface-2)">' +
-          '<img src="' + escapeHtml(thumbUrl) + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">' +
+        // The assets bucket blocks public reads, so thumbnails use short-lived
+        // presigned GET urls fetched via refreshPhotoUrls(); until the map is
+        // populated, show an empty tile rather than a guaranteed-broken image.
+        var signedUrl = activeEstimatePhotoUrls[p.key];
+        var img = signedUrl
+          ? '<img src="' + escapeHtml(signedUrl) + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">'
+          : '';
+        return '<div style="position:relative;aspect-ratio:1;border-radius:4px;overflow:hidden;background:var(--surface-2)">' + img +
           '<button onclick="removePhoto(\'' + escapeHtml(String(p.key || '').replace(/'/g, "\\'")) + '\')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:14px;line-height:1;cursor:pointer" title="Delete photo">&times;</button>' +
         '</div>';
       }).join('');
+    }
+
+    async function refreshPhotoUrls() {
+      if (!activeEstimateId || activeEstimatePhotos.length === 0) {
+        activeEstimatePhotoUrls = {};
+        renderPhotoGrid();
+        return;
+      }
+      try {
+        var resp = await API.getPhotoUrls(activeEstimateId);
+        activeEstimatePhotoUrls = (resp && resp.urls) || {};
+      } catch (e) { /* keep whatever urls we have; tiles render empty */ }
+      renderPhotoGrid();
     }
 
     async function handlePhotoUpload(files) {
@@ -2333,6 +2353,7 @@
           activeEstimatePhotos.push({ key: resp.key, filename: file.name, contentType: file.type });
           await API.updateEstimate(activeEstimateId, { photos: activeEstimatePhotos });
           renderPhotoGrid();
+          refreshPhotoUrls();
         } catch (e) {
           showToast('Failed to upload ' + file.name + ': ' + e.message);
         }
@@ -2621,7 +2642,7 @@
           address: document.getElementById('lead-address').value.trim(),
           notes: document.getElementById('lead-notes').value.trim(),
           totalFeet: leadFootage(),
-          totalCost: parseFloat((document.getElementById('sum-total').textContent || '0').replace(/[$,]/g, '')) || 0,
+          totalCost: computedTotals.customerTotal,
           fenceType: (typeof selectedFence === 'object' && selectedFence && selectedFence.type) || 'wood',
           fenceHeight: parseInt(document.getElementById('sum-height').textContent, 10) || 6,
           fencePoints: (typeof fencePoints !== 'undefined' && fencePoints || []).slice(0, 500).map(function (p) {

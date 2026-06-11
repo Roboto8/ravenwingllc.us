@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const db = require('./lib/dynamo');
 const auth = require('./lib/auth');
@@ -56,20 +56,48 @@ module.exports.getUploadUrl = async (event) => {
   const safeName = sanitizeFilename(body.filename);
   const key = companyId + '/' + estId + '/' + crypto.randomUUID() + '-' + safeName;
 
+  // NOTE: do not sign ContentLength — a presigned PUT signs the exact byte
+  // count, so any real upload (whose size differs) fails SignatureDoesNotMatch.
+  // Presigned PUTs cannot enforce a size range (only presigned POSTs can);
+  // the 10 MB cap is enforced client-side and bounded by the 5-minute expiry.
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
     ContentType: body.contentType,
-    ContentDisposition: 'attachment', // prevent browser execution
-    ContentLength: MAX_FILE_SIZE
+    ContentDisposition: 'attachment' // prevent browser execution
   });
 
-  const uploadUrl = await getSignedUrl(s3, command, {
-    expiresIn: 300,
-    unhoistableHeaders: new Set(['content-length'])
-  });
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
   return res.ok({ uploadUrl, key, maxSize: MAX_FILE_SIZE });
+};
+
+// The assets bucket blocks all public access, so the client cannot read raw
+// S3 URLs; it fetches short-lived presigned GET urls for an estimate's photos.
+module.exports.getPhotoUrls = async (event) => {
+  const companyId = await auth.getCompanyId(event, db);
+  if (!companyId) return res.forbidden();
+
+  const estId = event.pathParameters.id;
+
+  const est = await db.findById('COMPANY#' + companyId, 'EST#', estId);
+  if (!est) return res.notFound();
+
+  const photos = est.photos || [];
+  const urls = {};
+  for (const p of photos) {
+    if (!p || !p.key) continue;
+    // Only sign keys that belong to this company/estimate (same check as delete)
+    const keyParts = String(p.key).split('/');
+    if (keyParts.length < 3 || keyParts[0] !== companyId || keyParts[1] !== estId) continue;
+    urls[p.key] = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: BUCKET, Key: p.key }),
+      { expiresIn: 3600 }
+    );
+  }
+
+  return res.ok({ urls });
 };
 
 module.exports.deletePhoto = async (event) => {

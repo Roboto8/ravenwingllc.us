@@ -88,12 +88,13 @@ module.exports.create = res.wrap(async (event) => {
     createdAt: now,
     updatedAt: now
   };
-  // Preserve lead identity on restore (undo-delete recreates via this path);
-  // without it a restored widget lead would start counting against the cap.
-  if (body.source === 'website-widget') {
-    item.source = 'website-widget';
-    if (body.leadNotes) item.leadNotes = String(body.leadNotes).slice(0, 1000);
-  }
+  // NOTE: source is intentionally NOT copied from the request body. Widget
+  // leads acquire source='website-widget' only via the public lead handler,
+  // and countBillableSince exempts them from the Starter cap — trusting a
+  // client-supplied source would let any free account create unlimited
+  // estimates. Undo-delete restores via POST /api/estimates/{id}/restore,
+  // which preserves the original item (including source) instead of
+  // recreating it through this path.
   Object.assign(item, deriveMarketFields(item));
 
   await db.put(item);

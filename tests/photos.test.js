@@ -1,6 +1,7 @@
 jest.mock('@aws-sdk/client-s3', () => ({
   S3Client: jest.fn().mockImplementation(() => ({ send: jest.fn().mockResolvedValue({}) })),
   PutObjectCommand: jest.fn(),
+  GetObjectCommand: jest.fn(),
   DeleteObjectCommand: jest.fn()
 }));
 
@@ -151,6 +152,54 @@ describe('photos handler', () => {
       });
       const body = JSON.parse(result.body);
       expect(body.maxSize).toBe(10 * 1024 * 1024);
+    });
+  });
+
+  describe('getPhotoUrls', () => {
+    test('returns presigned url for each photo on the estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({
+        ...mockEstimate,
+        photos: [
+          { key: 'comp-1/est-1/abc-yard.jpg' },
+          { key: 'comp-1/est-1/def-gate.png' }
+        ]
+      });
+
+      const result = await photos.getPhotoUrls({ pathParameters: { id: 'est-1' } });
+      expect(result.statusCode).toBe(200);
+      const body = JSON.parse(result.body);
+      expect(body.urls['comp-1/est-1/abc-yard.jpg']).toContain('https://');
+      expect(body.urls['comp-1/est-1/def-gate.png']).toContain('https://');
+    });
+
+    test('skips keys that do not belong to this company/estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({
+        ...mockEstimate,
+        photos: [
+          { key: 'comp-OTHER/est-1/stolen.jpg' },
+          { key: 'comp-1/est-1/mine.jpg' }
+        ]
+      });
+
+      const result = await photos.getPhotoUrls({ pathParameters: { id: 'est-1' } });
+      const body = JSON.parse(result.body);
+      expect(body.urls['comp-OTHER/est-1/stolen.jpg']).toBeUndefined();
+      expect(body.urls['comp-1/est-1/mine.jpg']).toBeDefined();
+    });
+
+    test('returns 404 for missing estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue(null);
+      const result = await photos.getPhotoUrls({ pathParameters: { id: 'nope' } });
+      expect(result.statusCode).toBe(404);
+    });
+
+    test('returns 403 when no auth', async () => {
+      auth.getCompanyId.mockResolvedValue(null);
+      const result = await photos.getPhotoUrls({ pathParameters: { id: 'est-1' } });
+      expect(result.statusCode).toBe(403);
     });
   });
 

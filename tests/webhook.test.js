@@ -37,6 +37,8 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn().mockResolvedValue({}),
   get: jest.fn().mockResolvedValue(null),
   put: jest.fn().mockResolvedValue({}),
+  putIfNotExists: jest.fn().mockResolvedValue(true),
+  remove: jest.fn().mockResolvedValue(undefined),
   queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
 }));
 
@@ -77,6 +79,8 @@ describe('webhook handler', () => {
       update: jest.fn().mockResolvedValue({}),
       get: jest.fn().mockResolvedValue(null),
       put: jest.fn().mockResolvedValue({}),
+      putIfNotExists: jest.fn().mockResolvedValue(true),
+      remove: jest.fn().mockResolvedValue(undefined),
       queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
     }));
 
@@ -409,9 +413,9 @@ describe('webhook handler', () => {
 
   // ===== Webhook idempotency =====
   describe('idempotency', () => {
-    test('skips already-processed event', async () => {
+    test('skips event whose idempotency claim is already taken', async () => {
       const db = require('../handlers/lib/dynamo');
-      db.get.mockResolvedValue({ PK: 'WEBHOOK', SK: 'evt_already', processedAt: '2025-01-01' });
+      db.putIfNotExists.mockResolvedValue(false);
 
       mockConstructEvent.mockReturnValue({
         id: 'evt_already',
@@ -423,12 +427,11 @@ describe('webhook handler', () => {
       expect(result.statusCode).toBe(200);
       expect(result.body).toContain('already processed');
       expect(db.update).not.toHaveBeenCalled();
-      expect(db.put).not.toHaveBeenCalled();
     });
 
-    test('records new event ID and processes it', async () => {
+    test('claims new event ID (with table TTL attribute) and processes it', async () => {
       const db = require('../handlers/lib/dynamo');
-      db.get.mockResolvedValue(null);
+      db.putIfNotExists.mockResolvedValue(true);
 
       mockConstructEvent.mockReturnValue({
         id: 'evt_new_123',
@@ -438,15 +441,31 @@ describe('webhook handler', () => {
 
       const result = await handler(makeEvent());
       expect(result.statusCode).toBe(200);
-      expect(db.put).toHaveBeenCalledWith(
+      expect(db.putIfNotExists).toHaveBeenCalledWith(
         expect.objectContaining({
           PK: 'WEBHOOK',
           SK: 'evt_new_123',
           processedAt: expect.any(String),
-          ttl: expect.any(Number)
+          expiresAt: expect.any(Number)
         })
       );
       expect(db.update).toHaveBeenCalled();
+    });
+
+    test('releases the claim when processing fails so Stripe can retry', async () => {
+      const db = require('../handlers/lib/dynamo');
+      db.putIfNotExists.mockResolvedValue(true);
+      db.update.mockRejectedValue(new Error('transient ddb error'));
+
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_fail_456',
+        type: 'checkout.session.completed',
+        data: { object: { customer: 'cus_123', subscription: 'sub_abc' } }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(500);
+      expect(db.remove).toHaveBeenCalledWith('WEBHOOK', 'evt_fail_456');
     });
 
     test('processes events without id (no idempotency check)', async () => {

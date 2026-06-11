@@ -7,8 +7,13 @@ const API = {
     this.baseUrl = url.replace(/\/$/, '');
   },
 
-  // Retry with exponential backoff for transient failures
+  // Retry with exponential backoff for transient failures.
+  // Only idempotent methods are retried: a POST/PUT/DELETE whose response was
+  // lost may already have been processed server-side, and replaying it would
+  // duplicate the write (duplicate leads/estimates) — fail fast instead.
   async _fetchWithRetry(url, opts, retries = 2) {
+    var method = ((opts && opts.method) || 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') retries = 0;
     for (var attempt = 0; attempt <= retries; attempt++) {
       try {
         var controller = new AbortController();
@@ -136,6 +141,7 @@ const API = {
       body: JSON.stringify({ filename, contentType })
     });
   },
+  getPhotoUrls(estId) { return this._fetch('/api/estimates/' + estId + '/photos'); },
   deletePhoto(estId, key) {
     return this._fetch('/api/estimates/' + estId + '/photos/' + encodeURIComponent(key), { method: 'DELETE' });
   },

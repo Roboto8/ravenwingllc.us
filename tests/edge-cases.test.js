@@ -41,6 +41,8 @@ jest.mock('../handlers/lib/dynamo', () => ({
   update: jest.fn().mockResolvedValue({}),
   get: jest.fn().mockResolvedValue(null),
   put: jest.fn().mockResolvedValue({}),
+  putIfNotExists: jest.fn().mockResolvedValue(true),
+  remove: jest.fn().mockResolvedValue(undefined),
   queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
 }));
 
@@ -77,6 +79,8 @@ describe('webhook handler - missing event types', () => {
       update: jest.fn().mockResolvedValue({}),
       get: jest.fn().mockResolvedValue(null),
       put: jest.fn().mockResolvedValue({}),
+      putIfNotExists: jest.fn().mockResolvedValue(true),
+      remove: jest.fn().mockResolvedValue(undefined),
       queryGSI: jest.fn().mockResolvedValue([{ PK: 'COMPANY#comp-abc', SK: 'PROFILE', stripeCustomerId: 'cus_123' }])
     }));
 

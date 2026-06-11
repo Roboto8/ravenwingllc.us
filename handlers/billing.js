@@ -73,19 +73,33 @@ module.exports.checkout = res.wrap(async (event) => {
 
   if (!priceId) return res.bad('No price configured for tier: ' + tier);
 
-  // Create or reuse Stripe customer
+  // Create or reuse Stripe customer. The attach is conditional: two concurrent
+  // checkout calls (double-clicked Upgrade button on two Lambda containers)
+  // would otherwise both create a customer and the loser's plain overwrite
+  // could unmap the winning checkout's customer — its webhook would never find
+  // the company and the paid subscription would never activate.
   let customerId = company.stripeCustomerId;
   if (!customerId) {
     const customer = await s.customers.create({
       email: company.email,
       metadata: { companyId, tier }
     });
-    customerId = customer.id;
-    await db.update('COMPANY#' + companyId, 'PROFILE', {
-      stripeCustomerId: customerId,
-      GSI1PK: 'STRIPE#' + customerId,
+    const attached = await db.updateIfNotSet('COMPANY#' + companyId, 'PROFILE', {
+      stripeCustomerId: customer.id,
+      GSI1PK: 'STRIPE#' + customer.id,
       GSI1SK: 'PROFILE'
-    });
+    }, 'stripeCustomerId');
+    if (attached) {
+      customerId = customer.id;
+    } else {
+      // Lost the race: use the winner's customer and discard ours
+      const profile = await db.get('COMPANY#' + companyId, 'PROFILE');
+      customerId = profile && profile.stripeCustomerId;
+      try { await s.customers.del(customer.id); } catch (e) {
+        console.warn('Could not delete orphan Stripe customer ' + customer.id + ':', e.message);
+      }
+      if (!customerId) return res.bad('Could not initialize billing — please try again');
+    }
   }
 
   const clientRefId = companyId + '_' + Date.now();

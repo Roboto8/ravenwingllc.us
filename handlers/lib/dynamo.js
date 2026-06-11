@@ -16,6 +16,22 @@ module.exports = {
     return item;
   },
 
+  // Atomic claim: write only if no item with this key exists.
+  // Returns true if the claim won, false if another writer got there first.
+  async putIfNotExists(item) {
+    try {
+      await ddb.send(new PutCommand({
+        TableName: TABLE,
+        Item: item,
+        ConditionExpression: 'attribute_not_exists(PK)'
+      }));
+      return true;
+    } catch (e) {
+      if (e.name === 'ConditionalCheckFailedException') return false;
+      throw e;
+    }
+  },
+
   async update(pk, sk, updates) {
     const keys = Object.keys(updates);
     const expr = keys.map((k, i) => `#k${i} = :v${i}`).join(', ');
@@ -35,6 +51,35 @@ module.exports = {
       ReturnValues: 'ALL_NEW'
     }));
     return Attributes;
+  },
+
+  // Update only while `guardAttr` is still unset on the item — used to make
+  // read-create-attach flows (e.g. Stripe customer creation) single-winner.
+  // Returns the updated item, or null if the condition failed (someone else won).
+  async updateIfNotSet(pk, sk, updates, guardAttr) {
+    const keys = Object.keys(updates);
+    const expr = keys.map((k, i) => `#k${i} = :v${i}`).join(', ');
+    const names = { '#guard': guardAttr };
+    const values = {};
+    keys.forEach((k, i) => {
+      names[`#k${i}`] = k;
+      values[`:v${i}`] = updates[k];
+    });
+    try {
+      const { Attributes } = await ddb.send(new UpdateCommand({
+        TableName: TABLE,
+        Key: { PK: pk, SK: sk },
+        UpdateExpression: 'SET ' + expr,
+        ConditionExpression: 'attribute_not_exists(#guard) OR #guard = :empty',
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: { ...values, ':empty': '' },
+        ReturnValues: 'ALL_NEW'
+      }));
+      return Attributes;
+    } catch (e) {
+      if (e.name === 'ConditionalCheckFailedException') return null;
+      throw e;
+    }
   },
 
   async remove(pk, sk) {

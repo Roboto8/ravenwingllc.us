@@ -473,6 +473,15 @@ functions:
           authorizer:
             name: cognitoAuthorizer
 
+  getPhotoUrls:
+    handler: handlers/photos.getPhotoUrls
+    events:
+      - httpApi:
+          path: /api/estimates/{id}/photos
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
   deletePhoto:
     handler: handlers/photos.deletePhoto
     events:
@@ -631,6 +640,19 @@ resources:
           ServerSideEncryptionConfiguration:
             - ServerSideEncryptionByDefault:
                 SSEAlgorithm: AES256
+        # Browser uploads PUT directly to presigned URLs; S3 only answers the
+        # CORS preflight if the bucket itself has CORS rules. Origins mirror
+        # provider.httpApi.cors.allowedOrigins.
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods: [PUT, GET]
+              AllowedOrigins:
+                - 'https://fencetrace.com'
+                - 'https://www.fencetrace.com'
+                - 'http://ravenwingllc-frontend-dev.s3-website-us-east-1.amazonaws.com'
+                - 'http://ravenwing-frontend.s3-website-us-east-1.amazonaws.com'
+              AllowedHeaders: ['*']
+              MaxAge: 3600
 
   Outputs:
     UserPoolId:
