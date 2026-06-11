@@ -73,6 +73,7 @@ module.exports.create = res.wrap(async (event) => {
     addons: body.addons || {},
     bom: body.bom || [],
     customItems: body.customItems || [],
+    manualBom: body.manualBom || [],
     totalFeet: body.totalFeet || 0,
     totalCost: body.totalCost || 0,
     materialsCost: body.materialsCost || 0,
@@ -136,7 +137,7 @@ module.exports.update = res.wrap(async (event) => {
     'customerName', 'customerPhone', 'customerAddress', 'customerEmail',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
     'fencePoints', 'fenceClosed', 'sections', 'gates', 'addons', 'bom',
-    'customItems', 'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
+    'customItems', 'manualBom', 'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
     'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos',
     'finalPrice', 'lostReason'
   ];
@@ -269,6 +270,7 @@ const MAX_STRING = 500;
 const MAX_ARRAY = 1000;
 const MAX_BOM = 500;
 const MAX_CUSTOM_ITEMS = 50;
+const MAX_MANUAL_BOM = 50;
 const MAX_HISTORY_ENTRIES = 50; // matches the respond() cap in handlers/approval.js
 
 function validateInput(body) {
@@ -289,7 +291,7 @@ function validateInput(body) {
       if (typeof body[f] !== 'number' || !isFinite(body[f])) return f + ' must be a number';
     }
   }
-  const arrayFields = ['fencePoints', 'gates', 'bom', 'customItems', 'sections', 'mulchAreas', 'photos'];
+  const arrayFields = ['fencePoints', 'gates', 'bom', 'customItems', 'manualBom', 'sections', 'mulchAreas', 'photos'];
   for (const f of arrayFields) {
     if (body[f] !== undefined && !Array.isArray(body[f])) return f + ' must be an array';
   }
@@ -316,6 +318,23 @@ function validateInput(body) {
       }
       if (typeof ci.unitCost !== 'number' || !isFinite(ci.unitCost) || ci.unitCost < 0 || ci.unitCost > 1000000) {
         return 'Invalid custom item unitCost';
+      }
+    }
+  }
+  if (body.manualBom && Array.isArray(body.manualBom)) {
+    if (body.manualBom.length > MAX_MANUAL_BOM) {
+      return 'Too many manual BOM items (max ' + MAX_MANUAL_BOM + ')';
+    }
+    for (const mi of body.manualBom) {
+      if (!mi || typeof mi !== 'object' || Array.isArray(mi)) return 'Invalid manual BOM item';
+      if (typeof mi.name !== 'string') return 'Manual BOM item name must be a string';
+      mi.name = mi.name.trim();
+      if (mi.name.length > 200) return 'Manual BOM item name exceeds maximum length';
+      if (typeof mi.qty !== 'number' || !isFinite(mi.qty) || mi.qty < 0 || mi.qty > 10000) {
+        return 'Invalid manual BOM item qty';
+      }
+      if (typeof mi.unitCost !== 'number' || !isFinite(mi.unitCost) || mi.unitCost < 0 || mi.unitCost > 1000000) {
+        return 'Invalid manual BOM item unitCost';
       }
     }
   }

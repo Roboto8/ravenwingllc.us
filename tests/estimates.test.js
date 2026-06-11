@@ -401,6 +401,22 @@ describe('estimates handler', () => {
       expect(updateArgs.approvalHistory).toBeUndefined();
     });
 
+    test('does not reset approval when manualBom changes on a sent estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({ ...mockEstimate, approvalStatus: 'sent' });
+      db.update.mockResolvedValue(mockEstimate);
+
+      await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ manualBom: [{ name: 'Posts (supplier quote)', qty: 14, unitCost: 12.5 }] })
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.manualBom).toEqual([{ name: 'Posts (supplier quote)', qty: 14, unitCost: 12.5 }]);
+      expect(updateArgs.approvalStatus).toBeUndefined();
+      expect(updateArgs.approvalHistory).toBeUndefined();
+    });
+
     test('does not reset approval when money field value is unchanged', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.findById.mockResolvedValue({ ...mockEstimate, approvalStatus: 'approved' });

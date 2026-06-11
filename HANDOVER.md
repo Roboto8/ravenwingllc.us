@@ -1,110 +1,121 @@
-# Handover — 2026-06-10 late session (mobile station)
+# Handover — 2026-06-11 (homebase)
 
-Everything is committed and pushed. **Code is launch-ready but NOT yet deployed
-to prod** — that's the first action below. Outreach batch 2 fires tomorrow
-(Thu) 7–9am from homebase regardless of anything in this doc.
+Tests: **1635 passing, 60/60 suites.** Two prod deploys today; a third (manual
+BOM compare) is committed on `feat/manual-bom-compare` and mid-pipeline (dev →
+prod). Outreach batch 2 (Apex, P. Saylor, A&T Workman, Greenfield, Schmidt)
+sent automatically 7:00am — 10/20 prospects contacted, remainder Tue–Thu next
+week. Reply drafter is now grounded (see below) — review drafts in Gmail as
+replies arrive.
 
-## 1. DEPLOY (do this on homebase before/at the 7am batch if possible)
+## 1. Deploy notes (changed today!)
+
+`serverless client deploy` PROMPTS for confirmation — the `npm run deploy:dev`
+/ `deploy:prod` scripts **hang forever in non-interactive shells**. Use:
 
 ```bash
-git pull                              # master tip (palette + fixes + screen fix)
-npx serverless deploy --stage prod    # backend FIRST: new photo route + bucket CORS
-npm run deploy:prod                   # client → S3 + CloudFront invalidation
+npx serverless client deploy --stage dev --no-confirm
+npx serverless client deploy --stage prod --no-confirm && aws cloudfront create-invalidation --distribution-id E2Q8DG4LT7KL3 --paths "/*"
 ```
 
-If you already deployed the client once tonight, deploy it AGAIN after this
-pull — a late fix bumped the busters to `?v=20260611b` / SW `v21`.
+Backend: `npm run deploy:backend` / `deploy:backend:prod` (no prompt, fine as-is).
+Cache busters: prod is at `?v=20260611c`; the manual-BOM branch bumps to
+`?v=20260611d`. preview→dist still has NO build step — every client edit must
+be copied to `client/dist/` manually (config.js is the only intentional diff).
 
-Backend first: the pushed client expects `GET /api/estimates/{id}/photos` and
-the S3 CORS rules that only exist after the backend deploy. Until both run,
-prod still has the old theme and the broken photo/custom-item/approval bugs.
+## 2. Shipped to prod today (master `a2dcd96`)
 
-## 2. What changed tonight (master `c15a6fb`)
+**Money-path integrity** (found by recon, confirmed by adversarial review —
+these made the product disprove its own pitch in demos):
+- Terrain multiplier (Slope/Rocky) was display-only once a fence was drawn —
+  now multiplies fence materials in the BOM total and the PDF.
+- The customer approved a **materials-only** total (labor+markup computed then
+  discarded). Saved/shared `totalCost` is now the full customer price; PDF,
+  approval page, and in-app panel agree. Fence/gate labor respects the fence
+  module toggle (mulch-only quotes no longer bill fence labor).
+- Customer PDF + approval page exposed raw per-item material costs (a customer
+  could back out the spread). Stripped server-side (`getPublic` returns
+  name/qty/unit/isHeader only) and customer PDF drops cost columns.
+- Job minimum is a floor (price raised, bump → profit), not a warning.
+- Approval integrity: responses snapshot amount+footage; money-field changes
+  on sent/approved estimates reset approval to 'sent' + append `revised`.
+- saveEstimate persists the real multi-section BOM with manual overrides,
+  section notes, custom items; loadSavedEstimate restores them.
+- Export My Data now includes the price book + region; pricebook cloud-save
+  failures toast instead of `.catch(function(){})`.
+- PDF: applies BOM overrides, includes gate labor, respects fence/mulch
+  toggles, customer mode shows item/qty only.
 
-**Rebrand** — "Evergreen & Cedar" palette replaces the Anthropic-style
-terracotta everywhere (app light+dark, landing, legal pages, emails, widget
-default). Map/canvas drawing colors use cedar `#a05a2c` (visibility over grass);
-bright sketch colors untouched. NOTE: existing companies keep their stored
-terracotta `accentColor` in DynamoDB — only new signups get evergreen
-(migration script is a 10-minute task if wanted).
+**UI**: "Save Estimate" button added to the panel action group (Save was
+nav-only; Send to Customer requires a saved estimate). **Legal**: privacy.html
+fictional cookie table removed, Google tiles disclosed, Cognito-accurate
+session/CSRF/password claims; landing cancellation answer = 90 days in visible
+FAQ + JSON-LD. **Outreach**: REPLY_SYSTEM grounded with verified-true facts
+only (no terrain/export/staleness claims until deployed); classifier gained
+`objection_type` enum; follow-up deduped into `build-body.js` with opt-out P.S.
+restored on both paths.
 
-**Fixes (all were live-prod bugs, confirmed by adversarial review):**
-- Photo pipeline was 100% broken three ways: presigned PUT signed a fixed 10MB
-  Content-Length (every upload failed), bucket had no CORS (preflight rejected),
-  and display used raw S3 URLs on a public-access-blocked bucket. Fixed:
-  unsigned length, CORS rules in serverless.yml, presigned-GET display flow.
-- Custom line items were dead (unquoted UUIDs in inline handlers).
-- approve.html rendered addons as "0","1" (expects array shape now; legacy ok).
-- Stripe webhook: idempotency is an atomic claim released on failure (events
-  were being permanently dropped on transient errors); TTL attr fixed
-  (`expiresAt`, was `ttl` = never expired).
-- Checkout: customer create/attach is single-winner (double-click created
-  duplicate Stripe customers → paid-but-free-tier).
-- Starter-cap bypass closed: server ignores client-supplied
-  `source:'website-widget'`; undo-delete now uses the restore endpoint.
-- Saved totals/footage read numeric state (`computedTotals`), not
-  locale-formatted DOM ($1.234,56 → $1.23 corruption; metric saved m as ft).
-- API client no longer retries POSTs (duplicate leads on flaky networks).
-- Mid-width screens (901–1450px CSS, e.g. 1080p at 125–150% display scaling):
-  the map toolbar's intrinsic width pushed the estimate panel off-screen
-  (`min-width:auto` flexbox trap). Fixed with `min-width:0` on `.map-panel`;
-  regression-tested at 1280x648/1536x816 + panel-on-screen assertions.
+## 3. In flight: manual BOM compare (`feat/manual-bom-compare`)
 
-Cache busters: `?v=20260611b`, service worker `fencetrace-v21`. Tests: **1572
-passing, 59/59 suites**. `client/dist` synced with preview.
+Contractor-private worksheet in the Material Breakdown panel ("Compare with
+your list"): enter your own materials, rows match against the computed BOM
+with qty deltas. Invariants (reviewer-verified, test-pinned):
+**compare-only** (never touches totalCost/PDF/share/market-rollup) and
+**contractor-private** (getPublic whitelist omits it — regression test).
+Backend `manualBom` field validated like customItems (≤50 items, name ≤200,
+capped finite numbers). Autosave now also persists customItems (old gap).
+Known nits (deliberate): greedy matcher should get an exact-pass-first
+two-pass; no client-side input clamps (server rejects at save, same as
+customItems); matcher behavior pinned in `tests/manual-bom-compare.test.js`.
 
-## 3. Review backlog (confirmed findings NOT yet fixed — wave 3)
+## 4. Decisions pending on Todd (product/business)
 
-Full multi-agent review ran tonight: 99 findings, ~65 confirmed. Fixed the
-criticals above. Highest-value remaining, roughly in order:
+1. **Market rollup**: nightly job aggregates contractor pricing while the EULA
+   forbids users compiling pricing datasets ("data-moat" comment in the code is
+   journalist bait). Decide: opt-in, opt-out, or pause the (currently
+   write-only) pipeline — BEFORE publishing any "your data is never shared"
+   FAQ/marketing copy. Marcus-panel flip worth considering: give the data back
+   ("regional cedar +12% since your last update") to answer the stale-prices
+   objection.
+2. **Gated copy now unblocked** by today's fixes but unshipped: material-card
+   caption + "from $X/ft", landing FAQ additions (data ownership, cedar-jumps,
+   vendor-disappears), approval-page range display, tagline. Ship only with
+   their mechanisms (corner-post BOM still missing for the "every post" claim).
+3. Customer PDF shows per-line prices for **custom items** (charges, not
+   costs) while the approval page hides them — judgment call, flag if wrong.
+4. Panel additions worth scheduling: price-book staleness stamp + nudge,
+   import/export buttons, founder face-on-site, "run your last five jobs
+   through it" challenge in outreach, reference accounts.
+5. DKIM / bank DBA / Hanover County / footer address — unchanged from
+   yesterday's list (see git history of this file).
+
+## 5. Review backlog (confirmed, NOT yet fixed)
 
 1. **Market rollup aggregates nothing** — `deriveMarketFields` expects
-   `[lat,lng]` arrays, clients send `{lat,lng}` objects → regionKey never set,
-   the "data moat" is empty (`handlers/estimates.js:324`). Fix + backfill.
-2. **Team invites only work for never-registered emails** (redemption lives
-   solely in Cognito PostConfirmation; existing accounts can't join,
-   `handlers/auth.js:24`).
-3. **Editing the member role is a silent no-op** (writes
-   `defaultMemberPermissions`, nothing reads it; `handlers/roles.js:127`).
-4. **Lambda bundles include `outreach/`** — Gmail OAuth token + CRM ship inside
-   every deployed function zip (serverless.yml packaging). Exclude it.
-5. Outreach agent: sends before it scans (overnight opt-out gets one more
-   email) and saves crm.json after the Gmail send (crash window = double-send);
-   opt-outs from a different reply address are missed (`outreach/manage.js`).
-6. `STRIPE_WEBHOOK_SECRET` SSM default is `''` → fail-open if param missing;
-   checkout accepts arbitrary client tier; dispute handler reads
-   `data.customer` which doesn't exist on Dispute objects (`webhook.js`).
-7. daily-digest widget-lead exclusion is dead code (doesn't project `source`);
-   approval share tokens never expire; prod table/pool have no
-   DeletionPolicy + PITR off; `deploy:prod` has no preview→dist build step
-   (tonight it was synced manually — keep doing that or add a copy script).
+   `[lat,lng]` arrays, clients send `{lat,lng}` → regionKey never set. Fix +
+   backfill (or pause per §4.1).
+2. Team invites only work for never-registered emails; member-role edit is a
+   silent no-op (`handlers/auth.js:24`, `handlers/roles.js:127`).
+3. Outreach agent: sends before scanning (overnight opt-out gets one more
+   email); crm.json saved after Gmail send (crash window = double-send);
+   opt-outs from a different reply address missed.
+4. `STRIPE_WEBHOOK_SECRET` SSM default `''` = fail-open; checkout accepts
+   arbitrary client tier; dispute handler reads nonexistent `data.customer`.
+5. Share tokens never expire; no quote-validity window (approval price
+   snapshot + revision reset DID ship today, so the exposure is bounded).
+6. Reopening a saved estimate regenerates the BOM and silently drops manual
+   qty/price overrides (recalculated total can disagree with saved totalCost).
+7. daily-digest widget-lead exclusion dead code; prod table/pool lack
+   DeletionPolicy + PITR; privacy.html boilerplate (§2.2, §11.1 categories)
+   still needs a real legal pass.
 
-## 4. Pending on Todd (business)
+## 6. Machines (does NOT transfer via git)
 
-1. **Deploy** (section 1).
-2. **DKIM**: `aws route53 change-resource-record-sets --hosted-zone-id Z034210220UJFLSY9V2RP --change-batch file://outreach/dkim-records.json`
-   then poll `aws sesv2 get-email-identity --email-identity fencetrace.com --region us-east-1 --query DkimAttributes.Status --output text` until SUCCESS.
-3. **Bank**: add "DBA FenceTrace" to the LLC account (cert PDF in SCC CIS).
-4. **Confirm footer address** (8115 Judith Ln Unit 2008, Mechanicsville)
-   receives mail; else swap to Stephens Manor in `outreach/build-body.js`.
-5. **Hanover County**: register with the Commissioner of the Revenue (no fee,
-   no BPOL for software) and call Planning & Zoning re: home business
-   (804-365-6171). Asset inventory + filing helper live on the MOBILE STATION
-   at `C:\Users\porte\Documents\RavenWing\assets\` (`node report.js`); business
-   property return due May 1 yearly, received not postmarked. RW-0001
-   (homebase) still needs make/serial/cost captured — command in its README.
-6. Trademark: nothing due; check TSDR ~Sep 2026.
-
-## 5. Machines (does NOT transfer via git)
-
-- **Homebase** (upstairs, always-on, RTX 5070 Ti): runs the outreach agent
-  scheduled task (hourly 7am–2pm + 7:30pm), has AWS creds, Gmail OAuth files,
-  ANTHROPIC_API_KEY. NEVER create the agent task on a second machine
-  (double-sends). Deploys happen here.
+- **Homebase** (always-on, RTX 5070 Ti): outreach agent scheduled task (hourly
+  7am–2pm + 7:30pm ET), AWS creds, Gmail OAuth, ANTHROPIC_API_KEY. NEVER
+  create the agent task on a second machine. Deploys happen here.
+  NOTE: the agent runs `node outreach/manage.js agent` from this working tree —
+  whatever branch is checked out is what runs at 7:30pm.
 - **Mobile station** (ROG Ally X): dev/test only — no AWS creds, no agent.
-  Holds the asset inventory (above); copy it to homebase or commit somewhere
-  private if you want it backed up.
-- Outreach state (`outreach/crm.json`) IS committed and transfers fine.
-  Batch 1 of 5 sent 2026-06-10 6:33pm; 15 prospects remain, 5/day Tue–Thu.
-- Dev Stripe still points at the old $4.99 test price (cosmetic, dev only).
+- `outreach/crm.json` is committed and transfers; batches 1+2 sent (10/20),
+  5/day Tue–Thu, one follow-up max after 5 quiet days.
 - `/standup` in Claude Code = morning brief.

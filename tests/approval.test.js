@@ -281,6 +281,23 @@ describe('approval handler', () => {
       ]);
     });
 
+    test('omits manualBom from the public payload', async () => {
+      db.queryGSI.mockResolvedValue([{
+        ...mockEstimate,
+        GSI1SK: 'COMPANY#comp-1',
+        manualBom: [{ name: 'Posts (supplier quote)', qty: 14, unitCost: 12.5 }]
+      }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.manualBom).toBeUndefined();
+    });
+
     test('tolerates legacy non-array bom without throwing', async () => {
       db.queryGSI.mockResolvedValue([{
         ...mockEstimate,

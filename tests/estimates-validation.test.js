@@ -375,6 +375,133 @@ describe('estimates - input validation', () => {
     });
   });
 
+  // ===== manualBom validation =====
+  describe('manualBom validation', () => {
+    const validItem = { name: '4x4x8 PT posts (supplier quote)', qty: 14, unitCost: 12.5 };
+
+    test('defaults manualBom to empty array on create', async () => {
+      const result = await estimates.create({ body: '{}' });
+      expect(result.statusCode).toBe(201);
+      expect(JSON.parse(result.body).manualBom).toEqual([]);
+    });
+
+    test('accepts and persists valid manualBom', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: [validItem] })
+      });
+      expect(result.statusCode).toBe(201);
+      expect(JSON.parse(result.body).manualBom).toEqual([validItem]);
+    });
+
+    test('trims manual BOM item names', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: [{ ...validItem, name: '  Pickets from yard  ' }] })
+      });
+      expect(result.statusCode).toBe(201);
+      expect(JSON.parse(result.body).manualBom[0].name).toBe('Pickets from yard');
+    });
+
+    test('rejects non-array manualBom', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: 'not-an-array' })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('manualBom must be an array');
+    });
+
+    test('rejects manualBom exceeding 50', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: new Array(51).fill(validItem) })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Too many manual BOM items');
+    });
+
+    test('accepts manualBom at exactly 50', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: new Array(50).fill(validItem) })
+      });
+      expect(result.statusCode).toBe(201);
+    });
+
+    test('rejects non-object entry', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: ['just a string'] })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Invalid manual BOM item');
+    });
+
+    test('rejects entry with non-string name', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: [{ ...validItem, name: 42 }] })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Manual BOM item name must be a string');
+    });
+
+    test('rejects entry with name exceeding 200 chars', async () => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: [{ ...validItem, name: 'x'.repeat(201) }] })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Manual BOM item name exceeds maximum length');
+    });
+
+    test.each([
+      ['string qty', 'ten'],
+      ['negative qty', -1],
+      ['qty over 10000', 10001],
+      ['null qty', null]
+    ])('rejects %s', async (label, qty) => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: [{ ...validItem, qty }] })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Invalid manual BOM item qty');
+    });
+
+    test.each([
+      ['string unitCost', '$25'],
+      ['negative unitCost', -5],
+      ['unitCost over 1000000', 1000001],
+      ['null unitCost', null]
+    ])('rejects %s', async (label, unitCost) => {
+      const result = await estimates.create({
+        body: JSON.stringify({ manualBom: [{ ...validItem, unitCost }] })
+      });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Invalid manual BOM item unitCost');
+    });
+
+    test('allows updating manualBom', async () => {
+      db.findById.mockResolvedValue({
+        PK: 'COMPANY#comp-1', SK: 'EST#2025-01-01#est-1', id: 'est-1'
+      });
+      db.update.mockResolvedValue({});
+
+      const result = await estimates.update({
+        pathParameters: { id: 'est-1' },
+        body: JSON.stringify({ manualBom: [validItem] })
+      });
+      expect(result.statusCode).toBe(200);
+      expect(db.update.mock.calls[0][2].manualBom).toEqual([validItem]);
+    });
+
+    test('rejects invalid manualBom on update', async () => {
+      db.findById.mockResolvedValue({
+        PK: 'COMPANY#comp-1', SK: 'EST#2025-01-01#est-1', id: 'est-1'
+      });
+      db.update.mockResolvedValue({});
+
+      const result = await estimates.update({
+        pathParameters: { id: 'est-1' },
+        body: JSON.stringify({ manualBom: [{ name: 'No numbers' }] })
+      });
+      expect(result.statusCode).toBe(400);
+    });
+  });
+
   // ===== Enum validation =====
   describe('status enum validation', () => {
     test('rejects invalid approvalStatus', async () => {

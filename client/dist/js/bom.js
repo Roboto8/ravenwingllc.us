@@ -582,6 +582,47 @@ function computeContractorTotals(opts) {
   };
 }
 
+// === Manual BOM compare ===
+// Pure mirror of the contractor-private worksheet matcher in app.js
+// (normalizeBomName / compareManualBom). Keep the two in sync.
+function normalizeBomName(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function compareManualBom(manualItems, bomItems) {
+  var computed = (bomItems || []).filter(function(i) { return !i.isHeader; });
+  var used = {};
+  var rows = (manualItems || []).map(function(m) {
+    var mName = normalizeBomName(m.name);
+    var matchIdx = -1;
+    if (mName) {
+      computed.forEach(function(c, idx) {
+        if (matchIdx >= 0 || used[idx]) return;
+        if (normalizeBomName(c.name) === mName) matchIdx = idx;
+      });
+      if (matchIdx < 0 && mName.length >= 3) {
+        computed.forEach(function(c, idx) {
+          if (matchIdx >= 0 || used[idx]) return;
+          var cName = normalizeBomName(c.name);
+          if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) matchIdx = idx;
+        });
+      }
+    }
+    var match = matchIdx >= 0 ? computed[matchIdx] : null;
+    if (matchIdx >= 0) used[matchIdx] = true;
+    return {
+      name: m.name, qty: m.qty || 0, unitCost: m.unitCost || 0,
+      countedName: match ? match.name : null,
+      countedQty: match ? match.qty : null,
+      qtyDelta: match ? Math.round((match.qty - (m.qty || 0)) * 100) / 100 : null
+    };
+  });
+  var manualTotal = (manualItems || []).reduce(function(s, m) { return s + ((m.qty || 0) * (m.unitCost || 0)); }, 0);
+  var unmatchedComputed = computed.filter(function(c, idx) { return !used[idx]; })
+    .map(function(c) { return { name: c.name, qty: c.qty }; });
+  return { rows: rows, manualTotal: Math.round(manualTotal * 100) / 100, unmatchedComputed: unmatchedComputed };
+}
+
 module.exports = {
   BOM,
   MULCH,
@@ -599,5 +640,7 @@ module.exports = {
   getPrice,
   encodeEstimate,
   decodeEstimate,
-  customItemsTotal
+  customItemsTotal,
+  normalizeBomName,
+  compareManualBom
 };

@@ -3097,6 +3097,121 @@ function renderCustomItems() {
   `).join('');
 }
 
+// === Manual BOM Compare (contractor-private worksheet) ===
+// The contractor enters their own material list and sees it matched against
+// the computed BOM. Compare-only: it never feeds the estimate total and is
+// never sent to customer-facing surfaces (getPublic whitelists fields).
+// Matching logic mirrored in bom.js compareManualBom — keep the two in sync.
+var manualBom = [];
+var _lastCombinedBomItems = [];
+
+function normalizeBomName(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function compareManualBom(manualItems, bomItems) {
+  var computed = (bomItems || []).filter(function(i) { return !i.isHeader; });
+  var used = {};
+  var rows = (manualItems || []).map(function(m) {
+    var mName = normalizeBomName(m.name);
+    var matchIdx = -1;
+    if (mName) {
+      computed.forEach(function(c, idx) {
+        if (matchIdx >= 0 || used[idx]) return;
+        if (normalizeBomName(c.name) === mName) matchIdx = idx;
+      });
+      if (matchIdx < 0 && mName.length >= 3) {
+        computed.forEach(function(c, idx) {
+          if (matchIdx >= 0 || used[idx]) return;
+          var cName = normalizeBomName(c.name);
+          if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) matchIdx = idx;
+        });
+      }
+    }
+    var match = matchIdx >= 0 ? computed[matchIdx] : null;
+    if (matchIdx >= 0) used[matchIdx] = true;
+    return {
+      name: m.name, qty: m.qty || 0, unitCost: m.unitCost || 0,
+      countedName: match ? match.name : null,
+      countedQty: match ? match.qty : null,
+      qtyDelta: match ? Math.round((match.qty - (m.qty || 0)) * 100) / 100 : null
+    };
+  });
+  var manualTotal = (manualItems || []).reduce(function(s, m) { return s + ((m.qty || 0) * (m.unitCost || 0)); }, 0);
+  var unmatchedComputed = computed.filter(function(c, idx) { return !used[idx]; })
+    .map(function(c) { return { name: c.name, qty: c.qty }; });
+  return { rows: rows, manualTotal: Math.round(manualTotal * 100) / 100, unmatchedComputed: unmatchedComputed };
+}
+
+function toggleBomCompare() {
+  var el = document.getElementById('bom-compare');
+  if (!el) return;
+  var open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : '';
+  if (!open && manualBom.length === 0) addManualBomItem();
+  else renderManualBom();
+}
+
+function addManualBomItem() {
+  manualBom.push({ id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2), name: '', qty: 1, unitCost: 0 });
+  recalculate(); // persists the worksheet to autosave (manualBom is not a totals input)
+  renderManualBom(true);
+}
+
+function removeManualBomItem(id) {
+  manualBom = manualBom.filter(function(i) { return String(i.id) !== String(id); });
+  recalculate();
+  renderManualBom(true);
+}
+
+function updateManualBomItem(id, field, value) {
+  var item = manualBom.find(function(i) { return String(i.id) === String(id); });
+  if (item) {
+    item[field] = field === 'name' ? value : parseFloat(value) || 0;
+    recalculate();
+  }
+}
+
+function renderManualBom(force) {
+  var container = document.getElementById('manual-bom-list');
+  var summary = document.getElementById('manual-bom-summary');
+  if (!container) return;
+  // Don't rebuild the rows out from under the keyboard: a re-render during
+  // recalculate() (map drag, Tab between fields) would destroy focus.
+  if (!force && document.activeElement && container.contains(document.activeElement)) return;
+  if (manualBom.length === 0) {
+    container.innerHTML = '';
+    if (summary) summary.innerHTML = '';
+    return;
+  }
+  var result = compareManualBom(manualBom, _lastCombinedBomItems);
+  container.innerHTML = manualBom.map(function(i, idx) {
+    var r = result.rows[idx];
+    var delta = '';
+    if (r.countedQty !== null) {
+      var diffTxt = r.qtyDelta === 0 ? 'same count'
+        : r.qtyDelta > 0 ? 'FenceTrace counts ' + r.qtyDelta + ' more'
+        : 'you have ' + Math.abs(r.qtyDelta) + ' more';
+      delta = '<div style="font-size:0.7rem;color:' + (r.qtyDelta === 0 ? 'var(--green, #3a9a5c)' : 'var(--text-muted, #9aa)') + ';margin:-2px 0 4px 2px">⇆ ' + escapeHtml(r.countedName) + ': ' + r.countedQty + ' counted — ' + diffTxt + '</div>';
+    } else if (r.name) {
+      delta = '<div style="font-size:0.7rem;color:var(--text-muted, #9aa);margin:-2px 0 4px 2px">no matching item in FenceTrace’s count</div>';
+    }
+    return '<div class="custom-item">' +
+      '<input type="text" placeholder="Item name" value="' + escapeHtml(i.name) + '" onchange="updateManualBomItem(\'' + i.id + '\',\'name\',this.value)" class="ci-name">' +
+      '<input type="number" placeholder="Qty" value="' + i.qty + '" onchange="updateManualBomItem(\'' + i.id + '\',\'qty\',this.value)" class="ci-qty">' +
+      '<span class="ci-dollar">$<input type="number" placeholder="0" value="' + i.unitCost + '" onchange="updateManualBomItem(\'' + i.id + '\',\'unitCost\',this.value)" class="ci-cost"></span>' +
+      '<button class="gate-remove" onclick="removeManualBomItem(\'' + i.id + '\')">&times;</button>' +
+    '</div>' + delta;
+  }).join('');
+  if (summary) {
+    var parts = [];
+    if (result.manualTotal > 0) parts.push('Your list: $' + result.manualTotal.toLocaleString());
+    if (computedTotals.materialsTotal > 0) parts.push('FenceTrace materials: $' + computedTotals.materialsTotal.toLocaleString());
+    if (result.unmatchedComputed.length > 0) parts.push(result.unmatchedComputed.length + ' counted item' + (result.unmatchedComputed.length > 1 ? 's' : '') + ' not on your list');
+    summary.innerHTML = escapeHtml(parts.join(' · '));
+  }
+}
+
 // === Pricing Editor ===
 function showPricingEditor() {
   if (typeof requireAuth === 'function' && !requireAuth('customize pricing')) return;
@@ -4515,6 +4630,8 @@ function recalculate() {
       },
       laborPerFt: laborPerFt,
       markupPct: markupPct,
+      customItems: customItems.map(function(i) { return { name: i.name, qty: i.qty, unitCost: i.unitCost }; }),
+      manualBom: manualBom.map(function(i) { return { name: i.name, qty: i.qty, unitCost: i.unitCost }; }),
       mapView: [map.getCenter().lat, map.getCenter().lng],
       mapZoom: map.getZoom(),
       savedAt: Date.now()
@@ -4571,6 +4688,10 @@ function recalculate() {
     // Fence labor and gate labor only apply when the fence module is on.
     computedTotals.customerTotal = updateContractorSummary(adjTotal, fenceEnabled ? feet : 0, fenceEnabled ? gates.length : 0);
   }
+
+  // Refresh the manual-BOM compare worksheet against the latest count
+  _lastCombinedBomItems = combinedBOM ? combinedBOM.items : [];
+  renderManualBom();
 
   // Update mulch area labels (bag counts change with depth/material)
   if (mulchAreas.length > 0) renderMulchAreas();
@@ -6155,9 +6276,13 @@ function resetEstimate() {
   bomQtyOverrides = {};
   bomPriceOverrides = {};
 
-  // Reset custom items
+  // Reset custom items and the manual-BOM worksheet
   customItems = [];
   if (typeof renderCustomItems === 'function') renderCustomItems();
+  manualBom = [];
+  if (typeof renderManualBom === 'function') renderManualBom(true);
+  var _cmpEl = document.getElementById('bom-compare');
+  if (_cmpEl) _cmpEl.style.display = 'none';
 
   recalculate();
 
@@ -7049,6 +7174,24 @@ if (fencePoints.length === 0 && mulchAreas.length === 0 && !_hadSharedURL) {
       // Restore markup
       if (autosave.laborPerFt) document.getElementById('markup-labor').value = autosave.laborPerFt;
       if (autosave.markupPct) document.getElementById('markup-percent').value = autosave.markupPct;
+
+      // Restore custom items and the manual-BOM compare worksheet
+      function _restoreId() {
+        return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+      }
+      if (autosave.customItems && autosave.customItems.length > 0) {
+        customItems = autosave.customItems.map(function(ci) {
+          return { id: _restoreId(), name: ci.name || '', qty: ci.qty || 0, unitCost: ci.unitCost || 0 };
+        });
+        renderCustomItems();
+      }
+      if (autosave.manualBom && autosave.manualBom.length > 0) {
+        manualBom = autosave.manualBom.map(function(mi) {
+          return { id: _restoreId(), name: mi.name || '', qty: mi.qty || 0, unitCost: mi.unitCost || 0 };
+        });
+        var cmpEl = document.getElementById('bom-compare');
+        if (cmpEl) cmpEl.style.display = '';
+      }
 
       // Restore exact map view
       if (autosave.mapView && autosave.mapZoom) {
