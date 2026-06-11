@@ -123,6 +123,10 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-east-1
   timeout: 15
+  # Lambda logs expire instead of accumulating forever (cost + data hygiene;
+  # matches the retention posture in the privacy policy). Existing groups were
+  # stamped via put-retention-policy on 2026-06-11.
+  logRetentionInDays: 90
 
   stackTags:
     Project: RavenWingLLC
