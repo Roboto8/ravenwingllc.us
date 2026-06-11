@@ -15,3 +15,7 @@ outreach/google-credentials.json
 outreach/google-token.json
 outreach/scan.log
 outreach/agent.log
+
+# GA4 standup snapshot (service account key + property config)
+outreach/ga-service-account.json
+outreach/ga-config.json

@@ -39,6 +39,18 @@ function buildFollowupBody(p) {
     SIGNATURE + OPT_OUT + '\n\n' + ADDRESS;
 }
 
+// Click attribution: the HTML link's href carries UTM params so email clicks
+// show up in GA4 (source=outreach) instead of hiding inside "Direct". The
+// visible text and the text/plain part stay a clean fencetrace.com — the
+// email keeps its personal feel; only the anchor target is tagged.
+function trackedUrl(campaign, p) {
+  const slug = String((p && p.company) || '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  return 'https://fencetrace.com/?utm_source=outreach&utm_medium=email' +
+    '&utm_campaign=' + encodeURIComponent(campaign || 'round1') +
+    (slug ? '&utm_content=' + encodeURIComponent(slug) : '');
+}
+
 // Light HTML version of the same copy — clean typography, branded signature,
 // no images and no marketing layout (heavy HTML lands cold mail in the
 // Promotions tab; this stays personal-looking while reading "pro").
@@ -48,7 +60,8 @@ function escapeHtml(s) {
 
 // htmlWrap takes any plain body whose text ends with the "Todd / FenceTrace"
 // signature (and optional P.S.) and renders it with the styled signature.
-function htmlWrap(body) {
+function htmlWrap(body, linkHref) {
+  const href = linkHref || 'https://fencetrace.com';
   let addr = '';
   let content = body;
   if (content.endsWith('\n\n' + ADDRESS)) {
@@ -67,7 +80,7 @@ function htmlWrap(body) {
     let html = escapeHtml(para).replace(/\n/g, ' ');
     html = html.replace(
       /https:\/\/fencetrace\.com/g,
-      '<a href="https://fencetrace.com" style="color:#226d46;font-weight:600">fencetrace.com</a>'
+      '<a href="' + href + '" style="color:#226d46;font-weight:600">fencetrace.com</a>'
     );
     return '<p style="margin:0 0 16px">' + html + '</p>';
   }).join('\n');
@@ -85,7 +98,7 @@ function htmlWrap(body) {
 }
 
 function buildHtmlBody(p) {
-  return htmlWrap(buildBody(p));
+  return htmlWrap(buildBody(p), trackedUrl('round1', p));
 }
 
-module.exports = { SIGNATURE, OPT_OUT, TEMPLATE, ADDRESS, buildBody, buildFollowupBody, buildHtmlBody, htmlWrap, escapeHtml };
+module.exports = { SIGNATURE, OPT_OUT, TEMPLATE, ADDRESS, buildBody, buildFollowupBody, buildHtmlBody, htmlWrap, escapeHtml, trackedUrl };

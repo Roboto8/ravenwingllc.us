@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { buildBody, buildFollowupBody, htmlWrap, ADDRESS } = require('./build-body');
+const { buildBody, buildFollowupBody, htmlWrap, trackedUrl, ADDRESS } = require('./build-body');
 
 const DIR = __dirname;
 const CREDENTIALS_PATH = path.join(DIR, 'google-credentials.json');
@@ -90,9 +90,9 @@ function encodeHeader(value) {
 }
 
 // multipart/alternative: plain text + light branded HTML (see build-body.js)
-function mime({ to, subject, body, inReplyTo, references }) {
+function mime({ to, subject, body, link, inReplyTo, references }) {
   const boundary = 'ft' + Math.random().toString(36).slice(2);
-  const html = htmlWrap(body);
+  const html = htmlWrap(body, link);
   const lines = [
     'To: ' + to,
     'Subject: ' + encodeHeader(subject),
@@ -265,7 +265,7 @@ async function cmdSend(args) {
     if (dry) { console.log(body.split('\n').slice(0, 3).join('\n') + '\n...'); continue; }
     const sent = await gmail.users.messages.send({
       userId: 'me',
-      requestBody: { raw: mime({ to: p.to, subject: p.subject, body }) },
+      requestBody: { raw: mime({ to: p.to, subject: p.subject, body, link: trackedUrl('round1', p) }) },
     });
     const r = rec(crm, p.to);
     r.status = 'sent';
@@ -342,7 +342,7 @@ async function cmdFollowups(args) {
     const body = buildFollowupBody(p);
     await gmail.users.drafts.create({
       userId: 'me',
-      requestBody: { message: { raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body }) } },
+      requestBody: { message: { raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body, link: trackedUrl('followup', p) }) } },
     });
     const r = rec(crm, p.to);
     r.followupAt = new Date().toISOString();
@@ -394,7 +394,7 @@ async function cmdAgent() {
       const body = buildBody(p);
       const sent = await gmail.users.messages.send({
         userId: 'me',
-        requestBody: { raw: mime({ to: p.to, subject: p.subject, body }) },
+        requestBody: { raw: mime({ to: p.to, subject: p.subject, body, link: trackedUrl('round1', p) }) },
       });
       const r = rec(crm, p.to);
       r.status = 'sent';
@@ -420,7 +420,7 @@ async function cmdAgent() {
       await gmail.users.messages.send({
         userId: 'me',
         requestBody: {
-          raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body }),
+          raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body, link: trackedUrl('followup', p) }),
           threadId: r.threadId,
         },
       });
