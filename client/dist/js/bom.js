@@ -593,7 +593,16 @@ function computeContractorTotals(opts) {
 // Pure mirror of the contractor-private worksheet matcher in app.js
 // (normalizeBomName / compareManualBom). Keep the two in sync.
 function normalizeBomName(s) {
-  return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2') // '50lb' -> '50 lb'
+    .replace(/\s+/g, ' ').trim();
+}
+
+// Naive plural fold so 'screw boxes' can meet 'screws (box)'.
+function foldBomToken(t) {
+  if (t.length > 3 && t.slice(-2) === 'es') return t.slice(0, -2);
+  if (t.length > 2 && t.slice(-1) === 's') return t.slice(0, -1);
+  return t;
 }
 
 function compareManualBom(manualItems, bomItems) {
@@ -620,6 +629,26 @@ function compareManualBom(manualItems, bomItems) {
       if (matches[mi] >= 0 || used[idx]) return;
       var cName = normalizeBomName(c.name);
       if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) { matches[mi] = idx; used[idx] = true; }
+    });
+  });
+  // Pass 3: token-subset fallback — every word of the shorter name appears in
+  // the longer one (plural-folded), so '50 lb concrete bags' meets
+  // '50lb concrete bags' and 'screw boxes' meets 'Exterior deck screws (box)'.
+  manual.forEach(function(m, mi) {
+    if (matches[mi] >= 0) return;
+    var mName = normalizeBomName(m.name);
+    if (!mName || mName.length < 3) return;
+    var mTok = mName.split(' ').map(foldBomToken);
+    computed.forEach(function(c, idx) {
+      if (matches[mi] >= 0 || used[idx]) return;
+      var cTok = normalizeBomName(c.name).split(' ').map(foldBomToken);
+      var small = mTok.length <= cTok.length ? mTok : cTok;
+      var big = {};
+      (mTok.length <= cTok.length ? cTok : mTok).forEach(function(t) { big[t] = 1; });
+      if (small.length > 0 && small.every(function(t) { return big[t] === 1; })) {
+        matches[mi] = idx;
+        used[idx] = true;
+      }
     });
   });
   var rows = manual.map(function(m, mi) {

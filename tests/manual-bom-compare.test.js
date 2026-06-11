@@ -51,8 +51,9 @@ describe('parseMaterialListText (compare worksheet paste)', () => {
 });
 
 describe('normalizeBomName', () => {
-  test('lowercases, strips punctuation, collapses whitespace', () => {
-    expect(normalizeBomName('4x4x8 PT  Posts!')).toBe('4x4x8 pt posts');
+  test('lowercases, strips punctuation, splits digit/letter boundaries', () => {
+    expect(normalizeBomName('4x4x8 PT  Posts!')).toBe('4 x 4 x 8 pt posts');
+    expect(normalizeBomName('50lb concrete bags')).toBe('50 lb concrete bags');
     expect(normalizeBomName('  Rail-Brackets (galv.) ')).toBe('rail brackets galv');
     expect(normalizeBomName(null)).toBe('');
   });
@@ -105,6 +106,28 @@ describe('compareManualBom', () => {
   test('short names (<3 chars) only match exactly, not by substring', () => {
     const r = compareManualBom([{ name: 'pt', qty: 1 }], computed);
     expect(r.rows[0].countedName).toBeNull();
+  });
+
+  test('digit-unit and plural variants match (the QA-table names)', () => {
+    const realBom = [
+      { name: '4x4x8 PT line posts', qty: 18 },
+      { name: '1x6x6 dog ear PT pickets', qty: 323 },
+      { name: '50lb concrete bags', qty: 40 },
+      { name: 'Exterior deck screws (box)', qty: 22 }
+    ];
+    const r = compareManualBom([
+      { name: '50 lb concrete bags', qty: 40 },
+      { name: 'Screw boxes', qty: 22 },
+      { name: 'pickets', qty: 300 },
+      { name: 'line posts', qty: 18 }
+    ], realBom);
+    expect(r.rows[0].countedName).toBe('50lb concrete bags');
+    expect(r.rows[0].qtyDelta).toBe(0);
+    expect(r.rows[1].countedName).toBe('Exterior deck screws (box)');
+    expect(r.rows[2].countedName).toBe('1x6x6 dog ear PT pickets');
+    expect(r.rows[2].qtyDelta).toBe(23);
+    expect(r.rows[3].countedName).toBe('4x4x8 PT line posts');
+    expect(r.unmatchedComputed).toEqual([]);
   });
 
   test('unmatched computed items are listed', () => {

@@ -56,7 +56,7 @@ Trace a ~**152 ft** back-property line (2 points, no corners). Wood, 6 ft,
 | 4x4x8 line posts      | 18           | 9.98    | 179.64     |
 | 4x4x8 corner/end posts| 2            | 9.98    | 19.96      |
 | 2x4x16 rails          | 29           | 13.88   | 402.52     |
-| 6-ft pickets          | 323          | 2.38    | 768.74     |
+| pickets               | 323          | 2.38    | 768.74     |
 | Rail brackets         | 114          | 0.98    | 111.72     |
 | Post caps             | 20           | 7.98    | 159.60     |
 | 50 lb concrete bags   | 40           | 7.97    | 318.80     |
@@ -113,9 +113,10 @@ job minimum 750.
 Walk the whole path and verify each:
 1. Contractor panel: Customer Price = materials + gate + extras + labor
    (incl. gate labor) + markup; profit/margin shown.
-2. **Manual BOM compare**: enter a "what I'd buy" list — `4x4x8 posts ×20`,
-   `pickets ×300`, `concrete ×45` → expect match on posts (20 counted),
-   pickets short 23, concrete over 5.
+2. **Manual BOM compare**: paste a "what I'd buy" list — `4x4x8 posts x20`,
+   `pickets 300`, `concrete bags 45` → posts matches the *line posts* row
+   (18 counted — you have 2 more, since corners are their own row now),
+   pickets short 23, concrete bags over 5.
 3. Save → reopen: totals identical (BOM overrides + custom items survive).
 4. Send to Customer → open the link in a private window: items + quantities
    only, **no unit costs**, total = the full customer price from step 1,

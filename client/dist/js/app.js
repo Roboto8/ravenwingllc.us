@@ -3120,7 +3120,16 @@ var manualBom = [];
 var _lastCombinedBomItems = [];
 
 function normalizeBomName(s) {
-  return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2') // '50lb' -> '50 lb'
+    .replace(/\s+/g, ' ').trim();
+}
+
+// Naive plural fold so 'screw boxes' can meet 'screws (box)'.
+function foldBomToken(t) {
+  if (t.length > 3 && t.slice(-2) === 'es') return t.slice(0, -2);
+  if (t.length > 2 && t.slice(-1) === 's') return t.slice(0, -1);
+  return t;
 }
 
 function compareManualBom(manualItems, bomItems) {
@@ -3147,6 +3156,26 @@ function compareManualBom(manualItems, bomItems) {
       if (matches[mi] >= 0 || used[idx]) return;
       var cName = normalizeBomName(c.name);
       if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) { matches[mi] = idx; used[idx] = true; }
+    });
+  });
+  // Pass 3: token-subset fallback — every word of the shorter name appears in
+  // the longer one (plural-folded), so '50 lb concrete bags' meets
+  // '50lb concrete bags' and 'screw boxes' meets 'Exterior deck screws (box)'.
+  manual.forEach(function(m, mi) {
+    if (matches[mi] >= 0) return;
+    var mName = normalizeBomName(m.name);
+    if (!mName || mName.length < 3) return;
+    var mTok = mName.split(' ').map(foldBomToken);
+    computed.forEach(function(c, idx) {
+      if (matches[mi] >= 0 || used[idx]) return;
+      var cTok = normalizeBomName(c.name).split(' ').map(foldBomToken);
+      var small = mTok.length <= cTok.length ? mTok : cTok;
+      var big = {};
+      (mTok.length <= cTok.length ? cTok : mTok).forEach(function(t) { big[t] = 1; });
+      if (small.length > 0 && small.every(function(t) { return big[t] === 1; })) {
+        matches[mi] = idx;
+        used[idx] = true;
+      }
     });
   });
   var rows = manual.map(function(m, mi) {
@@ -3272,6 +3301,9 @@ function renderManualBom(force) {
     return;
   }
   var result = compareManualBom(manualBom, _lastCombinedBomItems);
+  // Compact single-line rows (the .custom-item classes force the name onto
+  // its own full-width row, which triples the height of every entry here).
+  var inputStyle = 'padding:5px 6px;background:var(--bg);border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-size:0.78rem;font-family:var(--font)';
   container.innerHTML = manualBom.map(function(i, idx) {
     var r = result.rows[idx];
     var delta = '';
@@ -3279,15 +3311,15 @@ function renderManualBom(force) {
       var diffTxt = r.qtyDelta === 0 ? 'same count'
         : r.qtyDelta > 0 ? 'FenceTrace counts ' + r.qtyDelta + ' more'
         : 'you have ' + Math.abs(r.qtyDelta) + ' more';
-      delta = '<div style="font-size:0.7rem;color:' + (r.qtyDelta === 0 ? 'var(--green, #3a9a5c)' : 'var(--text-muted, #9aa)') + ';margin:-2px 0 4px 2px">⇆ ' + escapeHtml(r.countedName) + ': ' + r.countedQty + ' counted — ' + diffTxt + '</div>';
+      delta = '<div style="font-size:0.68rem;line-height:1.3;color:' + (r.qtyDelta === 0 ? 'var(--green, #3a9a5c)' : 'var(--text-muted, #9aa)') + ';margin:0 0 6px 2px">⇆ ' + escapeHtml(r.countedName) + ': ' + r.countedQty + ' counted — ' + diffTxt + '</div>';
     } else if (r.name) {
-      delta = '<div style="font-size:0.7rem;color:var(--text-muted, #9aa);margin:-2px 0 4px 2px">no matching item in FenceTrace’s count</div>';
+      delta = '<div style="font-size:0.68rem;line-height:1.3;color:var(--text-muted, #9aa);margin:0 0 6px 2px">no matching item in FenceTrace’s count</div>';
     }
-    return '<div class="custom-item">' +
-      '<input type="text" placeholder="Item name" value="' + escapeHtml(i.name) + '" onchange="updateManualBomItem(\'' + i.id + '\',\'name\',this.value)" class="ci-name">' +
-      '<input type="number" placeholder="Qty" value="' + i.qty + '" onchange="updateManualBomItem(\'' + i.id + '\',\'qty\',this.value)" class="ci-qty">' +
-      '<span class="ci-dollar">$<input type="number" placeholder="0" value="' + i.unitCost + '" onchange="updateManualBomItem(\'' + i.id + '\',\'unitCost\',this.value)" class="ci-cost"></span>' +
-      '<button class="gate-remove" onclick="removeManualBomItem(\'' + i.id + '\')">&times;</button>' +
+    return '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">' +
+      '<input type="text" placeholder="Item name" value="' + escapeHtml(i.name) + '" onchange="updateManualBomItem(\'' + i.id + '\',\'name\',this.value)" style="flex:1;min-width:0;' + inputStyle + '">' +
+      '<input type="number" placeholder="Qty" value="' + i.qty + '" onchange="updateManualBomItem(\'' + i.id + '\',\'qty\',this.value)" style="width:52px;flex-shrink:0;text-align:right;' + inputStyle + '">' +
+      '<span style="display:flex;align-items:center;gap:1px;flex-shrink:0;color:var(--text-muted);font-size:0.78rem">$<input type="number" placeholder="0" value="' + i.unitCost + '" onchange="updateManualBomItem(\'' + i.id + '\',\'unitCost\',this.value)" style="width:58px;text-align:right;' + inputStyle + '"></span>' +
+      '<button class="gate-remove" onclick="removeManualBomItem(\'' + i.id + '\')" style="flex-shrink:0">&times;</button>' +
     '</div>' + delta;
   }).join('');
   if (summary) {
