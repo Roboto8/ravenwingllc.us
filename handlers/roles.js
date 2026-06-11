@@ -19,7 +19,7 @@ const ALL_PERMISSIONS = [
 // Built-in owner role — always has everything
 const OWNER_ROLE = {
   name: 'owner',
-  color: '#c0622e',
+  color: '#226d46',
   permissions: ALL_PERMISSIONS,
   builtIn: true
 };
@@ -27,7 +27,7 @@ const OWNER_ROLE = {
 // Default member role
 const DEFAULT_MEMBER_ROLE = {
   name: 'member',
-  color: '#6b6052',
+  color: '#5c6657',
   permissions: ['estimates.create', 'estimates.edit', 'estimates.view', 'export.data'],
   builtIn: true
 };
@@ -45,7 +45,7 @@ module.exports.list = res.wrap(async (event) => {
     if (r.name !== 'owner' && r.name !== 'member') {
       roles.push({
         name: r.name,
-        color: r.color || '#6b6052',
+        color: r.color || '#5c6657',
         permissions: r.permissions || [],
         builtIn: false
       });
@@ -83,7 +83,7 @@ module.exports.create = res.wrap(async (event) => {
   const requested = (body.permissions || []).filter(p => ALL_PERMISSIONS.includes(p));
   const permissions = filterGrantablePermissions(requested, callerPerms);
   const dropped = requested.filter(p => !permissions.includes(p));
-  const color = body.color || '#6b6052';
+  const color = body.color || '#5c6657';
 
   await db.put({
     PK: 'COMPANY#' + companyId,

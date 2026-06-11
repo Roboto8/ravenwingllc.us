@@ -16,7 +16,7 @@ const leads = require('../handlers/leads');
 
 const COMPANY_ID = 'comp-12345678';
 const mockCompany = {
-  id: COMPANY_ID, name: "Sam's Fence", accentColor: '#c0622e',
+  id: COMPANY_ID, name: "Sam's Fence", accentColor: '#226d46',
   tagline: 'Fences since 1976', email: 'secret@samsfences.com',
   pricebook: { 'wood.picket': 4.5 }, stripeCustomerId: 'cus_secret'
 };
@@ -50,7 +50,7 @@ describe('leads handler', () => {
       const body = JSON.parse(result.body);
       expect(result.statusCode).toBe(200);
       expect(body.name).toBe("Sam's Fence");
-      expect(body.accentColor).toBe('#c0622e');
+      expect(body.accentColor).toBe('#226d46');
       expect(body.email).toBeUndefined();
       expect(body.pricebook).toBeUndefined();
       expect(body.stripeCustomerId).toBeUndefined();

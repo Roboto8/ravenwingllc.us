@@ -56,19 +56,19 @@ function htmlWrap(body) {
     let html = escapeHtml(para).replace(/\n/g, ' ');
     html = html.replace(
       /https:\/\/fencetrace\.com/g,
-      '<a href="https://fencetrace.com" style="color:#c0622e;font-weight:600">fencetrace.com</a>'
+      '<a href="https://fencetrace.com" style="color:#226d46;font-weight:600">fencetrace.com</a>'
     );
     return '<p style="margin:0 0 16px">' + html + '</p>';
   }).join('\n');
   return [
     '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#ffffff">',
-    '<div style="max-width:560px;margin:0;font-family:Georgia,\'Times New Roman\',serif;font-size:16px;line-height:1.55;color:#2c2417;padding:8px 4px">',
+    '<div style="max-width:560px;margin:0;font-family:Georgia,\'Times New Roman\',serif;font-size:16px;line-height:1.55;color:#1c241a;padding:8px 4px">',
     paras,
     '<p style="margin:24px 0 0">Todd<br>',
-    '<span style="color:#c0622e;font-weight:700;letter-spacing:0.3px">FenceTrace</span><br>',
-    '<a href="https://fencetrace.com" style="color:#6b6052;font-size:13px;text-decoration:none">fencetrace.com</a></p>',
-    ps ? '<p style="margin:20px 0 0;font-size:13px;color:#6b6052">P.S. ' + escapeHtml(ps).replace(/\n/g, ' ') + '</p>' : '',
-    addr ? '<p style="margin:18px 0 0;font-size:11px;color:#9a9087">' + escapeHtml(addr) + '</p>' : '',
+    '<span style="color:#226d46;font-weight:700;letter-spacing:0.3px">FenceTrace</span><br>',
+    '<a href="https://fencetrace.com" style="color:#5c6657;font-size:13px;text-decoration:none">fencetrace.com</a></p>',
+    ps ? '<p style="margin:20px 0 0;font-size:13px;color:#5c6657">P.S. ' + escapeHtml(ps).replace(/\n/g, ' ') + '</p>' : '',
+    addr ? '<p style="margin:18px 0 0;font-size:11px;color:#8b948a">' + escapeHtml(addr) + '</p>' : '',
     '</div></body></html>',
   ].join('\n');
 }

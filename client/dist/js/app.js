@@ -614,10 +614,10 @@ function initMap() {
     var feetPerPixel = metersPerPixel * 3.28084;
     var accuracy;
     var color;
-    if (zoom >= 20) { accuracy = t('accuracy_excellent'); color = '#2d6e28'; }
-    else if (zoom >= 18) { accuracy = t('accuracy_good'); color = '#2d6e28'; }
-    else if (zoom >= 16) { accuracy = t('accuracy_fair'); color = '#d4870e'; }
-    else { accuracy = t('accuracy_low'); color = '#b93a2a'; }
+    if (zoom >= 20) { accuracy = t('accuracy_excellent'); color = '#2e7d32'; }
+    else if (zoom >= 18) { accuracy = t('accuracy_good'); color = '#2e7d32'; }
+    else if (zoom >= 16) { accuracy = t('accuracy_fair'); color = '#c77d11'; }
+    else { accuracy = t('accuracy_low'); color = '#b3362a'; }
 
     var pxLabel = useMetric ? (metersPerPixel.toFixed(1) + ' m/px') : (feetPerPixel.toFixed(1) + ' ft/px');
     div.innerHTML = '<span style="color:' + color + '">' + accuracy + '</span> ~' + pxLabel;
@@ -784,8 +784,8 @@ function makeDroneAdjustable(bounds) {
   corners.forEach(function(latlng, idx) {
     var marker = L.circleMarker(latlng, {
       radius: handleSize / 2,
-      color: '#c0622e',
-      fillColor: '#c0622e',
+      color: '#a05a2c',
+      fillColor: '#a05a2c',
       fillOpacity: 1,
       weight: 2,
       interactive: true,
@@ -965,7 +965,7 @@ function createSegmentLabel(p1, p2, segIndex) {
 
   // Leader line (only visible when label has been moved away)
   var leaderLine = L.polyline([[anchorLat, anchorLng], [midLat, midLng]], {
-    color: '#c0622e', weight: 1, opacity: isOffset ? 0.6 : 0, dashArray: '4,4',
+    color: '#a05a2c', weight: 1, opacity: isOffset ? 0.6 : 0, dashArray: '4,4',
     interactive: false
   }).addTo(map);
   segLeaderLines.push(leaderLine);
@@ -1310,7 +1310,7 @@ function addFencePoint(latlng) {
       if (ptIdx < 0) return;
       L.popup({ closeButton: true, className: 'fence-delete-popup', offset: [0, -15] })
         .setLatLng(marker.getLatLng())
-        .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Point ' + (ptIdx + 1) + '</b><br><button onclick="deleteFencePoint(' + ptIdx + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b93a2a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete Point</button></div>')
+        .setContent('<div style="text-align:center;padding:4px"><b style="font-size:12px">Point ' + (ptIdx + 1) + '</b><br><button onclick="deleteFencePoint(' + ptIdx + ');map.closePopup()" style="margin-top:6px;padding:6px 16px;background:#b3362a;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Delete Point</button></div>')
         .openOn(map);
     });
   }, 500);
@@ -1854,7 +1854,7 @@ function addGate(latlng) {
     draggable: true,
     icon: L.divIcon({
       className: 'gate-marker',
-      html: '<div style="background:#c0622e;color:#fff;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);letter-spacing:0.5px;">' + t('gate_marker_label') + '</div>',
+      html: '<div style="background:#a05a2c;color:#fff;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);letter-spacing:0.5px;">' + t('gate_marker_label') + '</div>',
       iconSize: [50, 20],
       iconAnchor: [25, 28]
     })
@@ -3704,14 +3704,14 @@ function finalizeMulchArea(points) {
   var rotCenter = getMulchCenter(points);
   var rotHandlePos = getRotationHandlePos(points, rotCenter);
   var rotMarker = L.circleMarker(rotHandlePos, {
-    radius: rotRadius, color: '#c0622e', fillColor: '#c0622e', fillOpacity: 0.9, weight: 2,
+    radius: rotRadius, color: '#a05a2c', fillColor: '#a05a2c', fillOpacity: 0.9, weight: 2,
     interactive: true, bubblingMouseEvents: false
   }).addTo(map);
   rotMarker.getElement && rotMarker.getElement() && (rotMarker.getElement().style.cursor = 'grab');
 
   // Rotation line connecting center to handle
   var rotLine = L.polyline([rotCenter, rotHandlePos], {
-    color: '#c0622e', weight: 1, dashArray: '4,4', opacity: 0.6
+    color: '#a05a2c', weight: 1, dashArray: '4,4', opacity: 0.6
   }).addTo(map);
 
   // Area label — positioned at top edge, draggable with leader line
@@ -4029,7 +4029,7 @@ function rebuildMulchCorners(areaIdx) {
   var rotPos = getRotationHandlePos(area.points, center);
 
   area.rotMarker = L.circleMarker(rotPos, {
-    radius: rotRadius, color: '#c0622e', fillColor: '#c0622e', fillOpacity: 0.9, weight: 2,
+    radius: rotRadius, color: '#a05a2c', fillColor: '#a05a2c', fillOpacity: 0.9, weight: 2,
     interactive: true, bubblingMouseEvents: false
   }).addTo(map);
   if (area.rotMarker.getElement) {
@@ -4038,7 +4038,7 @@ function rebuildMulchCorners(areaIdx) {
   }
 
   area.rotLine = L.polyline([center, rotPos], {
-    color: '#c0622e', weight: 1, dashArray: '4,4', opacity: 0.6
+    color: '#a05a2c', weight: 1, dashArray: '4,4', opacity: 0.6
   }).addTo(map);
 
   // Re-bind all drag handlers
@@ -4603,7 +4603,7 @@ function showSearchSuggestions(query) {
         if (!_searchDropdown) {
           _searchDropdown = document.createElement('div');
           _searchDropdown.id = 'search-dropdown';
-          _searchDropdown.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border,#d4cdc4);border-top:none;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-height:200px;overflow-y:auto';
+          _searchDropdown.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border,#ccd4c8);border-top:none;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-height:200px;overflow-y:auto';
           document.getElementById('search-bar').appendChild(_searchDropdown);
         }
 
@@ -4612,11 +4612,11 @@ function showSearchSuggestions(query) {
           var main = parts[0];
           var sub = parts.slice(1, 3).join(',').trim();
           return '<div class="search-suggestion" data-idx="' + i + '" style="padding:8px 12px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid var(--border,#eee);transition:background 0.1s"' +
-            ' onmouseover="this.style.background=\'var(--surface-2,#ede8e2)\'"' +
+            ' onmouseover="this.style.background=\'var(--surface-2,#eaeee7)\'"' +
             ' onmouseout="this.style.background=\'none\'"' +
             ' onclick="selectSuggestion(' + r.lat + ',' + r.lon + ',\'' + escapeHtml(r.display_name).replace(/'/g, "\\'") + '\')">' +
-            '<div style="font-weight:600;color:var(--text,#2c2417)">' + escapeHtml(main) + '</div>' +
-            '<div style="font-size:0.75rem;color:var(--text-muted,#6b6052)">' + escapeHtml(sub) + '</div>' +
+            '<div style="font-weight:600;color:var(--text,#1c241a)">' + escapeHtml(main) + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--text-muted,#5c6657)">' + escapeHtml(sub) + '</div>' +
           '</div>';
         }).join('');
       })
@@ -5103,7 +5103,7 @@ function captureMapWithTiles() {
     canvas.width = canvasW;
     canvas.height = canvasH;
     var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#e8e0d6';
+    ctx.fillStyle = '#e3e8e0';
     ctx.fillRect(0, 0, canvasW, canvasH);
 
     // Geographic bounds of the tile grid
@@ -5163,13 +5163,13 @@ function captureMapWithTiles() {
           if (i === 0) ctx.moveTo(toX(p), toY(p)); else ctx.lineTo(toX(p), toY(p));
         });
         if (sec.closed) ctx.closePath();
-        ctx.strokeStyle = '#c0622e';
+        ctx.strokeStyle = '#a05a2c';
         ctx.lineWidth = 4;
         ctx.stroke();
         sec.points.forEach(function(p) {
           ctx.beginPath();
           ctx.arc(toX(p), toY(p), 6, 0, Math.PI * 2);
-          ctx.fillStyle = '#c0622e'; ctx.fill();
+          ctx.fillStyle = '#a05a2c'; ctx.fill();
           ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
         });
       });
@@ -5179,7 +5179,7 @@ function captureMapWithTiles() {
         var x = toX(g.latlng), y = toY(g.latlng);
         ctx.font = 'bold 14px sans-serif';
         var tw = ctx.measureText('GATE').width;
-        ctx.fillStyle = '#c0622e';
+        ctx.fillStyle = '#a05a2c';
         ctx.fillRect(x - tw / 2 - 4, y - 10, tw + 8, 20);
         ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('GATE', x, y);
@@ -5255,7 +5255,7 @@ function captureMapReal() {
         allowTaint: true,
         scale: 2,
         logging: false,
-        backgroundColor: '#e8e0d6'
+        backgroundColor: '#e3e8e0'
       }).then(function(canvas) {
         // Restore UI and map view
         hideEls.forEach(function(el) { el.style.visibility = ''; });
@@ -5281,7 +5281,7 @@ function captureMapFallback() {
       var ctx = canvas.getContext('2d');
 
       // Background
-      ctx.fillStyle = '#e8e0d6';
+      ctx.fillStyle = '#e3e8e0';
       ctx.fillRect(0, 0, w, h);
 
       // Gather all points from all sections + mulch areas for bounds
@@ -5318,7 +5318,7 @@ function captureMapFallback() {
       function toY(lat) { return h - ((lat - minLat) / (maxLat - minLat)) * h; }
 
       // Draw grid lines
-      ctx.strokeStyle = '#d4cdc4';
+      ctx.strokeStyle = '#ccd4c8';
       ctx.lineWidth = 0.5;
       for (var gx = 0; gx < w; gx += 60) {
         ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
@@ -5368,7 +5368,7 @@ function captureMapFallback() {
             ctx.lineTo(toX(spline[i].lng), toY(spline[i].lat));
           }
           if (sec.closed) ctx.closePath();
-          ctx.strokeStyle = '#c0622e';
+          ctx.strokeStyle = '#a05a2c';
           ctx.lineWidth = 3;
           ctx.stroke();
         } else {
@@ -5378,7 +5378,7 @@ function captureMapFallback() {
             ctx.lineTo(toX(pts[i].lng), toY(pts[i].lat));
           }
           if (sec.closed) ctx.closePath();
-          ctx.strokeStyle = '#c0622e';
+          ctx.strokeStyle = '#a05a2c';
           ctx.lineWidth = 3;
           if (!sec.closed) ctx.setLineDash([8, 8]);
           ctx.stroke();
@@ -5389,7 +5389,7 @@ function captureMapFallback() {
         pts.forEach(function(p) {
           ctx.beginPath();
           ctx.arc(toX(p.lng), toY(p.lat), 5, 0, Math.PI * 2);
-          ctx.fillStyle = '#c0622e';
+          ctx.fillStyle = '#a05a2c';
           ctx.fill();
           ctx.strokeStyle = '#fff';
           ctx.lineWidth = 2;
@@ -5411,7 +5411,7 @@ function captureMapFallback() {
           var text = fmtLen(segFeet);
           ctx.font = 'bold 11px sans-serif';
           var tw = ctx.measureText(text).width;
-          ctx.fillStyle = 'rgba(44, 36, 23, 0.85)';
+          ctx.fillStyle = 'rgba(28, 36, 26, 0.85)';
           ctx.fillRect(mx - tw / 2 - 5, my - 8, tw + 10, 16);
           ctx.fillStyle = '#fff';
           ctx.textAlign = 'center';
@@ -5427,7 +5427,7 @@ function captureMapFallback() {
         ctx.font = 'bold 10px sans-serif';
         var gateLabel = t('gate_marker_label');
         var tw = ctx.measureText(gateLabel).width;
-        ctx.fillStyle = '#c0622e';
+        ctx.fillStyle = '#a05a2c';
         ctx.fillRect(x - tw / 2 - 5, y - 10, tw + 10, 18);
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
@@ -5437,7 +5437,7 @@ function captureMapFallback() {
 
       // Title
       ctx.font = 'bold 13px sans-serif';
-      ctx.fillStyle = '#2c2417';
+      ctx.fillStyle = '#1c241a';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       var mapTitle = '';
@@ -7000,9 +7000,9 @@ function showDemoBanner() {
   window._pendingDemoBanner = false;
   var banner = document.createElement('div');
   banner.id = 'demo-banner';
-  banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--text,#2c2417);color:#fff;padding:14px 20px;border-radius:12px;font-family:var(--font,Inter,sans-serif);font-size:0.95rem;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:calc(100% - 24px)';
+  banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--text,#1c241a);color:#fff;padding:14px 20px;border-radius:12px;font-family:var(--font,Inter,sans-serif);font-size:0.95rem;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:calc(100% - 24px)';
   banner.innerHTML = '<span>This is a <b>sample estimate</b></span>' +
-    '<button onclick="demoTryItYourself()" style="background:#c0622e;color:#fff;border:none;padding:12px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;white-space:nowrap">Try My Address</button>' +
+    '<button onclick="demoTryItYourself()" style="background:#226d46;color:#fff;border:none;padding:12px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;white-space:nowrap">Try My Address</button>' +
     '<button onclick="this.parentElement.remove()" aria-label="Dismiss" style="background:none;border:none;color:#999;cursor:pointer;font-size:22px;padding:6px">&times;</button>';
   document.body.appendChild(banner);
 }

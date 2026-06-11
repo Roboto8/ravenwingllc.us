@@ -120,7 +120,7 @@ describe('roles handler - edge cases', () => {
         body: JSON.stringify({ name: 'newrole', permissions: [] })
       });
       const body = JSON.parse(result.body);
-      expect(body.color).toBe('#6b6052');
+      expect(body.color).toBe('#5c6657');
     });
 
     test('uses provided color', async () => {

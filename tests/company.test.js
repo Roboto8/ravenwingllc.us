@@ -35,7 +35,7 @@ describe('company handler', () => {
     name: 'Acme Fencing',
     email: 'info@acme.com',
     phone: '555-0100',
-    accentColor: '#c0622e',
+    accentColor: '#226d46',
     tagline: 'Best fences in town',
     address: '123 Fence St',
     logoKey: 'logos/acme.png',

@@ -134,12 +134,12 @@ function money(n) {
 
 function buildHtml(m, mrr, dateStr) {
   const mrrLine = mrr.ok
-    ? `<tr><td style="padding:6px 0;font-size:22px;font-weight:800;color:#c0622e">${money(mrr.mrr)}<span style="font-size:13px;font-weight:400;color:#6b6052"> MRR · ${mrr.activeSubs} paying</span></td></tr>`
+    ? `<tr><td style="padding:6px 0;font-size:22px;font-weight:800;color:#226d46">${money(mrr.mrr)}<span style="font-size:13px;font-weight:400;color:#5c6657"> MRR · ${mrr.activeSubs} paying</span></td></tr>`
     : `<tr><td style="padding:6px 0;color:#a00">MRR unavailable (Stripe lookup failed) — ${m.active} active per our DB</td></tr>`;
-  const row = (label, val) => `<tr><td style="padding:4px 0;color:#6b6052;font-size:14px">${label}</td><td style="padding:4px 0;text-align:right;font-weight:700;font-size:14px">${val}</td></tr>`;
-  return `<!DOCTYPE html><html><body style="font-family:-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#2c2417">
-  <h2 style="color:#c0622e;margin:0 0 2px">Fence<span style="color:#2c2417">Trace</span> · daily</h2>
-  <p style="color:#6b6052;margin:0 0 16px;font-size:13px">${dateStr}</p>
+  const row = (label, val) => `<tr><td style="padding:4px 0;color:#5c6657;font-size:14px">${label}</td><td style="padding:4px 0;text-align:right;font-weight:700;font-size:14px">${val}</td></tr>`;
+  return `<!DOCTYPE html><html><body style="font-family:-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1c241a">
+  <h2 style="color:#226d46;margin:0 0 2px">Fence<span style="color:#1c241a">Trace</span> · daily</h2>
+  <p style="color:#5c6657;margin:0 0 16px;font-size:13px">${dateStr}</p>
   <table style="width:100%;border-collapse:collapse">${mrrLine}</table>
   <table style="width:100%;border-collapse:collapse;margin-top:12px">
     ${row('Total accounts', m.totalCompanies)}
@@ -152,8 +152,8 @@ function buildHtml(m, mrr, dateStr) {
     ${row('Estimates created (24h)', m.estimates24h)}
     ${row('Estimates this month', m.estimatesMonth)}
   </table>
-  <div style="margin-top:20px;padding:14px 16px;background:#fdf6f0;border-left:4px solid #c0622e;border-radius:4px">
-    <div style="font-size:12px;font-weight:700;color:#c0622e;letter-spacing:.04em;text-transform:uppercase">Today's move</div>
+  <div style="margin-top:20px;padding:14px 16px;background:#f0f6f1;border-left:4px solid #226d46;border-radius:4px">
+    <div style="font-size:12px;font-weight:700;color:#226d46;letter-spacing:.04em;text-transform:uppercase">Today's move</div>
     <div style="margin-top:4px;font-size:15px">${topAction(m)}</div>
   </div>
   </body></html>`;
