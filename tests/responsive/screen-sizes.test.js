@@ -28,6 +28,8 @@ const DEVICES = {
   'Desktop 1440x900': { width: 1440, height: 900 },
   'Desktop 1366x768': { width: 1366, height: 768 },
   'Laptop 1280x720': { width: 1280, height: 720 },
+  'Handheld 1080p @150% (ROG Ally)': { width: 1280, height: 648 },
+  'Desktop 1080p @125%': { width: 1536, height: 816 },
 
   // Tablets
   'iPad Pro 12.9': { width: 1024, height: 1366 },
@@ -91,6 +93,37 @@ describe('Main App - Screen Sizes', () => {
       });
 
       expect(overflow).toBe(false);
+      await page.close();
+    }, 15000);
+  });
+
+  // ---- Estimate panel fully on-screen (catches clipped-not-scrolling bugs) ----
+  // html/body use overflow:hidden, so scrollWidth checks miss layouts where a
+  // too-wide map panel pushes the estimate panel past the right edge (seen on
+  // 1080p at 150% display scaling). Assert the panel's box is inside the viewport.
+  describe('estimate panel fully on-screen', () => {
+    const wideDevices = Object.entries(DEVICES).filter(([_, v]) => v.width > 900);
+
+    test.each(wideDevices)('%s - panel right edge within viewport', async (name, { width, height }) => {
+      const page = await browser.newPage();
+      await page.setViewport({ width, height });
+      await page.goto(INDEX_URL, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      await delay(300);
+
+      const box = await page.evaluate(() => {
+        const el = document.querySelector('.estimate-panel');
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        return {
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          viewportWidth: document.documentElement.clientWidth
+        };
+      });
+
+      expect(box).not.toBeNull();
+      expect(box.right).toBeLessThanOrEqual(box.viewportWidth + 2);
+      expect(box.left).toBeGreaterThanOrEqual(-2);
       await page.close();
     }, 15000);
   });
