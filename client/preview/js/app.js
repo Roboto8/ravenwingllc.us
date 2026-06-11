@@ -2316,6 +2316,14 @@ function selectTerrain(btn, multiplier) {
   btn.parentElement.querySelectorAll('.height-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   terrainMultiplier = multiplier;
+  // Feedback at the point of click — the number this changes (Estimate
+  // total) lives further down the panel, and the Materials Total that sits
+  // next to these buttons intentionally never moves.
+  if (typeof showToast === 'function') {
+    showToast(multiplier > 1
+      ? '+' + Math.round((multiplier - 1) * 100) + '% terrain — fence materials adjusted in the Estimate total'
+      : 'Flat ground — no terrain adjustment');
+  }
   recalculate();
 }
 

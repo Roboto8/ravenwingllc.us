@@ -86,8 +86,8 @@ var I18N = {
 
     // -- Ground / terrain --
     terrain_flat: 'Flat',
-    terrain_slope: 'Slope',
-    terrain_rocky: 'Rocky',
+    terrain_slope: 'Slope +15%',
+    terrain_rocky: 'Rocky +30%',
 
     // -- Gates --
     gates_empty: 'Place gates by clicking the map',
@@ -476,8 +476,8 @@ var I18N = {
 
     // -- Ground / terrain --
     terrain_flat: 'Plano',
-    terrain_slope: 'Pendiente',
-    terrain_rocky: 'Rocoso',
+    terrain_slope: 'Pendiente +15%',
+    terrain_rocky: 'Rocoso +30%',
 
     // -- Gates --
     gates_empty: 'Coloque puertas haciendo clic en el mapa',
@@ -866,8 +866,8 @@ var I18N = {
 
     // -- Ground / terrain --
     terrain_flat: 'Vlak',
-    terrain_slope: 'Helling',
-    terrain_rocky: 'Rotsachtig',
+    terrain_slope: 'Helling +15%',
+    terrain_rocky: 'Rotsachtig +30%',
 
     // -- Gates --
     gates_empty: 'Plaats poorten door op de kaart te klikken',
@@ -1256,8 +1256,8 @@ var I18N = {
 
     // -- Ground / terrain --
     terrain_flat: 'Plat',
-    terrain_slope: 'Pente',
-    terrain_rocky: 'Rocheux',
+    terrain_slope: 'Pente +15%',
+    terrain_rocky: 'Rocheux +30%',
 
     // -- Gates --
     gates_empty: 'Placez des portails en cliquant sur la carte',
@@ -1646,8 +1646,8 @@ var I18N = {
 
     // -- Ground / terrain --
     terrain_flat: 'Flach',
-    terrain_slope: 'Hang',
-    terrain_rocky: 'Felsig',
+    terrain_slope: 'Hang +15%',
+    terrain_rocky: 'Felsig +30%',
 
     // -- Gates --
     gates_empty: 'Tore durch Klicken auf die Karte platzieren',
@@ -2036,8 +2036,8 @@ var I18N = {
 
     // -- Ground / terrain --
     terrain_flat: 'Plano',
-    terrain_slope: 'Inclinado',
-    terrain_rocky: 'Rochoso',
+    terrain_slope: 'Inclinado +15%',
+    terrain_rocky: 'Rochoso +30%',
 
     // -- Gates --
     gates_empty: 'Coloque portoes clicando no mapa',
