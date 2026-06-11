@@ -100,6 +100,9 @@ package:
     - '!coverage/**'
     # outreach/ holds Gmail OAuth secrets on homebase — must NEVER enter a zip
     - '!outreach/**'
+    # .env holds local credentials (the framework excludes dotenv files by
+    # default, but never rely on a default for a secret)
+    - '!.env*'
     - '!docs/**'
     - '!.claude/**'
     - '!*.md'
