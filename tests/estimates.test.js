@@ -349,6 +349,109 @@ describe('estimates handler', () => {
       });
       expect(result.statusCode).toBe(403);
     });
+
+    test('resets approval to sent when price changes on an approved estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({
+        ...mockEstimate,
+        approvalStatus: 'approved',
+        approvalHistory: [{ action: 'sent', timestamp: '2025-01-15T00:00:00.000Z' }]
+      });
+      db.update.mockResolvedValue(mockEstimate);
+
+      await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ totalCost: 9999 })
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.approvalStatus).toBe('sent');
+      const last = updateArgs.approvalHistory[updateArgs.approvalHistory.length - 1];
+      expect(last.action).toBe('revised');
+      expect(last.timestamp).toBeDefined();
+    });
+
+    test('resets approval when bom changes on a sent estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({ ...mockEstimate, approvalStatus: 'sent' });
+      db.update.mockResolvedValue(mockEstimate);
+
+      await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ bom: [{ name: 'Posts', qty: 14, unit: 'ea', unitCost: 16, total: 224 }] })
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.approvalStatus).toBe('sent');
+      expect(updateArgs.approvalHistory[updateArgs.approvalHistory.length - 1].action).toBe('revised');
+    });
+
+    test('does not reset approval when only non-money fields change', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({ ...mockEstimate, approvalStatus: 'approved' });
+      db.update.mockResolvedValue(mockEstimate);
+
+      await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ customerName: 'New Name' })
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.approvalStatus).toBeUndefined();
+      expect(updateArgs.approvalHistory).toBeUndefined();
+    });
+
+    test('does not reset approval when money field value is unchanged', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({ ...mockEstimate, approvalStatus: 'approved' });
+      db.update.mockResolvedValue(mockEstimate);
+
+      await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ totalCost: 2500 }) // same as existing
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.approvalStatus).toBeUndefined();
+      expect(updateArgs.approvalHistory).toBeUndefined();
+    });
+
+    test('does not reset approval on a draft estimate', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue({ ...mockEstimate, approvalStatus: 'draft' });
+      db.update.mockResolvedValue(mockEstimate);
+
+      await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ totalCost: 9999 })
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.approvalStatus).toBeUndefined();
+      expect(updateArgs.approvalHistory).toBeUndefined();
+    });
+
+    test('does not append revised entry when history is at the cap', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const fullHistory = Array.from({ length: 50 }, () => ({
+        action: 'changes_requested', timestamp: '2025-01-15T00:00:00.000Z'
+      }));
+      db.findById.mockResolvedValue({
+        ...mockEstimate,
+        approvalStatus: 'sent',
+        approvalHistory: fullHistory
+      });
+      db.update.mockResolvedValue(mockEstimate);
+
+      await estimates.update({
+        pathParameters: { id: 'est-123' },
+        body: JSON.stringify({ totalCost: 9999 })
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.approvalStatus).toBe('sent');
+      expect(updateArgs.approvalHistory).toBeUndefined();
+    });
   });
 
   // ===== DELETE =====

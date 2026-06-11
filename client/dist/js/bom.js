@@ -559,8 +559,15 @@ function computeContractorTotals(opts) {
   var markupAmt = Math.round(subtotal * markupPct / 100);
   var customerPrice = Math.round(subtotal + laborCost + markupAmt);
   var profit = laborCost + markupAmt;
-  var marginPct = customerPrice > 0 ? Math.round(profit / customerPrice * 100) : 0;
   var jobMin = pricebookNumber(pricebook, 'markup.jobMin') || 0;
+  // The job minimum is a floor, not a warning: a price below it is raised
+  // to it, and the bump lands in profit.
+  var raisedToMinimum = jobMin > 0 && customerPrice > 0 && customerPrice < jobMin;
+  if (raisedToMinimum) {
+    customerPrice = Math.round(jobMin);
+    profit = customerPrice - Math.round(subtotal);
+  }
+  var marginPct = customerPrice > 0 ? Math.round(profit / customerPrice * 100) : 0;
   return {
     laborPerFt: laborPerFt,
     laborCost: laborCost,
@@ -570,7 +577,8 @@ function computeContractorTotals(opts) {
     profit: profit,
     marginPct: marginPct,
     jobMin: jobMin,
-    belowMinimum: jobMin > 0 && customerPrice > 0 && customerPrice < jobMin
+    raisedToMinimum: raisedToMinimum,
+    belowMinimum: raisedToMinimum
   };
 }
 

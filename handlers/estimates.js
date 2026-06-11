@@ -72,6 +72,7 @@ module.exports.create = res.wrap(async (event) => {
     gates: body.gates || [],
     addons: body.addons || {},
     bom: body.bom || [],
+    customItems: body.customItems || [],
     totalFeet: body.totalFeet || 0,
     totalCost: body.totalCost || 0,
     materialsCost: body.materialsCost || 0,
@@ -135,7 +136,7 @@ module.exports.update = res.wrap(async (event) => {
     'customerName', 'customerPhone', 'customerAddress', 'customerEmail',
     'fenceType', 'fencePrice', 'fenceHeight', 'terrainMultiplier',
     'fencePoints', 'fenceClosed', 'sections', 'gates', 'addons', 'bom',
-    'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
+    'customItems', 'mulchAreas', 'mulchMaterial', 'mulchDepth', 'mulchDelivery',
     'totalFeet', 'totalCost', 'materialsCost', 'status', 'droneOverlay', 'photos',
     'finalPrice', 'lostReason'
   ];
@@ -145,6 +146,25 @@ module.exports.update = res.wrap(async (event) => {
     if (body[key] !== undefined) updates[key] = body[key];
   }
   updates.updatedAt = new Date().toISOString();
+
+  // Price integrity: if money-bearing fields change after the customer has
+  // seen (or approved) the estimate, the old approval no longer applies —
+  // drop back to 'sent' and record the revision. This is a server-side write,
+  // not a client-supplied one (see the exclusion comment above).
+  if (['sent', 'approved'].includes(est.approvalStatus)) {
+    const moneyFields = ['totalCost', 'fencePrice', 'addons', 'gates', 'sections', 'bom', 'customItems', 'terrainMultiplier'];
+    const moneyChanged = moneyFields.some(f =>
+      updates[f] !== undefined && JSON.stringify(updates[f]) !== JSON.stringify(est[f])
+    );
+    if (moneyChanged) {
+      updates.approvalStatus = 'sent';
+      const history = est.approvalHistory || [];
+      if (history.length < MAX_HISTORY_ENTRIES) {
+        history.push({ action: 'revised', timestamp: updates.updatedAt });
+        updates.approvalHistory = history;
+      }
+    }
+  }
 
   // Outcome tracking for the market-data corpus: stamp transitions
   // server-side so time-to-close and win rates are trustworthy.
@@ -248,6 +268,8 @@ function stripKeys(item) {
 const MAX_STRING = 500;
 const MAX_ARRAY = 1000;
 const MAX_BOM = 500;
+const MAX_CUSTOM_ITEMS = 50;
+const MAX_HISTORY_ENTRIES = 50; // matches the respond() cap in handlers/approval.js
 
 function validateInput(body) {
   const stringFields = ['customerName', 'customerPhone', 'customerAddress', 'customerEmail', 'fenceType', 'mulchMaterial', 'mulchDelivery'];
@@ -267,7 +289,7 @@ function validateInput(body) {
       if (typeof body[f] !== 'number' || !isFinite(body[f])) return f + ' must be a number';
     }
   }
-  const arrayFields = ['fencePoints', 'gates', 'bom', 'sections', 'mulchAreas', 'photos'];
+  const arrayFields = ['fencePoints', 'gates', 'bom', 'customItems', 'sections', 'mulchAreas', 'photos'];
   for (const f of arrayFields) {
     if (body[f] !== undefined && !Array.isArray(body[f])) return f + ' must be an array';
   }
@@ -279,6 +301,23 @@ function validateInput(body) {
   }
   if (body.bom && Array.isArray(body.bom) && body.bom.length > MAX_BOM) {
     return 'Too many BOM items (max ' + MAX_BOM + ')';
+  }
+  if (body.customItems && Array.isArray(body.customItems)) {
+    if (body.customItems.length > MAX_CUSTOM_ITEMS) {
+      return 'Too many custom items (max ' + MAX_CUSTOM_ITEMS + ')';
+    }
+    for (const ci of body.customItems) {
+      if (!ci || typeof ci !== 'object' || Array.isArray(ci)) return 'Invalid custom item';
+      if (typeof ci.name !== 'string') return 'Custom item name must be a string';
+      ci.name = ci.name.trim();
+      if (ci.name.length > 200) return 'Custom item name exceeds maximum length';
+      if (typeof ci.qty !== 'number' || !isFinite(ci.qty) || ci.qty < 0 || ci.qty > 10000) {
+        return 'Invalid custom item qty';
+      }
+      if (typeof ci.unitCost !== 'number' || !isFinite(ci.unitCost) || ci.unitCost < 0 || ci.unitCost > 1000000) {
+        return 'Invalid custom item unitCost';
+      }
+    }
   }
   if (body.sections && Array.isArray(body.sections) && body.sections.length > 50) {
     return 'Too many sections (max 50)';

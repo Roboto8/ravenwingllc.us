@@ -50,11 +50,32 @@ describe('computeContractorTotals', () => {
     expect(t.markupAmt).toBe(100);
   });
 
-  test('job minimum flag', () => {
+  test('job minimum is a floor: price is raised, bump lands in profit', () => {
     const pb = { 'markup.jobMin': 2000 };
-    expect(computeContractorTotals({ subtotal: 1500, feet: 0, pricebook: pb }).belowMinimum).toBe(true);
-    expect(computeContractorTotals({ subtotal: 2500, feet: 0, pricebook: pb }).belowMinimum).toBe(false);
-    expect(computeContractorTotals({ subtotal: 0, feet: 0, pricebook: pb }).belowMinimum).toBe(false);
+    const raised = computeContractorTotals({ subtotal: 1500, feet: 0, pricebook: pb });
+    expect(raised.raisedToMinimum).toBe(true);
+    expect(raised.belowMinimum).toBe(true); // legacy alias
+    expect(raised.customerPrice).toBe(2000);
+    expect(raised.profit).toBe(500);
+
+    const above = computeContractorTotals({ subtotal: 2500, feet: 0, pricebook: pb });
+    expect(above.raisedToMinimum).toBe(false);
+    expect(above.customerPrice).toBe(2500);
+
+    const empty = computeContractorTotals({ subtotal: 0, feet: 0, pricebook: pb });
+    expect(empty.raisedToMinimum).toBe(false);
+    expect(empty.customerPrice).toBe(0);
+  });
+
+  test('job minimum floors the labor+markup price, not just the subtotal', () => {
+    const t = computeContractorTotals({
+      subtotal: 1000, feet: 50, fenceType: 'wood', height: 6,
+      pricebook: { 'labor.default': 5, 'markup.percent': 10, 'markup.jobMin': 1500 },
+    });
+    // 1000 + 250 labor + 100 markup = 1350 → floored to 1500
+    expect(t.customerPrice).toBe(1500);
+    expect(t.raisedToMinimum).toBe(true);
+    expect(t.profit).toBe(500);
   });
 
   test('empty pricebook degrades to plain subtotal', () => {

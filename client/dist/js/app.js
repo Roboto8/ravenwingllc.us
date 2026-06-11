@@ -96,10 +96,15 @@ function saveExtrasPricing() {
 }
 
 function getPostCount() {
-  var feet = 0;
-  sections.forEach(function(s) { if (s.points.length >= 2) { for (var i = 1; i < s.points.length; i++) feet += s.points[i-1].distanceTo(s.points[i]) * 3.28084; } });
-  var spacing = 8;
-  return Math.max(Math.ceil(feet / spacing) + 1, 0);
+  var count = 0;
+  sections.forEach(function(s) {
+    var feet = getSectionFootage(s);
+    if (feet <= 0) return;
+    var spec = (typeof BOM !== 'undefined') ? BOM[s.fenceType || selectedFence.type] : null;
+    var spacing = (spec && spec.postSpacing) || 8;
+    count += Math.ceil(feet / spacing) + 1;
+  });
+  return count;
 }
 
 function calcExtraTotal(extra, feet) {
@@ -2261,7 +2266,9 @@ function editFencePrice(e, type) {
       companyPricebook['perFoot.' + type] = val;
       localStorage.setItem('fc_pricebook', JSON.stringify(companyPricebook));
       if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
-        API.updateCompany({ pricebook: companyPricebook }).catch(function() {});
+        API.updateCompany({ pricebook: companyPricebook }).catch(function() {
+          showToast('Price saved on this device only — cloud sync failed, try again');
+        });
       }
     }
 
@@ -2872,8 +2879,10 @@ function resetBomOverrides() {
 
 function getExportBom() {
   saveActiveSection();
-  var bom = calculateCombinedBOM();
-  var mulchResult = calculateMulchTotal();
+  // Respect the module toggles — the exported/saved list must match what
+  // the estimate actually prices.
+  var bom = fenceEnabled ? calculateCombinedBOM() : null;
+  var mulchResult = mulchEnabled ? calculateMulchTotal() : null;
   var items = [];
 
   if (bom && bom.items.length > 0) {
@@ -4396,6 +4405,12 @@ function updateContractorSummary(subtotal, feet, gateCount) {
   var markupAmt = Math.round(subtotal * markupPct / 100);
   var customerPrice = Math.round(subtotal + laborCost + markupAmt);
   var profit = laborCost + markupAmt;
+  var jobMin = pricebookNumber('markup.jobMin');
+  var raisedToMin = jobMin !== undefined && jobMin > 0 && customerPrice > 0 && customerPrice < jobMin;
+  if (raisedToMin) {
+    customerPrice = Math.round(jobMin);
+    profit = customerPrice - Math.round(subtotal);
+  }
   var marginPct = customerPrice > 0 ? Math.round(profit / customerPrice * 100) : 0;
 
   document.getElementById('markup-labor-row').style.display = laborCost > 0 ? 'flex' : 'none';
@@ -4407,10 +4422,8 @@ function updateContractorSummary(subtotal, feet, gateCount) {
 
   var warnEl = document.getElementById('job-min-warning');
   if (warnEl) {
-    var jobMin = pricebookNumber('markup.jobMin');
-    var below = jobMin !== undefined && jobMin > 0 && customerPrice > 0 && customerPrice < jobMin;
-    warnEl.style.display = below ? 'block' : 'none';
-    if (below) warnEl.textContent = '⚠ Below your $' + jobMin.toLocaleString() + ' job minimum';
+    warnEl.style.display = raisedToMin ? 'block' : 'none';
+    if (raisedToMin) warnEl.textContent = '↑ Raised to your $' + jobMin.toLocaleString() + ' job minimum';
   }
   return customerPrice;
 }
@@ -4462,7 +4475,6 @@ function recalculate() {
   document.getElementById('row-custom').style.display = customTotal > 0 ? 'flex' : 'none';
   document.getElementById('sum-custom').textContent = '$' + Math.round(customTotal).toLocaleString();
 
-  computedTotals.customerTotal = Math.round(total);
   document.getElementById('sum-total').textContent = '$' + Math.round(total).toLocaleString();
 
   // Contractor labor + markup. Defaults flow from the price book
@@ -4470,7 +4482,11 @@ function recalculate() {
   applyPricebookDefaults();
   var laborPerFt = parseFloat(document.getElementById('markup-labor').value) || 0;
   var markupPct = parseFloat(document.getElementById('markup-percent').value) || 0;
-  updateContractorSummary(total, feet, gates.length);
+  // The persisted/shared total is the price the customer actually pays —
+  // labor and markup included (and floored at the job minimum). Fence labor
+  // and gate labor only apply when the fence module is on.
+  computedTotals.customerTotal = updateContractorSummary(total, fenceEnabled ? feet : 0, fenceEnabled ? gates.length : 0);
+  computedTotals.materialsTotal = 0;
 
   // Auto-save to localStorage
   try {
@@ -4530,17 +4546,30 @@ function recalculate() {
   // After BOM renders with overrides, update the estimate total to match
   if (combinedBOM) {
     var bomTotal = combinedBOM.materialTotal;
-    var adjTotal = bomTotal + gateCost + extrasTotal + customTotal;
-    document.getElementById('sum-fence').textContent = '$' + Math.round(fenceEnabled ? (bomTotal - (mulchEnabled ? mulchCost : 0)) : 0).toLocaleString();
+    // Split fence materials from mulch (mulch items are appended after the
+    // first 'Mulch Area' header) — terrain applies to fence materials only.
+    var mulchHeaderIdx = -1;
+    combinedBOM.items.forEach(function(i, idx) {
+      if (mulchHeaderIdx < 0 && i.isHeader && i.name && i.name.indexOf('Mulch Area') === 0) mulchHeaderIdx = idx;
+    });
+    var fenceBomTotal = 0;
+    combinedBOM.items.forEach(function(i, idx) {
+      if (!i.isHeader && (mulchHeaderIdx < 0 || idx < mulchHeaderIdx)) fenceBomTotal += i.total;
+    });
+    var mulchBomTotal = bomTotal - fenceBomTotal;
+    var terrainAdj = Math.round(fenceBomTotal * terrainMultiplier) - Math.round(fenceBomTotal);
+    var adjTotal = Math.round(fenceBomTotal) + terrainAdj + Math.round(mulchBomTotal) + gateCost + extrasTotal + customTotal;
+    document.getElementById('sum-fence').textContent = '$' + Math.round(fenceEnabled ? fenceBomTotal : 0).toLocaleString();
     if (mulchEnabled && mulchCost > 0) {
-      var mulchBomTotal = combinedBOM.items.filter(function(i) { return !i.isHeader && i.name && i.name.indexOf('Mulch') >= 0; }).reduce(function(s, i) { return s + i.total; }, 0);
       document.getElementById('sum-mulch').textContent = '$' + Math.round(mulchBomTotal).toLocaleString();
       document.getElementById('mulch-total').textContent = '$' + Math.round(mulchBomTotal).toLocaleString();
     }
-    computedTotals.customerTotal = Math.round(adjTotal);
+    computedTotals.materialsTotal = Math.round(bomTotal);
     document.getElementById('sum-total').textContent = '$' + Math.round(adjTotal).toLocaleString();
-    // Update contractor money panel with the adjusted (BOM-true) total
-    updateContractorSummary(adjTotal, feet, gates.length);
+    // Update contractor money panel with the adjusted (BOM-true) total;
+    // the persisted/shared total is the full customer price it returns.
+    // Fence labor and gate labor only apply when the fence module is on.
+    computedTotals.customerTotal = updateContractorSummary(adjTotal, fenceEnabled ? feet : 0, fenceEnabled ? gates.length : 0);
   }
 
   // Update mulch area labels (bag counts change with depth/material)
@@ -5519,8 +5548,10 @@ async function generatePDF(mode) {
   var fType = selectedFence.type.charAt(0).toUpperCase() + selectedFence.type.slice(1).replace('-', ' ');
   var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   var estNum = 'FC-' + Date.now().toString(36).toUpperCase().slice(-6);
-  var hasFence = feet > 0;
-  var hasMulch = mulchAreas.length > 0;
+  // Respect the module toggles so the PDF prices exactly what the in-app
+  // summary and the saved/shared estimate price.
+  var hasFence = fenceEnabled && feet > 0;
+  var hasMulch = mulchEnabled && mulchAreas.length > 0;
   var pageNum = 1;
 
   // Company data
@@ -5534,7 +5565,7 @@ async function generatePDF(mode) {
   // ── BOM calculation ──
   var bom = hasFence ? calculateCombinedBOM() : null;
   var mulchRes = calculateMulchTotal();
-  if (mulchRes.details.length > 0) {
+  if (hasMulch && mulchRes.details.length > 0) {
     if (!bom) bom = { items: [], materialTotal: 0 };
     mulchRes.details.forEach(function(d) {
       var mn = MULCH[selectedMulchMaterial] ? MULCH[selectedMulchMaterial].name : selectedMulchMaterial;
@@ -5544,20 +5575,51 @@ async function generatePDF(mode) {
     });
   }
 
+  // Apply manual BOM qty/price overrides so the PDF matches the in-app totals
+  if (bom) {
+    bom.items.forEach(function(i) {
+      if (i.isHeader) return;
+      if (bomQtyOverrides[i.name] !== undefined) i.qty = bomQtyOverrides[i.name];
+      if (bomPriceOverrides[i.name] !== undefined) i.unitCost = bomPriceOverrides[i.name];
+      i.total = Math.round(i.qty * i.unitCost * 100) / 100;
+    });
+    bom.materialTotal = Math.round(bom.items.reduce(function(s, i) { return s + (i.isHeader ? 0 : i.total); }, 0));
+  }
+
   // ── Totals (calculated from BOM, not DOM) ──
   var pdfMaterialsTotal = bom ? bom.materialTotal : 0;
-  var pdfGateCost = gates.reduce(function(s, g) { return s + g.price; }, 0);
-  var pdfExtrasTotal = calcAllExtras(feet);
-  var pdfActiveExtras = extras.filter(function(e) { return e.on && calcExtraTotal(e, feet) > 0; });
+  // Fence materials get the terrain multiplier; mulch (appended after the
+  // first 'Mulch Area' header) and flat add-ons don't.
+  var pdfMulchHeaderIdx = -1, pdfFenceMaterials = 0;
+  if (bom) {
+    bom.items.forEach(function(i, idx) {
+      if (pdfMulchHeaderIdx < 0 && i.isHeader && i.name && i.name.indexOf('Mulch Area') === 0) pdfMulchHeaderIdx = idx;
+    });
+    bom.items.forEach(function(i, idx) {
+      if (!i.isHeader && (pdfMulchHeaderIdx < 0 || idx < pdfMulchHeaderIdx)) pdfFenceMaterials += i.total;
+    });
+  }
+  var pdfTerrainAdj = Math.round(pdfFenceMaterials * terrainMultiplier) - Math.round(pdfFenceMaterials);
+  var pdfGateCost = fenceEnabled ? gates.reduce(function(s, g) { return s + g.price; }, 0) : 0;
+  var pdfExtrasTotal = fenceEnabled ? calcAllExtras(feet) : 0;
+  var pdfActiveExtras = fenceEnabled ? extras.filter(function(e) { return e.on && calcExtraTotal(e, feet) > 0; }) : [];
   var customTotal = customItems.reduce(function(sum, i) { return sum + (i.qty * i.unitCost); }, 0);
-  var pdfTotal = pdfMaterialsTotal + pdfGateCost + pdfExtrasTotal + customTotal;
+  var pdfTotal = pdfMaterialsTotal + pdfTerrainAdj + pdfGateCost + pdfExtrasTotal + customTotal;
 
   var laborPerFt = parseFloat(document.getElementById('markup-labor').value) || 0;
   var markupPct = parseFloat(document.getElementById('markup-percent').value) || 0;
-  var laborCost = Math.round(feet * laborPerFt);
+  var pdfGateLaborRate = pricebookNumber('labor.gate') || 0;
+  var laborCost = Math.round((hasFence ? feet : 0) * laborPerFt + (fenceEnabled ? gates.length : 0) * pdfGateLaborRate);
   var markupAmt = Math.round(pdfTotal * markupPct / 100);
-  var customerPrice = pdfTotal + laborCost + markupAmt;
-  var displayTotal = (laborCost > 0 || markupAmt > 0) ? customerPrice : pdfTotal;
+  var customerPrice = Math.round(pdfTotal + laborCost + markupAmt);
+  var pdfJobMin = pricebookNumber('markup.jobMin');
+  var pdfRaisedToMin = pdfJobMin !== undefined && pdfJobMin > 0 && customerPrice > 0 && customerPrice < pdfJobMin;
+  var pdfMinAdj = 0;
+  if (pdfRaisedToMin) {
+    pdfMinAdj = Math.round(pdfJobMin) - customerPrice;
+    customerPrice = Math.round(pdfJobMin);
+  }
+  var displayTotal = (laborCost > 0 || markupAmt > 0 || pdfRaisedToMin) ? customerPrice : pdfTotal;
 
   var y = 0;
 
@@ -5775,9 +5837,15 @@ async function generatePDF(mode) {
     doc.setFontSize(7.5);
     doc.setTextColor.apply(doc, cWhite);
     doc.text('ITEM', colItem, y + 11);
-    doc.text('QTY', colQty, y + 11, { align: 'right' });
-    doc.text('UNIT COST', colUnit, y + 11, { align: 'right' });
-    doc.text('TOTAL', colTotal, y + 11, { align: 'right' });
+    // Customer mode gets the shopping list (items + quantities) but never
+    // the contractor's unit costs — those are the contractor's spread.
+    if (isCustomerMode) {
+      doc.text('QTY', colTotal, y + 11, { align: 'right' });
+    } else {
+      doc.text('QTY', colQty, y + 11, { align: 'right' });
+      doc.text('UNIT COST', colUnit, y + 11, { align: 'right' });
+      doc.text('TOTAL', colTotal, y + 11, { align: 'right' });
+    }
     y += thH + 6;
 
     var stripe = false;
@@ -5809,23 +5877,32 @@ async function generatePDF(mode) {
       doc.setFontSize(8.5);
       doc.setTextColor.apply(doc, cText);
       doc.text(item.name, colItem, y + 6);
-      doc.text(item.qty.toString(), colQty, y + 6, { align: 'right' });
-      doc.text('$' + item.unitCost.toFixed(2), colUnit, y + 6, { align: 'right' });
-      doc.setFont('helvetica', 'bold');
-      doc.text('$' + item.total.toLocaleString(), colTotal, y + 6, { align: 'right' });
+      if (isCustomerMode) {
+        doc.text(item.qty.toString(), colTotal, y + 6, { align: 'right' });
+      } else {
+        doc.text(item.qty.toString(), colQty, y + 6, { align: 'right' });
+        doc.text('$' + item.unitCost.toFixed(2), colUnit, y + 6, { align: 'right' });
+        doc.setFont('helvetica', 'bold');
+        doc.text('$' + item.total.toLocaleString(), colTotal, y + 6, { align: 'right' });
+      }
       y += 18;
     });
 
-    // Materials Total row
-    y += 2;
-    doc.setFillColor.apply(doc, cSurface);
-    doc.rect(margin, y - 4, contentW, 22, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor.apply(doc, cDark);
-    doc.text('Materials Total', colItem, y + 10);
-    doc.text('$' + bom.materialTotal.toLocaleString(), colTotal, y + 10, { align: 'right' });
-    y += 28;
+    // Materials Total row (contractor only — the customer summary box
+    // carries the customer-facing totals)
+    if (!isCustomerMode) {
+      y += 2;
+      doc.setFillColor.apply(doc, cSurface);
+      doc.rect(margin, y - 4, contentW, 22, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor.apply(doc, cDark);
+      doc.text('Materials Total', colItem, y + 10);
+      doc.text('$' + bom.materialTotal.toLocaleString(), colTotal, y + 10, { align: 'right' });
+      y += 28;
+    } else {
+      y += 6;
+    }
 
     // Mulch badge summary
     if (hasMulch && mulchRes.details.length > 0) {
@@ -5899,9 +5976,11 @@ async function generatePDF(mode) {
   // Estimate height needed for total box
   var totalBoxLines = 0;
   if (pdfMaterialsTotal > 0) totalBoxLines++;
-  if (hasFence && pdfGateCost > 0) totalBoxLines++;
+  if (pdfGateCost > 0) totalBoxLines++;
   totalBoxLines += pdfActiveExtras.length;
   if (customTotal > 0) totalBoxLines++;
+  if (pdfTerrainAdj > 0) totalBoxLines++;
+  if (pdfMinAdj > 0) totalBoxLines++;
   if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) totalBoxLines += 2; // labor + markup lines
   var estBoxH = 44 + totalBoxLines * 14 + 30; // padding + lines + total row
   checkPage(estBoxH);
@@ -5930,14 +6009,17 @@ async function generatePDF(mode) {
       var matVal = pdfMaterialsTotal + laborCost;
       totalLine(matLabel, '$' + Math.round(matVal).toLocaleString());
     }
-    if (hasFence && pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
+    if (pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
+    if (pdfTerrainAdj > 0) totalLine('Site conditions (+' + Math.round((terrainMultiplier - 1) * 100) + '%)', '$' + pdfTerrainAdj.toLocaleString());
     pdfActiveExtras.forEach(function(e) { totalLine(e.name, '$' + Math.round(calcExtraTotal(e, feet)).toLocaleString()); });
     if (customTotal > 0) totalLine('Custom items', '$' + Math.round(customTotal).toLocaleString());
     if (markupAmt > 0) totalLine('Service fee', '$' + markupAmt.toLocaleString());
+    if (pdfMinAdj > 0) totalLine('Minimum job charge', '$' + pdfMinAdj.toLocaleString());
   } else {
     // Contractor mode: full breakdown
     if (pdfMaterialsTotal > 0) totalLine('Materials', '$' + pdfMaterialsTotal.toLocaleString());
-    if (hasFence && pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
+    if (pdfGateCost > 0) totalLine('Gates (' + gates.length + ')', '$' + pdfGateCost.toLocaleString());
+    if (pdfTerrainAdj > 0) totalLine('Terrain (+' + Math.round((terrainMultiplier - 1) * 100) + '%)', '$' + pdfTerrainAdj.toLocaleString());
     pdfActiveExtras.forEach(function(e) { totalLine(e.name, '$' + Math.round(calcExtraTotal(e, feet)).toLocaleString()); });
     if (customTotal > 0) totalLine('Custom items', '$' + Math.round(customTotal).toLocaleString());
   }
@@ -5950,9 +6032,13 @@ async function generatePDF(mode) {
   y += 12;
 
   // Labor + markup (contractor mode only)
-  if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
-    if (laborCost > 0) totalLine('Labor (' + laborPerFt + '/ft)', '$' + laborCost.toLocaleString());
+  if (!isCustomerMode && (laborCost > 0 || markupAmt > 0 || pdfMinAdj > 0)) {
+    if (laborCost > 0) {
+      var laborLabel = 'Labor (' + laborPerFt + '/ft' + (gates.length > 0 && pdfGateLaborRate > 0 ? ' + ' + gates.length + ' gate' + (gates.length > 1 ? 's' : '') : '') + ')';
+      totalLine(laborLabel, '$' + laborCost.toLocaleString());
+    }
     if (markupAmt > 0) totalLine('Markup (' + markupPct + '%)', '$' + markupAmt.toLocaleString());
+    if (pdfMinAdj > 0) totalLine('Job minimum adjustment', '$' + pdfMinAdj.toLocaleString());
     doc.setDrawColor.apply(doc, cDark);
     doc.setLineWidth(1.5);
     doc.line(innerMargin, y, innerRight, y);
@@ -5971,11 +6057,11 @@ async function generatePDF(mode) {
   y += 20;
 
   // Profit line (contractor mode only)
-  if (!isCustomerMode && (laborCost > 0 || markupAmt > 0)) {
+  if (!isCustomerMode && (laborCost > 0 || markupAmt > 0 || pdfMinAdj > 0)) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor.apply(doc, cSecondary);
-    doc.text('Profit: $' + (laborCost + markupAmt).toLocaleString(), innerMargin, y);
+    doc.text('Profit: $' + (customerPrice - pdfTotal).toLocaleString(), innerMargin, y);
     y += 12;
   }
 

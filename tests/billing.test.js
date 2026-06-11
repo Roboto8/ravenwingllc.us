@@ -744,6 +744,43 @@ describe('billing handler', () => {
       expect(body.exportDate).toBeDefined();
     });
 
+    test('export includes company pricebook and region', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        name: 'Test Co',
+        email: 'test@co.com',
+        phone: '555-0000',
+        address: '123 Main St',
+        pricebook: { 'wood.6.postCost': 18.5 },
+        region: 'southeast'
+      });
+      db.query.mockResolvedValue({ items: [], nextKey: null });
+
+      const result = await billing.exportData({});
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.company.pricebook).toEqual({ 'wood.6.postCost': 18.5 });
+      expect(body.company.region).toBe('southeast');
+    });
+
+    test('defaults pricebook to empty object and region to national', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue({
+        name: 'Test Co',
+        email: 'test@co.com',
+        phone: '555-0000',
+        address: '123 Main St'
+      });
+      db.query.mockResolvedValue({ items: [], nextKey: null });
+
+      const result = await billing.exportData({});
+      const body = JSON.parse(result.body);
+
+      expect(body.company.pricebook).toEqual({});
+      expect(body.company.region).toBe('national');
+    });
+
     test('handles paginated query results', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.get.mockResolvedValue({

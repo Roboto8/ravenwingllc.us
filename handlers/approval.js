@@ -80,11 +80,22 @@ module.exports.getPublic = res.wrap(async (event) => {
     customerAddress: est.customerAddress || '',
     fenceType: est.fenceType || '',
     fenceHeight: est.fenceHeight || 6,
-    fencePrice: est.fencePrice || 0,
+    // fencePrice deliberately omitted: the per-foot rate can be the
+    // contractor's own price-book number — the customer gets the bottom line.
     totalFeet: est.totalFeet || 0,
     totalCost: est.totalCost || 0,
-    materialsCost: est.materialsCost || 0,
-    bom: est.bom || [],
+    // Strip per-item pricing — the customer sees the quantity list and the
+    // bottom-line total, never the contractor's material costs. Section
+    // headers and units carry no pricing and are kept for display.
+    bom: (Array.isArray(est.bom) ? est.bom : []).map(i => {
+      const row = {
+        name: i.name || i.item || i.description || '',
+        qty: i.qty || i.quantity || 0
+      };
+      if (i.unit) row.unit = i.unit;
+      if (i.isHeader) row.isHeader = true;
+      return row;
+    }),
     gates: (est.gates || []).map(g => ({ type: g.type, price: g.price })),
     mulchAreas: est.mulchAreas || [],
     mulchMaterial: est.mulchMaterial || 'hardwood',
@@ -135,6 +146,10 @@ module.exports.respond = res.wrap(async (event) => {
   const historyEntry = {
     action,
     message,
+    // Snapshot the price the customer actually responded to, so later edits
+    // can't change what an approval meant.
+    amount: est.totalCost || 0,
+    totalFeet: est.totalFeet || 0,
     timestamp: new Date().toISOString()
   };
 

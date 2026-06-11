@@ -259,7 +259,9 @@ module.exports.exportData = res.wrap(async (event) => {
       name: company.name,
       email: company.email,
       phone: company.phone,
-      address: company.address
+      address: company.address,
+      pricebook: company.pricebook || {},
+      region: company.region || 'national'
     },
     estimates: allEstimates,
     exportDate: new Date().toISOString(),

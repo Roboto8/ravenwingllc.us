@@ -230,6 +230,71 @@ describe('approval handler', () => {
       // Should not leak internal fields
       expect(body.gates[0].internalId).toBeUndefined();
     });
+
+    test('strips per-item pricing from bom and omits materialsCost', async () => {
+      db.queryGSI.mockResolvedValue([{
+        ...mockEstimate,
+        GSI1SK: 'COMPANY#comp-1',
+        materialsCost: 1800,
+        bom: [
+          { name: '4x4x8 PT posts', qty: 14, unit: 'ea', unitCost: 16, total: 224 },
+          { name: 'Rail brackets', qty: 78, unit: 'ea', unitCost: 1.5, total: 117 }
+        ]
+      }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(body.bom).toEqual([
+        { name: '4x4x8 PT posts', qty: 14, unit: 'ea' },
+        { name: 'Rail brackets', qty: 78, unit: 'ea' }
+      ]);
+      expect(body.materialsCost).toBeUndefined();
+      // The per-foot rate can be a price-book number — never public
+      expect(body.fencePrice).toBeUndefined();
+      // Bottom-line total is still shown
+      expect(body.totalCost).toBe(2500);
+    });
+
+    test('keeps section headers (isHeader) in the stripped bom', async () => {
+      db.queryGSI.mockResolvedValue([{
+        ...mockEstimate,
+        GSI1SK: 'COMPANY#comp-1',
+        bom: [
+          { name: 'Section 1: Wood 6ft — 120 ft', qty: 0, unit: '', unitCost: 0, total: 0, isHeader: true },
+          { name: '4x4x8 PT posts', qty: 14, unit: 'ea', unitCost: 16, total: 224 }
+        ]
+      }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      const body = JSON.parse(result.body);
+
+      expect(body.bom).toEqual([
+        { name: 'Section 1: Wood 6ft — 120 ft', qty: 0, isHeader: true },
+        { name: '4x4x8 PT posts', qty: 14, unit: 'ea' }
+      ]);
+    });
+
+    test('tolerates legacy non-array bom without throwing', async () => {
+      db.queryGSI.mockResolvedValue([{
+        ...mockEstimate,
+        GSI1SK: 'COMPANY#comp-1',
+        bom: { legacy: true }
+      }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({
+        pathParameters: { token: 'abc-token' }
+      });
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body).bom).toEqual([]);
+    });
   });
 
   describe('respond', () => {
@@ -254,6 +319,35 @@ describe('approval handler', () => {
           ])
         })
       );
+    });
+
+    test('history entry snapshots amount and totalFeet at response time', async () => {
+      db.queryGSI.mockResolvedValue([{ ...mockEstimate, totalFeet: 120, approvalHistory: [] }]);
+      db.update.mockResolvedValue({});
+
+      await approval.respond({
+        pathParameters: { token: 'abc-token' },
+        body: JSON.stringify({ action: 'approved', message: 'Looks great!' })
+      });
+
+      const entry = db.update.mock.calls[0][2].approvalHistory[0];
+      expect(entry.amount).toBe(2500);
+      expect(entry.totalFeet).toBe(120);
+    });
+
+    test('snapshot defaults to 0 when totalCost and totalFeet missing', async () => {
+      const { totalCost, ...estNoCost } = mockEstimate;
+      db.queryGSI.mockResolvedValue([{ ...estNoCost, approvalHistory: [] }]);
+      db.update.mockResolvedValue({});
+
+      await approval.respond({
+        pathParameters: { token: 'abc-token' },
+        body: JSON.stringify({ action: 'approved' })
+      });
+
+      const entry = db.update.mock.calls[0][2].approvalHistory[0];
+      expect(entry.amount).toBe(0);
+      expect(entry.totalFeet).toBe(0);
     });
 
     test('records changes_requested response', async () => {

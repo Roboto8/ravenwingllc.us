@@ -292,7 +292,7 @@
       <h2>Materials Breakdown</h2>
       <table class="bom-table">
         <thead>
-          <tr><th>Item</th><th>Qty</th><th>Cost</th></tr>
+          <tr><th>Item</th><th>Qty</th></tr>
         </thead>
         <tbody id="bom-body"></tbody>
       </table>
@@ -311,6 +311,7 @@
     <div id="actions-section" class="actions">
       <div class="card">
         <h2>Your Response</h2>
+        <p style="font-size:0.8rem;color:#5c6657;margin:0 0 10px;font-style:italic">Measurements are satellite-based estimates. Final pricing may be adjusted after on-site verification.</p>
         <textarea id="response-message" placeholder="Optional message or notes..."></textarea>
         <div class="btn-row">
           <button class="btn btn-approve" id="btn-approve" onclick="respondApprove()">Approve Estimate</button>
@@ -420,14 +421,17 @@
       }
     }
 
-    // BOM
+    // BOM — materials list only (item + quantity). Per-item pricing is the
+    // contractor's cost basis and is stripped server-side; never render it.
     if (est.bom && est.bom.length > 0) {
       document.getElementById('bom-card').style.display = 'block';
       document.getElementById('bom-body').innerHTML = est.bom.map(function(item) {
         var name = escapeHtml(item.name || item.item || item.description || '-');
+        if (item.isHeader) {
+          return '<tr><td colspan="2" style="font-weight:600;padding-top:10px">' + name + '</td></tr>';
+        }
         var qty = escapeHtml(String(item.qty || item.quantity || 0));
-        var cost = Number(item.cost || item.total || item.unitCost || 0).toLocaleString();
-        return '<tr><td>' + name + '</td><td>' + qty + '</td><td>$' + cost + '</td></tr>';
+        return '<tr><td>' + name + '</td><td>' + qty + '</td></tr>';
       }).join('');
     }
 

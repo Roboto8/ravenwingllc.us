@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { buildBody, htmlWrap, ADDRESS } = require('./build-body');
+const { buildBody, buildFollowupBody, htmlWrap, ADDRESS } = require('./build-body');
 
 const DIR = __dirname;
 const CREDENTIALS_PATH = path.join(DIR, 'google-credentials.json');
@@ -153,6 +153,11 @@ const CLASSIFY_SCHEMA = {
     },
     summary: { type: 'string', description: 'One sentence: what they said.' },
     needs_reply: { type: 'boolean' },
+    objection_type: {
+      type: 'string',
+      enum: ['grade_terrain', 'pricing_model', 'price_anchoring', 'data_ownership', 'price_updates', 'vendor_trust', 'scope_commercial_ag', 'other'],
+      description: 'Only when category is objection or question: the closest matching objection.',
+    },
   },
   required: ['category', 'summary', 'needs_reply'],
   additionalProperties: false,
@@ -165,7 +170,8 @@ async function classify(ai, company, outbound, reply) {
     output_config: { format: { type: 'json_schema', schema: CLASSIFY_SCHEMA } },
     messages: [{
       role: 'user',
-      content: 'Classify this reply to a cold outreach email about FenceTrace (fence-estimating software).\n\n' +
+      content: 'Classify this reply to a cold outreach email about FenceTrace (fence-estimating software).\n' +
+        'If the category is objection or question, also set objection_type to the closest match.\n\n' +
         'Prospect: ' + company + '\n\nOriginal email:\n' + outbound + '\n\nTheir reply:\n' + reply,
     }],
   });
@@ -189,10 +195,32 @@ const REPLY_SYSTEM = [
   '  for their own site. Homeowners sketch their fence and the lead lands in the',
   '  contractor FenceTrace estimates list with a notification. Works on every plan,',
   '  including free, and incoming leads never count against the Starter limit.',
+  '- Estimates are an itemized bill of materials (posts, rails, pickets, concrete',
+  '  bags) priced from the contractor\'s own price book. The contractor reviews',
+  '  and adjusts everything — tear-out, haul-away, grading, rock/hard-soil, and',
+  '  permits are toggleable line items — BEFORE anything is shared with a customer.',
+  '  Nothing reaches a customer until the contractor explicitly saves and sends',
+  '  a link.',
+  '- The satellite photo does the measuring takeoff; the site walk confirms ground',
+  '  conditions. It\'s for the quote, not the build.',
+  '- If satellite imagery is stale or tree-covered, contractors can overlay their',
+  '  own drone photo and trace on that. Site photos can be attached to estimates.',
+  '- The contractor owns their data (Terms of Service §12.1 — "you retain all',
+  '  ownership rights"). Their price book is never shown to other contractors and',
+  '  never exposed on public endpoints. Data stays available for 90 days after',
+  '  cancellation, and is deleted on request.',
+  '- Prices are the contractor\'s to edit anytime in the app (tap any price, or',
+  '  the Pricing tab). Todd will also update their price book for them on request',
+  '  via email.',
+  '- FenceTrace is built for residential fence quoting. It is NOT for commercial',
+  '  blueprint bids or agricultural acreage wire — concede that plainly if asked.',
   'Rules: answer their actual question first. Keep it under 120 words. No links',
   'unless they asked how to try it (then https://fencetrace.com). Do NOT include',
   'a sign-off or signature — it is appended automatically. Output ONLY the email',
-  'body text, no subject line.',
+  'body text, no subject line. For hard-trust questions (data ownership, what',
+  'happens if you disappear, pricing accuracy), keep the draft short, factual,',
+  'and free of marketing superlatives. If a question can\'t be answered from',
+  'these facts, flag it for Todd in the draft rather than improvising an answer.',
 ].join('\n');
 
 async function draftReply(ai, company, outbound, reply) {
@@ -311,12 +339,7 @@ async function cmdFollowups(args) {
   });
   if (!due.length) return console.log('No follow-ups due.');
   for (const p of due) {
-    const body = 'Hi ' + (p.name || 'there') + ',\n\n' +
-      'Quick follow-up on my note from last week about FenceTrace — satellite\n' +
-      'fence estimates priced from your own price book, with your profit visible\n' +
-      'before the quote goes out.\n\n' +
-      'If the timing is wrong, no worries at all. If you want to kick the tires,\n' +
-      'it takes about two minutes: https://fencetrace.com\n\nTodd\nFenceTrace\n\n' + ADDRESS;
+    const body = buildFollowupBody(p);
     await gmail.users.drafts.create({
       userId: 'me',
       requestBody: { message: { raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body }) } },
@@ -392,14 +415,7 @@ async function cmdAgent() {
         (Date.now() - new Date(r.sentAt).getTime()) / 86400000 >= FOLLOWUP_DAYS && h >= 7 && h < 9;
     }).slice(0, budget);
     for (const p of due) {
-      const body = 'Hi ' + (p.name || 'there') + ',\n\n' +
-        'Quick follow-up on my note from last week about FenceTrace — satellite\n' +
-        'fence estimates priced from your own price book, with your profit visible\n' +
-        'before the quote goes out.\n\n' +
-        'If the timing is wrong, no worries at all. If you want to kick the tires,\n' +
-        'it takes about two minutes: https://fencetrace.com\n\nTodd\nFenceTrace' +
-        '\n\nP.S. If you\'d rather not hear from me, just reply "no thanks" and that\'s the end of it.' +
-        '\n\n' + ADDRESS;
+      const body = buildFollowupBody(p);
       const r = rec(crm, p.to);
       await gmail.users.messages.send({
         userId: 'me',

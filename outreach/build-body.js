@@ -28,6 +28,17 @@ function buildBody(p) {
   return greeting + '\n\n' + core + SIGNATURE + OPT_OUT + '\n\n' + ADDRESS;
 }
 
+// Follow-up touch — single source of truth for manage.js followups + agent.
+function buildFollowupBody(p) {
+  return 'Hi ' + (p.name || 'there') + ',\n\n' +
+    'Quick follow-up on my note from last week about FenceTrace — satellite\n' +
+    'fence estimates priced from your own price book, with your profit visible\n' +
+    'before the quote goes out.\n\n' +
+    'If the timing is wrong, no worries at all. If you want to kick the tires,\n' +
+    'it takes about two minutes: https://fencetrace.com' +
+    SIGNATURE + OPT_OUT + '\n\n' + ADDRESS;
+}
+
 // Light HTML version of the same copy — clean typography, branded signature,
 // no images and no marketing layout (heavy HTML lands cold mail in the
 // Promotions tab; this stays personal-looking while reading "pro").
@@ -77,4 +88,4 @@ function buildHtmlBody(p) {
   return htmlWrap(buildBody(p));
 }
 
-module.exports = { SIGNATURE, OPT_OUT, TEMPLATE, ADDRESS, buildBody, buildHtmlBody, htmlWrap, escapeHtml };
+module.exports = { SIGNATURE, OPT_OUT, TEMPLATE, ADDRESS, buildBody, buildFollowupBody, buildHtmlBody, htmlWrap, escapeHtml };

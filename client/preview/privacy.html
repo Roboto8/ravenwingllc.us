@@ -462,6 +462,12 @@
           <td>Email address, hashed password, authentication tokens, and session metadata. AWS Cognito acts as a data processor on our behalf.</td>
         </tr>
         <tr>
+          <td>Satellite Imagery (Primary Map Imagery)</td>
+          <td>Google LLC (Google Maps satellite tiles)</td>
+          <td>Rendering the high-resolution satellite imagery tiles used as the primary map imagery for fence line drawing, property visualization, and measurement</td>
+          <td>Geographic coordinates (latitude/longitude) of map viewport center and bounds, zoom level, and tile coordinates. Your IP address is transmitted as part of map-tile HTTP requests when you view maps. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</td>
+        </tr>
+        <tr>
           <td>Satellite &amp; Aerial Imagery / Map Tiles</td>
           <td>Esri (ArcGIS World Imagery) and OpenStreetMap contributors</td>
           <td>Rendering satellite imagery, aerial photography, and base map tiles for fence line drawing, property visualization, and measurement</td>
@@ -495,7 +501,7 @@
       <li><a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe Privacy Policy</a> | <a href="https://stripe.com/guides/general-data-protection-regulation" target="_blank" rel="noopener">Stripe GDPR Guide</a></li>
       <li><a href="https://www.esri.com/en-us/privacy/overview" target="_blank" rel="noopener">Esri Privacy Policy</a></li>
       <li><a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">OpenStreetMap Foundation Privacy Policy</a></li>
-      <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> (Fonts and Analytics)</li>
+      <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> (Maps satellite imagery, Fonts, and Analytics)</li>
     </ul>
 
     <h2 id="sharing">6. Data Sharing</h2>
@@ -552,9 +558,9 @@
     <ul>
       <li><strong>Encryption in Transit:</strong> All data transmitted between your browser and our servers is encrypted using TLS 1.2 or higher (Transport Layer Security) / HTTPS. We enforce HTTP Strict Transport Security (HSTS) headers to prevent protocol downgrade attacks.</li>
       <li><strong>Encryption at Rest:</strong> All data stored on our servers, databases, and backup systems is encrypted at rest using AES-256 encryption (Advanced Encryption Standard with 256-bit keys) managed through AWS Key Management Service (KMS).</li>
-      <li><strong>Password Security:</strong> User passwords are hashed using bcrypt with unique per-user salts and a cost factor calibrated to current hardware capabilities. We never store, log, display, or have access to plaintext passwords. Password reset tokens are cryptographically random, single-use, and time-limited.</li>
-      <li><strong>Session Security:</strong> User sessions are managed using secure, httpOnly, and SameSite cookies with cryptographically random session identifiers. Sessions expire after periods of inactivity and may be terminated remotely by the user.</li>
-      <li><strong>CSRF Protection:</strong> Cross-site request forgery tokens are used on all state-changing operations to prevent unauthorized actions on behalf of authenticated users.</li>
+      <li><strong>Password Security:</strong> Passwords are managed by AWS Cognito, which stores only salted cryptographic hashes. We never store, log, display, or have access to plaintext passwords. Password reset codes are cryptographically random, single-use, and time-limited.</li>
+      <li><strong>Session Security:</strong> Authentication is handled by AWS Cognito. Session tokens are stored in your browser's local storage (see Section 11.4), expire automatically, and are validated server-side on every request. Signing out invalidates the session on your device.</li>
+      <li><strong>Cross-Site Request Protection:</strong> API requests are authenticated with bearer tokens sent in request headers rather than cookies, which prevents cross-site request forgery by design: another website cannot cause your browser to make authenticated requests to the Service.</li>
       <li><strong>Input Validation:</strong> All user input is validated, sanitized, and parameterized to prevent injection attacks (including SQL injection, XSS, and command injection).</li>
     </ul>
 
@@ -631,9 +637,9 @@
           <td>Legitimate interest (service quality, dispute resolution)</td>
         </tr>
         <tr>
-          <td>Cookie Data</td>
-          <td>See Section 11 (Cookie Policy) for specific durations per cookie</td>
-          <td>Varies by cookie type (see Section 11)</td>
+          <td>Local Storage &amp; Cookie Data</td>
+          <td>Local storage persists until you sign out or clear browser data; third-party cookie durations are set by the providers listed in Section 5</td>
+          <td>Varies (see Sections 5 and 11)</td>
         </tr>
         <tr>
           <td>Database Backups</td>
@@ -669,7 +675,7 @@
     <p>You may opt out of:</p>
     <ul>
       <li><strong>Marketing communications:</strong> By clicking the "unsubscribe" link in any marketing email, by adjusting your communication preferences in your Account settings, or by contacting us at <a href="mailto:support@fencetrace.com">support@fencetrace.com</a>. Opting out of marketing emails does not affect transactional or Service-related communications (such as billing receipts, security alerts, and Terms updates), which are necessary for the operation of your Account.</li>
-      <li><strong>Non-essential cookies:</strong> By adjusting your browser cookie settings or by using the cookie preference mechanisms described in Section 11. Note that blocking strictly necessary cookies may impair the functionality of the Service.</li>
+      <li><strong>Non-essential cookies:</strong> By adjusting your browser cookie settings, as described in Section 11.5. Note that blocking third-party cookies used for payment processing may impair checkout functionality.</li>
       <li><strong>Analytics data collection:</strong> By contacting us at <a href="mailto:support@fencetrace.com">support@fencetrace.com</a> to request that we exclude your Account from analytics data collection. This will not affect the core functionality of the Service.</li>
     </ul>
 
@@ -688,77 +694,18 @@
     <p><strong>You will not be discriminated against, penalized, or subjected to any adverse consequence for exercising any of your privacy rights.</strong> We will not deny you the Service, charge you different prices, provide you with a different level or quality of Service, or suggest that you will receive any of the foregoing as a result of exercising your rights.</p>
 
     <h2 id="cookies">11. Cookie Policy</h2>
-    <p>FenceTrace uses cookies and similar client-side storage technologies (including local storage and session storage in your web browser) to provide, secure, and improve the Service. A "cookie" is a small data file placed on your device by your web browser when you visit a website. This section describes the specific cookies we use, their purposes, and how you can manage them.</p>
+    <p>FenceTrace uses cookies and similar client-side storage technologies (including local storage and session storage in your web browser) to provide, secure, and improve the Service. A "cookie" is a small data file placed on your device by your web browser when you visit a website. This section describes how cookies and these storage technologies are used in connection with the Service, their purposes, and how you can manage them.</p>
 
     <h3>11.1 Categories of Cookies</h3>
-    <p>We categorize the cookies used in the Service as follows:</p>
+    <p>Cookies used in connection with the Service (all of which are set by third-party services, as described in Sections 11.2 and 11.3) are categorized as follows:</p>
     <ul>
-      <li><strong>Strictly Necessary Cookies:</strong> Required for the Service to function. These cookies enable core functionality such as user authentication, session management, and security protection. The Service cannot operate correctly without these cookies. You cannot opt out of strictly necessary cookies.</li>
+      <li><strong>Strictly Necessary Cookies:</strong> Required for core functionality such as secure payment processing, fraud detection, and security protection. The affected portions of the Service cannot operate correctly without these cookies. You cannot opt out of strictly necessary cookies.</li>
       <li><strong>Functional Cookies:</strong> Enable enhanced functionality and personalization, such as remembering your preferences, default settings, and display options. These cookies are not strictly necessary but improve your experience.</li>
       <li><strong>Analytics Cookies:</strong> Collect anonymized information about how the Service is used, including pages visited, features used, and session duration. This data helps us understand usage patterns and improve the Service. Analytics cookies do not contain personally identifiable information.</li>
     </ul>
 
-    <h3>11.2 Specific Cookies We Use</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Cookie Name</th>
-          <th>Category</th>
-          <th>Purpose</th>
-          <th>Duration</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>fc_session</code></td>
-          <td>Strictly Necessary</td>
-          <td>Maintains your authenticated session after login. Contains a cryptographically random session identifier. Required for the Service to recognize you as a logged-in user.</td>
-          <td>Session (expires when browser is closed), or 30 days if "Remember me" is selected during login</td>
-        </tr>
-        <tr>
-          <td><code>fc_csrf</code></td>
-          <td>Strictly Necessary</td>
-          <td>Cross-site request forgery (CSRF) protection token. Prevents unauthorized third-party websites from performing actions on your behalf while you are logged in.</td>
-          <td>Session (expires when browser is closed)</td>
-        </tr>
-        <tr>
-          <td><code>fc_consent</code></td>
-          <td>Strictly Necessary</td>
-          <td>Records your cookie consent preferences (which categories of cookies you have accepted or declined).</td>
-          <td>1 year</td>
-        </tr>
-        <tr>
-          <td><code>fc_prefs</code></td>
-          <td>Functional</td>
-          <td>Stores your application preferences, including default fence type, preferred map view, measurement units, and display settings.</td>
-          <td>1 year</td>
-        </tr>
-        <tr>
-          <td><code>fc_theme</code></td>
-          <td>Functional</td>
-          <td>Stores your display theme preference (if applicable).</td>
-          <td>1 year</td>
-        </tr>
-        <tr>
-          <td><code>fc_analytics</code></td>
-          <td>Analytics</td>
-          <td>Collects anonymized, non-personally-identifiable usage data to help us understand how the Service is used, identify popular features, and detect areas for improvement.</td>
-          <td>1 year</td>
-        </tr>
-        <tr>
-          <td><code>fc_ref</code></td>
-          <td>Analytics</td>
-          <td>Records the referral source that brought you to the Service (e.g., search engine, direct link, marketing campaign). Used for marketing attribution and channel analysis.</td>
-          <td>30 days</td>
-        </tr>
-        <tr>
-          <td><code>fc_ab</code></td>
-          <td>Analytics</td>
-          <td>Assigns you to A/B test groups for feature experiments. Contains only a randomized group identifier, no personal information.</td>
-          <td>90 days</td>
-        </tr>
-      </tbody>
-    </table>
+    <h3>11.2 First-Party Cookies</h3>
+    <p>FenceTrace does not set its own (first-party) cookies for authentication, session management, preference storage, analytics, or tracking. User authentication and session state are maintained using tokens issued by AWS Cognito and stored in your browser's local storage, and your application preferences are likewise stored in local storage on your device, as described in Section 11.4. The only cookies that may be placed on your device when you use the Service are those set by the third-party services described in Section 11.3.</p>
 
     <h3>11.3 Third-Party Cookies</h3>
     <p>Certain third-party services integrated into FenceTrace may set their own cookies on your device when you use the Service:</p>
@@ -772,7 +719,7 @@
     <p>In addition to cookies, the Service uses your browser's local storage and session storage APIs to store authentication tokens (issued by AWS Cognito), application state, cached data, and user preferences locally on your device. Authentication tokens stored in local storage are required for the Service to maintain your logged-in session. Data stored in local storage persists until explicitly cleared by you or by the application. Data stored in session storage is automatically cleared when you close your browser tab.</p>
 
     <h3>11.5 Managing Cookies</h3>
-    <p>You can control and manage cookies through your browser settings. Most modern browsers allow you to view, block, or delete cookies for specific websites. However, please note that blocking or deleting strictly necessary cookies (such as <code>fc_session</code> and <code>fc_csrf</code>) will prevent the Service from functioning correctly, and you may be unable to log in or use the Service.</p>
+    <p>You can control and manage cookies through your browser settings. Most modern browsers allow you to view, block, or delete cookies for specific websites. Because FenceTrace does not set its own cookies, blocking or deleting cookies will not affect your ability to log in to or use the Service; however, blocking the third-party cookies described in Section 11.3 (such as those set by Stripe) may prevent payment forms from functioning correctly. Please note that clearing your browser's site data, including local storage, will sign you out of the Service (see Section 11.4).</p>
     <p>Instructions for managing cookies in common browsers:</p>
     <ul>
       <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener">Google Chrome</a></li>
