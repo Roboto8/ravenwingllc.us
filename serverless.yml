@@ -98,6 +98,11 @@ package:
     - '!client/**'
     - '!tests/**'
     - '!coverage/**'
+    # outreach/ holds Gmail OAuth secrets on homebase — must NEVER enter a zip
+    - '!outreach/**'
+    - '!docs/**'
+    - '!.claude/**'
+    - '!*.md'
     - '!node_modules/.bin/**'
     - '!node_modules/*/test/**'
     - '!node_modules/*/tests/**'
