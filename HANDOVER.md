@@ -120,6 +120,14 @@ names, see code comment).
 5. Multi-section BOM override restore unsupported (name collisions); needs
    section-scoped matching if it ever matters.
 
+## 5c. Observability (homebase-local, separate repo)
+
+Grafana + Loki + Prometheus + blackbox at `C:\Users\porte\observability`
+(own git repo) — http://localhost:3000, login/setup/rebuild instructions in
+its README. Dashboards: FenceTrace + Skullbash Lambda overviews (CloudWatch
+in place via read-only `grafana-readonly` IAM user), site uptime/TLS probes,
+outreach agent logs (promtail→Loki). Requires Docker Desktop running.
+
 ## 6. Machines (does NOT transfer via git)
 
 - **Homebase** (always-on, RTX 5070 Ti): outreach agent scheduled task (hourly
