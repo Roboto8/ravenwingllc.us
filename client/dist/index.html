@@ -26,7 +26,7 @@
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Fence estimating software â€” trace fence lines on satellite imagery, get instant bill of materials with every post, rail, bracket, and concrete bag. Wood, vinyl, chain link, aluminum, iron. Regional pricing. Free to start.">
+  <meta name="description" content="Fence estimating software — trace fence lines on satellite imagery, get instant bill of materials with every post, rail, bracket, and concrete bag. Wood, vinyl, chain link, aluminum, iron. Regional pricing. Free to start.">
   <meta name="keywords" content="fence estimate, fence calculator, fence bid, fence contractor software, bill of materials, fence cost, fencing estimate, satellite fence estimator">
   <link rel="canonical" href="https://fencetrace.com/">
   <title>FenceTrace | Fence Estimating Software</title>
@@ -36,7 +36,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link href="css/app.css?v=20260611d" rel="stylesheet">
+  <link href="css/app.css?v=20260611e" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#226d46">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -124,7 +124,7 @@
       <button class="auth-close" id="auth-close" onclick="hideAuthUI()">&times;</button>
       <h2 class="modal-title">Fence<span class="accent">Trace</span></h2>
       <p class="auth-gate-msg" id="auth-gate-msg" style="display:none"></p>
-      <p class="modal-sub" data-i18n="auth_subtitle">Free to use â€” no card required.</p>
+      <p class="modal-sub" data-i18n="auth_subtitle">Free to use — no card required.</p>
 
       <div id="auth-login" class="auth-form">
         <div class="form-group"><input type="email" id="login-email" placeholder="Email" autocomplete="email" inputmode="email" data-i18n="placeholder_email" data-i18n-attr="placeholder"></div>
@@ -205,7 +205,7 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-full" id="paywall-subscribe-btn" onclick="handleUpgrade()">Subscribe â€” Pro $29/mo</button>
+      <button class="btn btn-full" id="paywall-subscribe-btn" onclick="handleUpgrade()">Subscribe — Pro $29/mo</button>
       <p class="auth-switch" style="margin-top:12px"><a href="#" onclick="document.getElementById('paywall-modal').style.display='none'; return false;">Maybe later</a></p>
     </div>
   </div>
@@ -697,7 +697,7 @@
         <div class="panel-section" data-section="markup">
           <h3 class="section-title collapsible collapsed" onclick="toggleSection(this)"><span class="section-chevron">&#9656;</span>Contractor Markup</h3>
           <div class="section-body collapsed">
-            <p class="empty-state" style="font-size:0.75rem;margin-bottom:8px">These costs are visible only to you â€” hidden from customer shares and PDFs.</p>
+            <p class="empty-state" style="font-size:0.75rem;margin-bottom:8px">These costs are visible only to you — hidden from customer shares and PDFs.</p>
             <div class="form-group" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
               <span style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap">Labor $/ft</span>
               <input type="number" id="markup-labor" min="0" step="0.50" value="0" onchange="this.dataset.userSet='1';recalculate()" style="width:70px;padding:4px 6px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px">
@@ -721,7 +721,7 @@
               <span id="sum-profit">$0</span>
             </div>
             <div id="job-min-warning" style="display:none;font-size:0.78rem;font-weight:600;color:var(--red);padding:4px 0"></div>
-            <p class="empty-state" style="font-size:0.72rem;margin-top:6px">Defaults come from your <a href="#" onclick="showAccountPanel();switchAcctTab('pricing');return false" style="color:var(--accent)">price book</a> â€” set labor rates once, tweak per job.</p>
+            <p class="empty-state" style="font-size:0.72rem;margin-top:6px">Defaults come from your <a href="#" onclick="showAccountPanel();switchAcctTab('pricing');return false" style="color:var(--accent)">price book</a> — set labor rates once, tweak per job.</p>
           </div>
         </div>
 
@@ -771,19 +771,19 @@
         <div id="account-info">
           <div class="account-row">
             <span class="account-label" data-i18n="account_email">Email</span>
-            <span id="account-email">â€”</span>
+            <span id="account-email">—</span>
           </div>
           <div class="account-row">
             <span class="account-label" data-i18n="account_status">Status</span>
-            <span id="account-status">â€”</span>
+            <span id="account-status">—</span>
           </div>
           <div class="account-row" id="account-next-row" style="display:none">
             <span class="account-label" data-i18n="account_next_billing">Next billing</span>
-            <span id="account-next">â€”</span>
+            <span id="account-next">—</span>
           </div>
           <div class="account-row" id="account-amount-row" style="display:none">
             <span class="account-label" data-i18n="account_plan">Plan</span>
-            <span id="account-amount">â€”</span>
+            <span id="account-amount">—</span>
           </div>
         </div>
         <div style="margin-top:16px">
@@ -804,12 +804,17 @@
           <button class="btn btn-full btn-outline" id="account-upgrade-btn" onclick="showPricing()">View Plans</button>
           <button class="btn btn-full btn-outline" onclick="handleExportData()">Export My Data</button>
         </div>
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:0.82rem;margin-top:12px;cursor:pointer">
+          <input type="checkbox" id="benchmark-optout" onchange="saveBenchmarkOptOut(this.checked)" style="margin-top:2px">
+          <span>Don't include my anonymized pricing in regional benchmarks</span>
+        </label>
+        <p class="empty-state" style="font-size:0.72rem;margin-top:4px">FenceTrace aggregates quote outcomes into regional medians (counts and averages only — your individual prices, price book, and customers are never shown to anyone). Opt out anytime; it takes effect from the next nightly rollup.</p>
         <div class="account-utility-row" style="margin-top:12px">
           <button class="btn btn-sm btn-outline" onclick="resetHints()">Reset Tips</button>
           <button class="btn btn-sm btn-outline" onclick="resetOnboarding()">Reset Onboarding</button>
         </div>
         <p style="margin-top:12px;font-size:0.82rem;color:var(--text-muted);text-align:center">
-          Cancel anytime â€” no fees, no questions. Your data stays available for 90 days after cancellation.
+          Cancel anytime — no fees, no questions. Your data stays available for 90 days after cancellation.
         </p>
       </div>
 
@@ -866,7 +871,7 @@
         <div id="pricebook-list" style="max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
 
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px;margin-top:16px">Labor &amp; Markup</p>
-        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">New estimates start from these rates â€” you can still adjust any single job.</p>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">New estimates start from these rates — you can still adjust any single job.</p>
         <div id="pricebook-globals">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.8rem">
             <span style="flex:1;color:var(--text-mid)">Default labor ($/ft, all fences)</span>
@@ -895,13 +900,13 @@
       <!-- Tab: Shortcuts -->
       <div class="acct-tab-content" id="acct-tab-website">
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Instant-Quote Button</p>
-        <p class="empty-state" style="font-size:0.8rem;margin-bottom:10px">Put this button on your website. Homeowners sketch their own fence and the lead lands in your Estimates â€” yours alone, no per-lead fee, and you get a notification.</p>
+        <p class="empty-state" style="font-size:0.8rem;margin-bottom:10px">Put this button on your website. Homeowners sketch their own fence and the lead lands in your Estimates — yours alone, no per-lead fee, and you get a notification.</p>
         <textarea id="embed-snippet" readonly onclick="this.select()" style="width:100%;min-height:96px;padding:8px;font-family:monospace;font-size:0.7rem;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn btn-sm btn-outline" onclick="copyEmbedSnippet()">Copy snippet</button>
           <button class="btn btn-sm btn-outline" onclick="copyEmbedLink()">Copy plain link</button>
         </div>
-        <p class="empty-state" style="font-size:0.72rem;margin-top:10px">No website? Share the plain link anywhere â€” Facebook page, Google Business profile, text messages.</p>
+        <p class="empty-state" style="font-size:0.72rem;margin-top:10px">No website? Share the plain link anywhere — Facebook page, Google Business profile, text messages.</p>
       </div>
       <div class="acct-tab-content" id="acct-tab-shortcuts">
         <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px">Keyboard Shortcuts</p>
@@ -1001,12 +1006,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="js/i18n.js?v=20260611d"></script>
-  <script src="js/auth.js?v=20260611d"></script>
-  <script src="js/api.js?v=20260611d"></script>
-  <script src="js/regions.js?v=20260611d"></script>
-  <script src="js/app.js?v=20260611d"></script>
-  <script src="js/config.js?v=20260611d"></script>
+  <script src="js/i18n.js?v=20260611e"></script>
+  <script src="js/auth.js?v=20260611e"></script>
+  <script src="js/api.js?v=20260611e"></script>
+  <script src="js/regions.js?v=20260611e"></script>
+  <script src="js/app.js?v=20260611e"></script>
+  <script src="js/config.js?v=20260611e"></script>
   <script>
     Auth.configure(FC_CONFIG.userPoolId, FC_CONFIG.clientId);
     API.configure(FC_CONFIG.apiUrl);
@@ -1029,7 +1034,7 @@
           banner = document.createElement('div');
           banner.id = 'offline-banner';
           banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#b3362a;color:#fff;text-align:center;padding:8px 16px;font-size:0.85rem;font-weight:600;z-index:99998;font-family:var(--font)';
-          banner.textContent = 'You are offline â€” changes will not be saved until connection is restored';
+          banner.textContent = 'You are offline — changes will not be saved until connection is restored';
           document.body.appendChild(banner);
         }
       } else if (banner) {
@@ -1203,7 +1208,7 @@
       document.getElementById('btn-logout').style.display = 'none';
     }
 
-    // Gate check â€” show signup prompt for premium features
+    // Gate check — show signup prompt for premium features
     var _subscriptionActive = false;
 
     function requireAuth(featureName) {
@@ -1263,16 +1268,16 @@
         if (status.pastDue) {
           document.getElementById('trial-banner').style.display = 'flex';
           document.getElementById('trial-banner').style.background = '#b3362a';
-          document.getElementById('trial-text').textContent = 'Payment failed â€” please update your payment method';
+          document.getElementById('trial-text').textContent = 'Payment failed — please update your payment method';
           document.getElementById('trial-action-btn').textContent = 'Update Payment';
           document.getElementById('trial-action-btn').onclick = handleManageBilling;
           document.getElementById('paywall-modal').style.display = 'none';
         } else if (status.tier === 'pro' || status.tier === 'builder' || status.tier === 'contractor') {
-          // Paid subscriber â€” hide banner
+          // Paid subscriber — hide banner
           document.getElementById('trial-banner').style.display = 'none';
           document.getElementById('paywall-modal').style.display = 'none';
         } else {
-          // Starter tier â€” only show banner when 1 or 0 estimates remaining
+          // Starter tier — only show banner when 1 or 0 estimates remaining
           var limit = status.estimateLimit || 2;
           var remaining = Math.max(0, limit - (status.estimatesUsed || 0));
           if (remaining <= 1) {
@@ -1282,7 +1287,7 @@
               document.getElementById('trial-text').textContent = 'No free estimates remaining this month';
               document.getElementById('trial-action-btn').textContent = 'Upgrade';
             } else {
-              document.getElementById('trial-text').textContent = '1 free estimate remaining' + (limit === 2 ? ' â€” share for +1 bonus' : '');
+              document.getElementById('trial-text').textContent = '1 free estimate remaining' + (limit === 2 ? ' — share for +1 bonus' : '');
               document.getElementById('trial-action-btn').textContent = 'Upgrade';
             }
             document.getElementById('trial-action-btn').onclick = showPricing;
@@ -1291,7 +1296,7 @@
           }
         }
       } catch (e) {
-        // API not deployed or error â€” allow access (don't lock people out on errors)
+        // API not deployed or error — allow access (don't lock people out on errors)
         _subscriptionActive = true;
         window._ftTier = 'free';
       }
@@ -1311,6 +1316,8 @@
           companyPricebook = company.pricebook;
           localStorage.setItem('fc_pricebook', JSON.stringify(company.pricebook));
         }
+        var benchEl = document.getElementById('benchmark-optout');
+        if (benchEl) benchEl.checked = !!company.benchmarkOptOut;
         if (company.language) {
           setLang(company.language);
           var langSel = document.getElementById('lang-select');
@@ -1453,7 +1460,7 @@
       // Save to company profile
       if (Auth.isLoggedIn()) {
         API.updateCompany({ pricebook: companyPricebook }).catch(function() {
-          showToast('Saved on this device only â€” cloud sync failed, try Save again');
+          showToast('Saved on this device only — cloud sync failed, try Save again');
         });
       }
       recalculate();
@@ -1469,7 +1476,7 @@
       localStorage.setItem('fc_pricebook', JSON.stringify(companyPricebook));
       if (Auth.isLoggedIn()) {
         API.updateCompany({ pricebook: companyPricebook }).catch(function() {
-          showToast('Reset on this device only â€” cloud sync failed, try again');
+          showToast('Reset on this device only — cloud sync failed, try again');
         });
       }
       renderPricebook();
@@ -1478,7 +1485,7 @@
     }
 
     // First-run nudge: contractors who never open the Pricing tab never get
-    // accurate quotes â€” so after login, if no labor/markup rates are saved
+    // accurate quotes — so after login, if no labor/markup rates are saved
     // and they haven't dismissed it, walk them to the price book once.
     function maybePromptPricebookSetup() {
       try {
@@ -1549,7 +1556,7 @@
 
     async function showAccountPanel() {
       document.getElementById('account-modal').style.display = 'flex';
-      document.getElementById('account-email').textContent = Auth.user ? Auth.user.email : 'â€”';
+      document.getElementById('account-email').textContent = Auth.user ? Auth.user.email : '—';
       initRegionSelect();
       renderPricebook();
       loadRoles();
@@ -1573,7 +1580,7 @@
         if (status.planAmount) {
           document.getElementById('account-amount-row').style.display = 'flex';
           var tierName = { free: 'Starter', builder: 'Pro', contractor: 'Pro', pro: 'Pro' }[status.tier] || 'Pro';
-          document.getElementById('account-amount').textContent = tierName + ' â€” $' + status.planAmount + '/month';
+          document.getElementById('account-amount').textContent = tierName + ' — $' + status.planAmount + '/month';
         } else if (status.tier) {
           document.getElementById('account-amount-row').style.display = 'flex';
           var tierName = { free: 'Starter', builder: 'Pro', contractor: 'Pro', pro: 'Pro' }[status.tier] || 'Starter';
@@ -1830,7 +1837,7 @@
     async function changeRole(email, newRole) {
       try {
         await API.assignRole(email, newRole);
-        showToast(email + ' â†’ ' + newRole);
+        showToast(email + ' → ' + newRole);
         loadTeamList();
       } catch (e) { showToast(e.message || 'Failed to assign role'); }
     }
@@ -1840,6 +1847,21 @@
         var result = await API.createPortal(window.location.href);
         window.location.href = result.url;
       } catch (e) { showToast('Could not open billing portal'); }
+    }
+
+    function saveBenchmarkOptOut(optedOut) {
+      var el = document.getElementById('benchmark-optout');
+      if (!Auth.isLoggedIn()) {
+        if (el) el.checked = !optedOut; // revert — nothing was saved
+        requireAuth('change benchmark settings');
+        return;
+      }
+      API.updateCompany({ benchmarkOptOut: !!optedOut }).then(function() {
+        showToast(optedOut ? 'Opted out of regional benchmarks' : 'Opted back into regional benchmarks');
+      }).catch(function() {
+        if (el) el.checked = !optedOut; // revert so the UI never lies about a failed save
+        showToast('Could not save — try again');
+      });
     }
 
     async function handleExportData() {
@@ -1935,7 +1957,7 @@
       var card = document.getElementById('plan-' + tier);
       if (card) card.style.borderColor = 'var(--accent)';
       var btn = document.getElementById('paywall-subscribe-btn');
-      if (btn) btn.textContent = 'Subscribe â€” Pro $29/mo';
+      if (btn) btn.textContent = 'Subscribe — Pro $29/mo';
     }
 
     function showPricing() {
@@ -1963,7 +1985,7 @@
     async function saveEstimate() {
       if (!requireAuth('save estimates')) return;
       // Read numeric state, never the formatted DOM (locale separators +
-      // metric display corrupt parsed values â€” meters saved as feet, 1000x off)
+      // metric display corrupt parsed values — meters saved as feet, 1000x off)
       const feet = computedTotals.feet;
       if (feet === 0 && mulchAreas.length === 0) return showToast('Draw a fence or mulch area first');
 
@@ -2314,6 +2336,28 @@
         var cmpEl = document.getElementById('bom-compare');
         if (cmpEl) cmpEl.style.display = manualBom.length > 0 ? '' : 'none';
 
+        // Rebuild manual BOM qty/price overrides: the saved bom carries values
+        // as shipped — diff against a freshly computed BOM so the reopened
+        // estimate prices what was actually saved instead of silently
+        // regenerating different numbers.
+        bomQtyOverrides = {};
+        bomPriceOverrides = {};
+        // Single-section only: multi-section combined BOMs repeat item names
+        // per section, and name-keyed overrides would cross-contaminate rows.
+        if ((est.sections || []).length <= 1 && est.bom && est.bom.length > 0 && typeof calculateCombinedBOM === 'function') {
+          saveActiveSection();
+          var freshBom = calculateCombinedBOM();
+          var freshByName = {};
+          if (freshBom) freshBom.items.forEach(function(fi) { if (!fi.isHeader) freshByName[fi.name] = fi; });
+          est.bom.forEach(function(saved) {
+            if (saved.isHeader) return;
+            var fresh = freshByName[saved.name];
+            if (!fresh) return;
+            if (typeof saved.qty === 'number' && saved.qty !== fresh.qty) bomQtyOverrides[saved.name] = saved.qty;
+            if (typeof saved.unitCost === 'number' && saved.unitCost !== fresh.unitCost) bomPriceOverrides[saved.name] = saved.unitCost;
+          });
+        }
+
         // Load photos
         activeEstimateId = est.id;
         activeEstimatePhotos = est.photos || [];
@@ -2655,12 +2699,12 @@
           showGuestUI();
         });
       } else {
-        // Guest mode â€” show sign in button, let them use the app
+        // Guest mode — show sign in button, let them use the app
         showGuestUI();
         showOnboarding();
       }
     } catch (e) {
-      // Any init error â€” fall back to guest mode
+      // Any init error — fall back to guest mode
       showGuestUI();
       showOnboarding();
     }
@@ -2673,7 +2717,7 @@
       if (!ref || !/^[A-Za-z0-9_-]{8,64}$/.test(ref)) return;
       try {
         _refCompany = await API.getPublicCompany(ref);
-      } catch (e) { return; } // bad ref â€” behave like a normal visit
+      } catch (e) { return; } // bad ref — behave like a normal visit
       document.getElementById('ref-company-name').textContent = _refCompany.name;
       document.getElementById('lead-company-name').textContent = _refCompany.name;
       document.getElementById('lead-company-name2').textContent = _refCompany.name;
@@ -2681,7 +2725,7 @@
     }
     initRefMode();
 
-    // Read from app state, never from rendered DOM text â€” display strings are
+    // Read from app state, never from rendered DOM text — display strings are
     // locale-formatted and unit-converted (metric mode), which silently
     // corrupts lead numbers.
     function leadFootage() {
@@ -2689,7 +2733,7 @@
     }
 
     function openLeadModal() {
-      if (!leadFootage()) { showToast('Draw your fence on the map first â€” then send it'); return; }
+      if (!leadFootage()) { showToast('Draw your fence on the map first — then send it'); return; }
       document.getElementById('lead-modal').style.display = 'flex';
       document.getElementById('lead-name').focus();
     }
@@ -2702,7 +2746,7 @@
       if (!name) { showToast('Please enter your name'); return; }
       if (!phone && !email) { showToast('Please add a phone number or email'); return; }
       var btn = document.getElementById('lead-submit-btn');
-      btn.disabled = true; btn.textContent = 'Sendingâ€¦';
+      btn.disabled = true; btn.textContent = 'Sending…';
       try {
         await API.submitLead({
           companyId: _refCompany.id,
@@ -2843,7 +2887,7 @@
       <button onclick="localStorage.setItem('fc_cookie_ok','1');document.getElementById('cookie-banner').style.display='none'" style="background:var(--accent,#226d46);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;white-space:nowrap">Got it</button>
     </div>
   </div>
-  <!-- Cookie banner is gated by maybeShowCookieBanner() â€” shown only after onboarding is dismissed -->
+  <!-- Cookie banner is gated by maybeShowCookieBanner() — shown only after onboarding is dismissed -->
 
   <!-- First-run price book setup prompt: shown once to logged-in users who
        have no labor/markup rates saved. Big buttons, plain words. -->

@@ -46,6 +46,9 @@ function rec(crm, email) {
 function note(r, text) {
   r.history.push(new Date().toISOString().slice(0, 16) + ' ' + text);
 }
+function updateNote(r, text) {
+  r.history[r.history.length - 1] = new Date().toISOString().slice(0, 16) + ' ' + text;
+}
 
 // ---------- gmail ----------
 async function gmailClient() {
@@ -263,15 +266,30 @@ async function cmdSend(args) {
     const body = buildBody(p);
     console.log('\n--- ' + p.company + ' <' + p.to + '> — "' + p.subject + '"');
     if (dry) { console.log(body.split('\n').slice(0, 3).join('\n') + '\n...'); continue; }
-    const sent = await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw: mime({ to: p.to, subject: p.subject, body, link: trackedUrl('round1', p) }) },
-    });
+    // Claim in the CRM BEFORE the send: a crash between send and save must
+    // skip this prospect next run, never email them twice.
     const r = rec(crm, p.to);
+    const prevStatus = r.status;
     r.status = 'sent';
     r.sentAt = new Date().toISOString();
+    note(r, 'sending round-1 email...');
+    saveCrm(crm);
+    let sent;
+    try {
+      sent = await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw: mime({ to: p.to, subject: p.subject, body, link: trackedUrl('round1', p) }) },
+      });
+    } catch (err) {
+      r.status = prevStatus;
+      delete r.sentAt;
+      updateNote(r, 'round-1 send failed: ' + err.message);
+      saveCrm(crm);
+      console.log('send failed: ' + err.message);
+      continue;
+    }
     r.threadId = sent.data.threadId;
-    note(r, 'sent round-1 email');
+    updateNote(r, 'sent round-1 email');
     saveCrm(crm);
     console.log('sent ✓');
     await new Promise((res) => setTimeout(res, 5000));
@@ -286,11 +304,22 @@ async function cmdScan() {
   for (const p of PROSPECTS) {
     const r = rec(crm, p.to);
     if (r.status === 'opted_out') continue;
+    // The search only catches replies sent FROM the prospect's address; the
+    // stored sent thread (r.threadId) also catches replies from a different
+    // address at the same company (office@ answering mail sent to sales@).
     const res = await gmail.users.threads.list({ userId: 'me', q: 'from:' + p.to });
-    for (const t of res.data.threads || []) {
-      const thread = await gmail.users.threads.get({ userId: 'me', id: t.id, format: 'full' });
+    const threadIds = (res.data.threads || []).map((t) => t.id);
+    if (r.threadId && !threadIds.includes(r.threadId)) threadIds.unshift(r.threadId);
+    for (const tid of threadIds) {
+      const thread = await gmail.users.threads.get({ userId: 'me', id: tid, format: 'full' });
       const msgs = thread.data.messages || [];
-      const inbound = msgs.filter((m) => header(m, 'From').includes(p.to) && !(r.seenMessages || []).includes(m.id));
+      // In the sent thread, anything we didn't write (no SENT label, and not
+      // one of our own Claude drafts) counts as a reply, whoever sent it.
+      // seenMessages dedupes so no reply is ever classified twice.
+      const inbound = msgs.filter((m) =>
+        !(m.labelIds || []).some((l) => l === 'SENT' || l === 'DRAFT') &&
+        (tid === r.threadId || header(m, 'From').includes(p.to)) &&
+        !(r.seenMessages || []).includes(m.id));
       if (!inbound.length) continue;
       const latest = inbound[inbound.length - 1];
       const replyText = plainText(latest.payload).slice(0, 4000);
@@ -299,6 +328,9 @@ async function cmdScan() {
       r.seenMessages = (r.seenMessages || []).concat(inbound.map((m) => m.id));
       r.status = cls.category === 'opt_out' || cls.category === 'not_interested' ? 'opted_out' : cls.category;
       note(r, 'reply (' + cls.category + '): ' + cls.summary);
+      // Persist the classification BEFORE drafting: a crash in drafts.create
+      // must not re-classify (and re-draft) the same reply on the next run.
+      saveCrm(crm);
       console.log('\n' + p.company + ' → ' + cls.category.toUpperCase() + ': ' + cls.summary);
       if (cls.needs_reply && cls.category !== 'opt_out' && cls.category !== 'not_interested') {
         const body = (await draftReply(ai, p.company, outbound, replyText)) + '\n\nTodd\nFenceTrace\n\n' + ADDRESS;
@@ -307,7 +339,7 @@ async function cmdScan() {
           userId: 'me',
           requestBody: {
             message: {
-              threadId: t.id,
+              threadId: tid,
               raw: mime({
                 to: p.to,
                 subject: /^re:/i.test(subj) ? subj : 'Re: ' + subj,
@@ -358,6 +390,9 @@ async function cmdFollowups(args) {
 //   * hard cap: 5 outbound emails per calendar day, total
 //   * one round-1 email per prospect ever; at most ONE follow-up after 5+
 //     quiet days; replied / opted-out / bounced prospects are never touched
+//   * replies are scanned BEFORE any send, so an overnight opt-out is
+//     honored on the same run; the CRM is claimed before each Gmail send,
+//     so a crash can only skip a prospect, never email them twice
 //   * Claude-drafted replies are NEVER auto-sent (scan leaves drafts)
 const DAILY_CAP = 5;
 const SEND_DAYS = [2, 3, 4]; // Tue, Wed, Thu
@@ -377,6 +412,16 @@ function sentTodayCount(crm) {
 async function cmdAgent() {
   const stamp = new Date().toISOString().slice(0, 16);
   console.log('[' + stamp + '] agent run');
+
+  // Scan FIRST so an overnight opt-out reply is marked before any send
+  // below; Claude drafts go to Gmail Drafts for review. cmdScan loads and
+  // saves the CRM itself, so reload from disk afterwards for fresh statuses.
+  if (process.env.ANTHROPIC_API_KEY) {
+    await cmdScan();
+  } else {
+    console.log('  scan skipped: ANTHROPIC_API_KEY not set');
+  }
+
   const crm = loadCrm();
   const day = new Date().getDay();
   let budget = DAILY_CAP - sentTodayCount(crm);
@@ -392,15 +437,30 @@ async function cmdAgent() {
     }).slice(0, budget);
     for (const p of fresh) {
       const body = buildBody(p);
-      const sent = await gmail.users.messages.send({
-        userId: 'me',
-        requestBody: { raw: mime({ to: p.to, subject: p.subject, body, link: trackedUrl('round1', p) }) },
-      });
+      // Claim in the CRM BEFORE the send: a crash between send and save must
+      // skip this prospect next run, never email them twice.
       const r = rec(crm, p.to);
+      const prevStatus = r.status;
       r.status = 'sent';
       r.sentAt = new Date().toISOString();
+      note(r, 'agent sending round-1 email...');
+      saveCrm(crm);
+      let sent;
+      try {
+        sent = await gmail.users.messages.send({
+          userId: 'me',
+          requestBody: { raw: mime({ to: p.to, subject: p.subject, body, link: trackedUrl('round1', p) }) },
+        });
+      } catch (err) {
+        r.status = prevStatus;
+        delete r.sentAt;
+        updateNote(r, 'round-1 send failed: ' + err.message);
+        saveCrm(crm);
+        console.log('  send failed (' + p.company + '): ' + err.message);
+        continue;
+      }
       r.threadId = sent.data.threadId;
-      note(r, 'agent sent round-1 email');
+      updateNote(r, 'agent sent round-1 email');
       saveCrm(crm);
       budget--;
       console.log('  sent round-1: ' + p.company);
@@ -417,15 +477,26 @@ async function cmdAgent() {
     for (const p of due) {
       const body = buildFollowupBody(p);
       const r = rec(crm, p.to);
-      await gmail.users.messages.send({
-        userId: 'me',
-        requestBody: {
-          raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body, link: trackedUrl('followup', p) }),
-          threadId: r.threadId,
-        },
-      });
+      // Same claim-first pattern as round-1: never risk a double follow-up.
       r.followupSentAt = new Date().toISOString();
-      note(r, 'agent sent follow-up (final touch)');
+      note(r, 'agent sending follow-up...');
+      saveCrm(crm);
+      try {
+        await gmail.users.messages.send({
+          userId: 'me',
+          requestBody: {
+            raw: mime({ to: p.to, subject: 'Re: ' + p.subject, body, link: trackedUrl('followup', p) }),
+            threadId: r.threadId,
+          },
+        });
+      } catch (err) {
+        delete r.followupSentAt;
+        updateNote(r, 'follow-up send failed: ' + err.message);
+        saveCrm(crm);
+        console.log('  send failed (' + p.company + '): ' + err.message);
+        continue;
+      }
+      updateNote(r, 'agent sent follow-up (final touch)');
       saveCrm(crm);
       budget--;
       console.log('  sent follow-up: ' + p.company);
@@ -433,14 +504,7 @@ async function cmdAgent() {
     }
     if (!fresh.length && !due.length) console.log('  nothing in send window');
   } else {
-    console.log('  no sends (day/cap rules) — scan only');
-  }
-
-  // Always scan for replies; Claude drafts go to Gmail Drafts for review
-  if (process.env.ANTHROPIC_API_KEY) {
-    await cmdScan();
-  } else {
-    console.log('  scan skipped: ANTHROPIC_API_KEY not set');
+    console.log('  no sends (day/cap rules)');
   }
 }
 

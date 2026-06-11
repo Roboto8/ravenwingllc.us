@@ -36,6 +36,15 @@ describe('compareManualBom', () => {
     expect(r.rows[0].countedName).toBeNull();
   });
 
+  test('exact match wins even when an earlier row would substring-claim it', () => {
+    const r = compareManualBom(
+      [{ name: 'posts', qty: 5 }, { name: '4x4x8 PT posts', qty: 17 }],
+      computed
+    );
+    expect(r.rows[1].countedName).toBe('4x4x8 PT posts');
+    expect(r.rows[0].countedName).toBeNull();
+  });
+
   test('a computed item is matched at most once', () => {
     const r = compareManualBom(
       [{ name: '4x4x8 PT posts', qty: 10 }, { name: '4x4x8 posts', qty: 5 }],

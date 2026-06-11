@@ -1,4 +1,12 @@
-const { rollup } = require('../handlers/market-rollup');
+const mockSend = jest.fn();
+jest.mock('@aws-sdk/client-dynamodb', () => ({ DynamoDBClient: jest.fn() }));
+jest.mock('@aws-sdk/lib-dynamodb', () => ({
+  DynamoDBDocumentClient: { from: jest.fn(() => ({ send: mockSend })) },
+  ScanCommand: jest.fn().mockImplementation((input) => ({ __type: 'Scan', input })),
+  BatchWriteCommand: jest.fn().mockImplementation((input) => ({ __type: 'BatchWrite', input })),
+}));
+
+const { rollup, handler } = require('../handlers/market-rollup');
 
 const NOW = new Date('2026-06-10T12:00:00Z');
 
@@ -99,5 +107,75 @@ describe('market rollup aggregation', () => {
       est({ status: 'won', sentAt: '2026-06-05T00:00:00.000Z', wonAt: '2026-06-01T00:00:00.000Z' }),
     ], NOW);
     expect(items[0].medianDaysToWin).toBeNull();
+  });
+
+  test('excludes estimates from benchmark-opted-out companies', () => {
+    const items = rollup([
+      est({ PK: 'COMPANY#opted-out' }),
+      est({ PK: 'COMPANY#participating' }),
+      est({ PK: 'COMPANY#participating' }),
+    ], NOW, new Set(['COMPANY#opted-out']));
+    expect(items).toHaveLength(1);
+    expect(items[0].quotes).toBe(2);
+  });
+
+  test('no opt-out set means every company aggregates (default)', () => {
+    const items = rollup([
+      est({ PK: 'COMPANY#a' }),
+      est({ PK: 'COMPANY#b' }),
+    ], NOW);
+    expect(items[0].quotes).toBe(2);
+  });
+});
+
+describe('market rollup handler (scan + opt-out wiring)', () => {
+  beforeEach(() => mockSend.mockReset());
+
+  test('one scan collects profiles and estimates; opted-out estimates never aggregate', async () => {
+    const writes = [];
+    let scanInput;
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd.__type === 'Scan') {
+        scanInput = cmd.input;
+        return {
+          Items: [
+            { PK: 'COMPANY#a', SK: 'PROFILE', benchmarkOptOut: true },
+            { PK: 'COMPANY#b', SK: 'PROFILE' },
+            { ...est({}), PK: 'COMPANY#a' },
+            { ...est({}), PK: 'COMPANY#b' },
+          ],
+        };
+      }
+      writes.push(cmd.input);
+      return {};
+    });
+
+    const out = await handler();
+
+    // Scan picks up PROFILE items alongside estimates in a single pass
+    expect(scanInput.FilterExpression).toBe('begins_with(SK, :est) OR SK = :profile');
+    expect(scanInput.ExpressionAttributeValues).toEqual({ ':est': 'EST#', ':profile': 'PROFILE' });
+
+    // Profiles are not counted as estimates; opted-out company excluded
+    expect(out.estimatesScanned).toBe(2);
+    expect(out.aggregatesWritten).toBe(1);
+    const written = writes[0].RequestItems[Object.keys(writes[0].RequestItems)[0]];
+    expect(written).toHaveLength(1);
+    expect(written[0].PutRequest.Item.quotes).toBe(1);
+  });
+
+  test('paginated scan accumulates opt-outs across pages', async () => {
+    const pages = [
+      { Items: [{ PK: 'COMPANY#a', SK: 'PROFILE', benchmarkOptOut: true }], LastEvaluatedKey: { PK: 'x' } },
+      { Items: [{ ...est({}), PK: 'COMPANY#a' }, { ...est({}), PK: 'COMPANY#b' }] },
+    ];
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd.__type === 'Scan') return pages.shift();
+      return {};
+    });
+
+    const out = await handler();
+    expect(out.estimatesScanned).toBe(2);
+    expect(out.aggregatesWritten).toBe(1);
   });
 });

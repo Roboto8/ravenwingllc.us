@@ -69,6 +69,10 @@ module.exports.checkout = res.wrap(async (event) => {
     contractor: process.env.STRIPE_PRICE_CONTRACTOR
   };
   const tier = body.tier || 'pro';
+  // Whitelist the tier server-side — never trust an arbitrary client value
+  if (typeof tier !== 'string' || !Object.prototype.hasOwnProperty.call(tierPrices, tier)) {
+    return res.bad('Unknown tier: ' + tier);
+  }
   const priceId = tierPrices[tier] || process.env.STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_CONTRACTOR || process.env.STRIPE_PRICE_ID;
 
   if (!priceId) return res.bad('No price configured for tier: ' + tier);

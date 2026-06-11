@@ -117,4 +117,58 @@ describe('estimate outcome tracking', () => {
     expect(res.statusCode).toBe(201);
     expect(db.put.mock.calls[0][0].regionKey).toBeUndefined();
   });
+
+  // Clients send fencePoints as both [lat, lng] arrays and {lat, lng} objects;
+  // deriveMarketFields must accept either or the rollup corpus silently starves.
+  test('derives market fields from {lat,lng} object points on create', async () => {
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
+    const res = await estimates.create({
+      body: JSON.stringify({
+        fencePoints: [{ lat: 40.001, lng: -83.001 }],
+        totalFeet: 100,
+        totalCost: 2500
+      })
+    });
+    expect(res.statusCode).toBe(201);
+    const item = db.put.mock.calls[0][0];
+    expect(item.regionKey).toBe('40.0,-83.0');
+    expect(item.pricePerFoot).toBe(25);
+  });
+
+  test('derives regionKey from {lat,lng} object points on update', async () => {
+    db.findById.mockResolvedValue({
+      ...baseEstimate,
+      fencePoints: [{ lat: 39.123, lng: -84.512 }, { lat: 39.125, lng: -84.514 }]
+    });
+    await estimates.update(updateEvent({ totalCost: 7000 }));
+    const updates = db.update.mock.calls[0][2];
+    expect(updates.regionKey).toBe('39.1,-84.5');
+    expect(updates.pricePerFoot).toBe(35);
+  });
+
+  test('mixed array and object point shapes both count toward the centroid', async () => {
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
+    const res = await estimates.create({
+      body: JSON.stringify({
+        fencePoints: [[39.1, -84.5], { lat: 39.3, lng: -84.7 }],
+        totalFeet: 100,
+        totalCost: 2500
+      })
+    });
+    expect(res.statusCode).toBe(201);
+    expect(db.put.mock.calls[0][0].regionKey).toBe('39.2,-84.6');
+  });
+
+  test('ignores malformed points (string coords, nulls) when deriving regionKey', async () => {
+    db.get.mockResolvedValue({ subscriptionStatus: 'active', tier: 'pro' });
+    const res = await estimates.create({
+      body: JSON.stringify({
+        fencePoints: [{ lat: '39.1', lng: -84.5 }, null, { lng: -84.5 }, [40.0, -83.0]],
+        totalFeet: 100,
+        totalCost: 2500
+      })
+    });
+    expect(res.statusCode).toBe(201);
+    expect(db.put.mock.calls[0][0].regionKey).toBe('40.0,-83.0');
+  });
 });

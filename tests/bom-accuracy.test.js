@@ -26,8 +26,26 @@ describe('real-world fence scenarios', () => {
     const bom = calculateBOM(150, 'wood', 6);
     const items = name => bom.items.find(i => i.name.includes(name));
 
-    test('post count: 150ft / 8ft spacing = 19 sections + 1 = 20 posts', () => {
-      expect(items('posts').qty).toBe(20);
+    test('post count: 150ft / 8ft spacing = 19 sections + 1 = 20 posts (line + corner/end)', () => {
+      const line = items('line posts');
+      const cornerEnd = items('corner/end posts');
+      expect(line.qty + cornerEnd.qty).toBe(20);
+      // default open run (2 endpoints, no corners): 2 corner/end, 18 line
+      expect(cornerEnd.qty).toBe(2);
+      expect(line.qty).toBe(18);
+    });
+
+    test('an L-shaped run counts the corner post separately', () => {
+      const l = calculateBOM(150, 'wood', 6, { fencePointCount: 3, fenceClosed: false });
+      expect(l.items.find(i => i.name.includes('corner/end posts')).qty).toBe(3); // 2 ends + 1 corner
+      const closed = calculateBOM(150, 'wood', 6, { fencePointCount: 4, fenceClosed: true });
+      expect(closed.items.find(i => i.name.includes('corner/end posts')).qty).toBe(4); // 4 corners, no ends
+    });
+
+    test('cornerPostCost price-book key prices corner/end posts separately', () => {
+      const b = calculateBOM(150, 'wood', 6, { customPricing: { 'wood.6.cornerPostCost': 30 } });
+      expect(b.items.find(i => i.name.includes('corner/end posts')).unitCost).toBe(30);
+      expect(b.items.find(i => i.name.includes('line posts')).unitCost).not.toBe(30);
     });
 
     test('3 horizontal rails per section for 6ft fence = 57 rails', () => {

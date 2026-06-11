@@ -30,10 +30,12 @@ const mockConstructEvent = jest.fn();
 const mockSubscriptionsRetrieve = jest.fn().mockResolvedValue({
   items: { data: [{ price: { id: 'price_pro_test' } }] }
 });
+const mockChargesRetrieve = jest.fn();
 const mockStripeWebhook = {
   webhooks: { constructEvent: mockConstructEvent },
   subscriptions: { retrieve: mockSubscriptionsRetrieve, cancel: mockSubscriptionsCancel },
-  invoices: { retrieve: mockInvoicesRetrieve }
+  invoices: { retrieve: mockInvoicesRetrieve },
+  charges: { retrieve: mockChargesRetrieve }
 };
 jest.mock('stripe', () => jest.fn().mockReturnValue(mockStripeWebhook));
 
@@ -251,18 +253,20 @@ describe('webhook handler - missing event types', () => {
 
   // ===== charge.dispute.created =====
   describe('charge.dispute.created', () => {
-    test('immediately revokes access', async () => {
+    test('resolves the customer via the disputed charge and revokes access', async () => {
       const db = require('../handlers/lib/dynamo');
+      mockChargesRetrieve.mockResolvedValue({ id: 'ch_123', customer: 'cus_123' });
       mockConstructEvent.mockReturnValue({
         id: 'evt_dispute_1',
         type: 'charge.dispute.created',
         data: {
-          object: { customer: 'cus_123' }
+          object: { id: 'dp_1', charge: 'ch_123' }
         }
       });
 
       const result = await handler(makeEvent());
       expect(result.statusCode).toBe(200);
+      expect(mockChargesRetrieve).toHaveBeenCalledWith('ch_123');
       expect(db.update).toHaveBeenCalledWith(
         'COMPANY#comp-abc', 'PROFILE',
         expect.objectContaining({
@@ -276,13 +280,56 @@ describe('webhook handler - missing event types', () => {
     test('no-op when company not found', async () => {
       const db = require('../handlers/lib/dynamo');
       db.queryGSI.mockResolvedValueOnce([]);
+      mockChargesRetrieve.mockResolvedValue({ id: 'ch_unknown', customer: 'cus_unknown' });
       mockConstructEvent.mockReturnValue({
         id: 'evt_dispute_2',
         type: 'charge.dispute.created',
-        data: { object: { customer: 'cus_unknown' } }
+        data: { object: { id: 'dp_2', charge: 'ch_unknown' } }
       });
 
       await handler(makeEvent());
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    test('logs and skips when the charge lookup fails', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockChargesRetrieve.mockRejectedValue(new Error('Stripe error'));
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_dispute_3',
+        type: 'charge.dispute.created',
+        data: { object: { id: 'dp_3', charge: 'ch_err' } }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    test('skips when the dispute has no charge', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_dispute_4',
+        type: 'charge.dispute.created',
+        data: { object: { id: 'dp_4' } }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
+      expect(mockChargesRetrieve).not.toHaveBeenCalled();
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    test('skips when the charge has no customer', async () => {
+      const db = require('../handlers/lib/dynamo');
+      mockChargesRetrieve.mockResolvedValue({ id: 'ch_guest', customer: null });
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_dispute_5',
+        type: 'charge.dispute.created',
+        data: { object: { id: 'dp_5', charge: 'ch_guest' } }
+      });
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(200);
       expect(db.update).not.toHaveBeenCalled();
     });
   });

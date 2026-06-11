@@ -71,6 +71,34 @@ describe('approval handler', () => {
       expect(body.shareToken).toBe('existing-token');
     });
 
+    test('stamps sharedAt as an ISO timestamp', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.findById.mockResolvedValue(mockEstimate);
+      db.update.mockResolvedValue({});
+
+      await approval.share({
+        pathParameters: { id: 'est-1' },
+        headers: { origin: 'https://fencetrace.com' }
+      });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.sharedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(new Date(updateArgs.sharedAt).getTime()).not.toBeNaN();
+    });
+
+    test('re-sharing refreshes sharedAt (fresh 30-day window)', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      const staleSharedAt = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+      db.findById.mockResolvedValue({ ...mockEstimate, shareToken: 'existing-token', sharedAt: staleSharedAt });
+      db.update.mockResolvedValue({});
+
+      await approval.share({ pathParameters: { id: 'est-1' }, headers: {} });
+
+      const updateArgs = db.update.mock.calls[0][2];
+      expect(updateArgs.sharedAt).not.toBe(staleSharedAt);
+      expect(new Date(updateArgs.sharedAt).getTime()).toBeGreaterThan(Date.now() - 10000);
+    });
+
     test('returns 404 for missing estimate', async () => {
       auth.getCompanyId.mockResolvedValue('comp-1');
       db.findById.mockResolvedValue(null);
@@ -396,6 +424,85 @@ describe('approval handler', () => {
         body: JSON.stringify({ action: 'approved' })
       });
       expect(result.statusCode).toBe(404);
+    });
+  });
+
+  describe('share-link expiry (quotes valid 30 days)', () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const daysAgo = (n) => new Date(Date.now() - n * DAY_MS).toISOString();
+
+    test('getPublic includes sharedAt and expired=false within 30 days', async () => {
+      const sharedAt = daysAgo(29);
+      db.queryGSI.mockResolvedValue([{ ...mockEstimate, GSI1SK: 'COMPANY#comp-1', sharedAt }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({ pathParameters: { token: 'abc-token' } });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200);
+      expect(body.sharedAt).toBe(sharedAt);
+      expect(body.expired).toBe(false);
+    });
+
+    test('getPublic flags expired=true at 31 days but page stays viewable', async () => {
+      db.queryGSI.mockResolvedValue([{ ...mockEstimate, GSI1SK: 'COMPANY#comp-1', sharedAt: daysAgo(31) }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({ pathParameters: { token: 'abc-token' } });
+      const body = JSON.parse(result.body);
+
+      expect(result.statusCode).toBe(200); // still viewable
+      expect(body.expired).toBe(true);
+      expect(body.customerName).toBe('Jane Doe');
+      expect(body.totalCost).toBe(2500);
+    });
+
+    test('legacy estimates without sharedAt are never expired', async () => {
+      db.queryGSI.mockResolvedValue([{ ...mockEstimate, GSI1SK: 'COMPANY#comp-1' }]);
+      db.get.mockResolvedValue({ name: 'Acme Fencing' });
+
+      const result = await approval.getPublic({ pathParameters: { token: 'abc-token' } });
+      const body = JSON.parse(result.body);
+
+      expect(body.sharedAt).toBe('');
+      expect(body.expired).toBe(false);
+    });
+
+    test('respond is blocked with 410 when expired', async () => {
+      db.queryGSI.mockResolvedValue([{ ...mockEstimate, approvalHistory: [], sharedAt: daysAgo(31) }]);
+
+      const result = await approval.respond({
+        pathParameters: { token: 'expired-token' },
+        body: JSON.stringify({ action: 'approved' })
+      });
+
+      expect(result.statusCode).toBe(410);
+      expect(JSON.parse(result.body).error).toBe(
+        'This estimate has expired — ask your contractor for an updated quote.'
+      );
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    test('respond still works when shared within 30 days', async () => {
+      db.queryGSI.mockResolvedValue([{ ...mockEstimate, approvalHistory: [], sharedAt: daysAgo(5) }]);
+      db.update.mockResolvedValue({});
+
+      const result = await approval.respond({
+        pathParameters: { token: 'fresh-token' },
+        body: JSON.stringify({ action: 'approved' })
+      });
+      expect(result.statusCode).toBe(200);
+    });
+
+    test('respond still works for legacy estimates without sharedAt', async () => {
+      db.queryGSI.mockResolvedValue([{ ...mockEstimate, approvalHistory: [] }]);
+      db.update.mockResolvedValue({});
+
+      const result = await approval.respond({
+        pathParameters: { token: 'legacy-token' },
+        body: JSON.stringify({ action: 'changes_requested', message: 'still deciding' })
+      });
+      expect(result.statusCode).toBe(200);
     });
   });
 });

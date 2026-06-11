@@ -76,10 +76,9 @@ describe('calculateBOM', () => {
       expect(bom.items.length).toBeGreaterThan(0);
       expect(bom.materialTotal).toBeGreaterThan(0);
 
-      const postItem = bom.items.find(i => i.name.includes('posts'));
-      expect(postItem).toBeDefined();
-      // 100ft / 8ft spacing = 13 sections, 14 posts
-      expect(postItem.qty).toBe(14);
+      // 100ft / 8ft spacing = 13 sections, 14 posts (split: line + corner/end)
+      const postQty = bom.items.filter(i => i.name.includes('posts')).reduce((s, i) => s + i.qty, 0);
+      expect(postQty).toBe(14);
 
       const railItem = bom.items.find(i => i.name.includes('rails'));
       const expectedRails = BOM.wood.heights[height].rails;

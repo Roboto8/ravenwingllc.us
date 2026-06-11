@@ -6,19 +6,19 @@ const BOM = {
     postSpacing: 8,
     heights: {
       4: {
-        postLength: '4x4x6 PT', postCost: 12, postCostGothic: 15, rails: 2,
+        postLength: '4x4x6 PT', postCost: 12, postCostGothic: 15, cornerPostCost: 12, rails: 2,
         railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x4 dog ear PT', picketCost: 2.25,
         screwsPerPicket: 4, concreteBags: 2, brackets: 2
       },
       6: {
-        postLength: '4x4x8 PT', postCost: 16, postCostGothic: 19, rails: 3,
+        postLength: '4x4x8 PT', postCost: 16, postCostGothic: 19, cornerPostCost: 16, rails: 3,
         railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x6 dog ear PT', picketCost: 3,
         screwsPerPicket: 6, concreteBags: 2, brackets: 3
       },
       8: {
-        postLength: '6x6x12 PT', postCost: 42, rails: 4,
+        postLength: '6x6x12 PT', postCost: 42, cornerPostCost: 42, rails: 4,
         railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x8 dog ear PT', picketCost: 5.50,
         screwsPerPicket: 8, concreteBags: 4, brackets: 4
@@ -177,7 +177,14 @@ function calculateBOM(feet, fenceType, height, options = {}) {
       ? p('postCostGothic', h.postCostGothic != null ? h.postCostGothic : h.postCost + 3)
       : p('postCost', h.postCost);
 
-    items.push({ name: postLabel, qty: posts, unit: 'ea', unitCost: postCost });
+    // Corner & end posts broken out — same lumber by default (price-book key
+    // wood.<h>.cornerPostCost overrides), but contractors brace and price
+    // them separately, and "counts every post" has to mean corners too.
+    const woodCorners = fenceClosed ? fencePointCount : Math.max(0, fencePointCount - 2);
+    const cornerEndPosts = Math.min(posts, woodCorners + (fenceClosed ? 0 : 2));
+    const woodLinePosts = Math.max(0, posts - cornerEndPosts);
+    items.push({ name: postLabel.replace(' posts', ' line posts'), qty: woodLinePosts, unit: 'ea', unitCost: postCost });
+    items.push({ name: postLabel.replace(' posts', ' corner/end posts'), qty: cornerEndPosts, unit: 'ea', unitCost: p('cornerPostCost', h.cornerPostCost != null ? h.cornerPostCost : postCost) });
     items.push({ name: railDesc + ' rails', qty: railSticks, unit: 'ea', unitCost: railCost });
     items.push({ name: h.picketDesc + ' pickets', qty: totalPickets, unit: 'ea', unitCost: p('picketCost', h.picketCost) });
     items.push({ name: 'Rail brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
@@ -592,24 +599,31 @@ function normalizeBomName(s) {
 function compareManualBom(manualItems, bomItems) {
   var computed = (bomItems || []).filter(function(i) { return !i.isHeader; });
   var used = {};
-  var rows = (manualItems || []).map(function(m) {
+  var manual = manualItems || [];
+  var matches = manual.map(function() { return -1; });
+  // Pass 1: exact (normalized) matches win regardless of row order, so an
+  // earlier vague row can't substring-claim an item another row names exactly.
+  manual.forEach(function(m, mi) {
     var mName = normalizeBomName(m.name);
-    var matchIdx = -1;
-    if (mName) {
-      computed.forEach(function(c, idx) {
-        if (matchIdx >= 0 || used[idx]) return;
-        if (normalizeBomName(c.name) === mName) matchIdx = idx;
-      });
-      if (matchIdx < 0 && mName.length >= 3) {
-        computed.forEach(function(c, idx) {
-          if (matchIdx >= 0 || used[idx]) return;
-          var cName = normalizeBomName(c.name);
-          if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) matchIdx = idx;
-        });
-      }
-    }
-    var match = matchIdx >= 0 ? computed[matchIdx] : null;
-    if (matchIdx >= 0) used[matchIdx] = true;
+    if (!mName) return;
+    computed.forEach(function(c, idx) {
+      if (matches[mi] >= 0 || used[idx]) return;
+      if (normalizeBomName(c.name) === mName) { matches[mi] = idx; used[idx] = true; }
+    });
+  });
+  // Pass 2: substring fallback for whatever is still unmatched.
+  manual.forEach(function(m, mi) {
+    if (matches[mi] >= 0) return;
+    var mName = normalizeBomName(m.name);
+    if (!mName || mName.length < 3) return;
+    computed.forEach(function(c, idx) {
+      if (matches[mi] >= 0 || used[idx]) return;
+      var cName = normalizeBomName(c.name);
+      if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) { matches[mi] = idx; used[idx] = true; }
+    });
+  });
+  var rows = manual.map(function(m, mi) {
+    var match = matches[mi] >= 0 ? computed[matches[mi]] : null;
     return {
       name: m.name, qty: m.qty || 0, unitCost: m.unitCost || 0,
       countedName: match ? match.name : null,
@@ -617,7 +631,7 @@ function compareManualBom(manualItems, bomItems) {
       qtyDelta: match ? Math.round((match.qty - (m.qty || 0)) * 100) / 100 : null
     };
   });
-  var manualTotal = (manualItems || []).reduce(function(s, m) { return s + ((m.qty || 0) * (m.unitCost || 0)); }, 0);
+  var manualTotal = manual.reduce(function(s, m) { return s + ((m.qty || 0) * (m.unitCost || 0)); }, 0);
   var unmatchedComputed = computed.filter(function(c, idx) { return !used[idx]; })
     .map(function(c) { return { name: c.name, qty: c.qty }; });
   return { rows: rows, manualTotal: Math.round(manualTotal * 100) / 100, unmatchedComputed: unmatchedComputed };

@@ -105,6 +105,26 @@ describe('webhook handler', () => {
       expect(result.statusCode).toBe(400);
       expect(result.body).toContain('Invalid signature');
     });
+
+    test('returns 500 and never processes when webhook secret is missing (fail closed)', async () => {
+      const db = require('../handlers/lib/dynamo');
+      delete process.env.STRIPE_WEBHOOK_SECRET;
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(500);
+      expect(mockConstructEvent).not.toHaveBeenCalled();
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    test('returns 500 when webhook secret is empty string (SSM default)', async () => {
+      const db = require('../handlers/lib/dynamo');
+      process.env.STRIPE_WEBHOOK_SECRET = '';
+
+      const result = await handler(makeEvent());
+      expect(result.statusCode).toBe(500);
+      expect(mockConstructEvent).not.toHaveBeenCalled();
+      expect(db.update).not.toHaveBeenCalled();
+    });
   });
 
   // ===== checkout.session.completed =====

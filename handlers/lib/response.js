@@ -31,6 +31,9 @@ module.exports = {
   tooMany(msg) {
     return { statusCode: 429, headers: SECURITY_HEADERS, body: JSON.stringify({ error: msg || 'Too many requests' }) };
   },
+  gone(msg) {
+    return { statusCode: 410, headers: SECURITY_HEADERS, body: JSON.stringify({ error: msg || 'Gone' }) };
+  },
   error(msg) {
     return { statusCode: 500, headers: SECURITY_HEADERS, body: JSON.stringify({ error: msg || 'Internal error' }) };
   },

@@ -480,6 +480,43 @@ describe('billing handler', () => {
       expect(sessionArg.line_items).toEqual([{ price: 'price_fallback', quantity: 1 }]);
     });
 
+    test('rejects unknown tier with 400', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+
+      const result = await billing.checkout({
+        body: JSON.stringify({ tier: 'enterprise-bogus' })
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).error).toContain('Unknown tier');
+      expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled();
+    });
+
+    test('rejects prototype-chain tier names with 400', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+
+      const result = await billing.checkout({
+        body: JSON.stringify({ tier: 'constructor' })
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled();
+    });
+
+    test('rejects non-string tier with 400', async () => {
+      auth.getCompanyId.mockResolvedValue('comp-1');
+      db.get.mockResolvedValue(companyWithStripe);
+
+      const result = await billing.checkout({
+        body: JSON.stringify({ tier: { sneaky: true } })
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled();
+    });
+
     test('checkout passes tier in customer metadata when creating new customer', async () => {
       process.env.STRIPE_PRICE_BUILDER = 'price_builder_123';
       auth.getCompanyId.mockResolvedValue('comp-1');

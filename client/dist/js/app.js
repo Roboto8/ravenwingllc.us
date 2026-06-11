@@ -2325,19 +2325,19 @@ const BOM = {
     postSpacing: 8,
     heights: {
       4: {
-        postLength: '4x4x6 PT', postCost: 12, postCostGothic: 15, rails: 2,
+        postLength: '4x4x6 PT', postCost: 12, postCostGothic: 15, cornerPostCost: 12, rails: 2,
         railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x4 dog ear PT', picketCost: 2.25,
         screwsPerPicket: 4, concreteBags: 2, brackets: 2
       },
       6: {
-        postLength: '4x4x8 PT', postCost: 16, postCostGothic: 19, rails: 3,
+        postLength: '4x4x8 PT', postCost: 16, postCostGothic: 19, cornerPostCost: 16, rails: 3,
         railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x6 dog ear PT', picketCost: 3,
         screwsPerPicket: 6, concreteBags: 2, brackets: 3
       },
       8: {
-        postLength: '6x6x12 PT', postCost: 42, rails: 4,
+        postLength: '6x6x12 PT', postCost: 42, cornerPostCost: 42, rails: 4,
         railDesc: '2x4x8 PT', railCost: 6, railDesc16: '2x4x16 PT', railCost16: 12,
         pickets: 17, picketDesc: '1x6x8 dog ear PT', picketCost: 5.50,
         screwsPerPicket: 8, concreteBags: 4, brackets: 4
@@ -2554,7 +2554,8 @@ function calculateCombinedBOM() {
     var s = sections[0];
     var feet = getSectionFootage(s);
     if (feet === 0) return null;
-    return calculateBOM(feet, s.fenceType || selectedFence.type, s.fenceHeight || selectedHeight);
+    return calculateBOM(feet, s.fenceType || selectedFence.type, s.fenceHeight || selectedHeight,
+      { fencePointCount: (s.points || []).length, fenceClosed: !!s.closed });
   }
 
   // Multiple sections — calculate each, then merge items by name
@@ -2568,7 +2569,7 @@ function calculateCombinedBOM() {
 
     var type = s.fenceType || 'wood';
     var height = s.fenceHeight || 6;
-    var bom = calculateBOM(feet, type, height);
+    var bom = calculateBOM(feet, type, height, { fencePointCount: (s.points || []).length, fenceClosed: !!s.closed });
     if (!bom) return;
 
     sectionHeaders.push({
@@ -2593,7 +2594,7 @@ function calculateCombinedBOM() {
 
     var type = s.fenceType || 'wood';
     var height = s.fenceHeight || 6;
-    var bom = calculateBOM(feet, type, height);
+    var bom = calculateBOM(feet, type, height, { fencePointCount: (s.points || []).length, fenceClosed: !!s.closed });
     if (!bom) return;
 
     result.push({
@@ -2662,7 +2663,13 @@ function setConcreteWeight(weight) {
   recalculate();
 }
 
-function calculateBOM(feet, fenceType, height) {
+function calculateBOM(feet, fenceType, height, opts) {
+  // Per-section corner geometry: callers (calculateCombinedBOM) pass each
+  // section's own vertex count; bare calls fall back to the active section's
+  // globals. Mirrored as options.fencePointCount/fenceClosed in bom.js.
+  opts = opts || {};
+  var bomPointCount = (typeof opts.fencePointCount === 'number') ? opts.fencePointCount : fencePoints.length;
+  var bomClosed = (typeof opts.fenceClosed === 'boolean') ? opts.fenceClosed : fenceClosed;
   const spec = BOM[fenceType];
   if (!spec) return null;
 
@@ -2704,7 +2711,14 @@ function calculateBOM(feet, fenceType, height) {
     var basePostCost = useGothic
       ? p('postCostGothic', h.postCostGothic != null ? h.postCostGothic : h.postCost + 3)
       : p('postCost', h.postCost);
-    items.push({ name: postLabel, qty: posts, unit: 'ea', unitCost: Math.round(basePostCost * heightScale * 100) / 100 });
+    // Corner & end posts broken out — same lumber by default (price-book key
+    // wood.<h>.cornerPostCost overrides), mirrored in bom.js. Uses the active
+    // section's vertices, matching the chain-link terminal-post logic.
+    var woodCorners = bomClosed ? bomPointCount : Math.max(0, bomPointCount - 2);
+    var cornerEndPosts = Math.min(posts, woodCorners + (bomClosed ? 0 : 2));
+    var woodLinePosts = Math.max(0, posts - cornerEndPosts);
+    items.push({ name: postLabel.replace(' posts', ' line posts'), qty: woodLinePosts, unit: 'ea', unitCost: Math.round(basePostCost * heightScale * 100) / 100 });
+    items.push({ name: postLabel.replace(' posts', ' corner/end posts'), qty: cornerEndPosts, unit: 'ea', unitCost: Math.round(p('cornerPostCost', h.cornerPostCost != null ? h.cornerPostCost : basePostCost) * heightScale * 100) / 100 });
     items.push({ name: railDesc + ' rails', qty: railSticks, unit: 'ea', unitCost: railCost });
     items.push({ name: picketLabel, qty: totalPickets, unit: 'ea', unitCost: Math.round(p('picketCost', h.picketCost) * heightScale * 100) / 100 });
     items.push({ name: 'Rail brackets', qty: totalBrackets, unit: 'ea', unitCost: pe('bracketCost', ex.bracketCost) });
@@ -2732,8 +2746,8 @@ function calculateBOM(feet, fenceType, height) {
   }
   else if (fenceType === 'chain-link') {
     const linePosts = Math.max(0, posts - 2);
-    const termPosts = Math.min(posts, 2 + (fenceClosed ? 0 : 0));
-    const corners = fenceClosed ? fencePoints.length : Math.max(0, fencePoints.length - 2);
+    const termPosts = Math.min(posts, 2 + (bomClosed ? 0 : 0));
+    const corners = bomClosed ? bomPointCount : Math.max(0, bomPointCount - 2);
     const totalTerminals = 2 + corners;
     const totalLinePosts = Math.max(0, posts - totalTerminals);
     const fabricRolls = Math.ceil(feet / h.fabricLength);
@@ -3112,24 +3126,31 @@ function normalizeBomName(s) {
 function compareManualBom(manualItems, bomItems) {
   var computed = (bomItems || []).filter(function(i) { return !i.isHeader; });
   var used = {};
-  var rows = (manualItems || []).map(function(m) {
+  var manual = manualItems || [];
+  var matches = manual.map(function() { return -1; });
+  // Pass 1: exact (normalized) matches win regardless of row order, so an
+  // earlier vague row can't substring-claim an item another row names exactly.
+  manual.forEach(function(m, mi) {
     var mName = normalizeBomName(m.name);
-    var matchIdx = -1;
-    if (mName) {
-      computed.forEach(function(c, idx) {
-        if (matchIdx >= 0 || used[idx]) return;
-        if (normalizeBomName(c.name) === mName) matchIdx = idx;
-      });
-      if (matchIdx < 0 && mName.length >= 3) {
-        computed.forEach(function(c, idx) {
-          if (matchIdx >= 0 || used[idx]) return;
-          var cName = normalizeBomName(c.name);
-          if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) matchIdx = idx;
-        });
-      }
-    }
-    var match = matchIdx >= 0 ? computed[matchIdx] : null;
-    if (matchIdx >= 0) used[matchIdx] = true;
+    if (!mName) return;
+    computed.forEach(function(c, idx) {
+      if (matches[mi] >= 0 || used[idx]) return;
+      if (normalizeBomName(c.name) === mName) { matches[mi] = idx; used[idx] = true; }
+    });
+  });
+  // Pass 2: substring fallback for whatever is still unmatched.
+  manual.forEach(function(m, mi) {
+    if (matches[mi] >= 0) return;
+    var mName = normalizeBomName(m.name);
+    if (!mName || mName.length < 3) return;
+    computed.forEach(function(c, idx) {
+      if (matches[mi] >= 0 || used[idx]) return;
+      var cName = normalizeBomName(c.name);
+      if (cName.indexOf(mName) >= 0 || mName.indexOf(cName) >= 0) { matches[mi] = idx; used[idx] = true; }
+    });
+  });
+  var rows = manual.map(function(m, mi) {
+    var match = matches[mi] >= 0 ? computed[matches[mi]] : null;
     return {
       name: m.name, qty: m.qty || 0, unitCost: m.unitCost || 0,
       countedName: match ? match.name : null,
@@ -3137,7 +3158,7 @@ function compareManualBom(manualItems, bomItems) {
       qtyDelta: match ? Math.round((match.qty - (m.qty || 0)) * 100) / 100 : null
     };
   });
-  var manualTotal = (manualItems || []).reduce(function(s, m) { return s + ((m.qty || 0) * (m.unitCost || 0)); }, 0);
+  var manualTotal = manual.reduce(function(s, m) { return s + ((m.qty || 0) * (m.unitCost || 0)); }, 0);
   var unmatchedComputed = computed.filter(function(c, idx) { return !used[idx]; })
     .map(function(c) { return { name: c.name, qty: c.qty }; });
   return { rows: rows, manualTotal: Math.round(manualTotal * 100) / 100, unmatchedComputed: unmatchedComputed };

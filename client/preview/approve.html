@@ -322,6 +322,11 @@
       <p style="font-size:0.7rem;color:#5c6657;text-align:center;margin-top:8px;font-style:italic">Measurements are satellite-based estimates. Final pricing may be adjusted after on-site verification.</p>
     </div>
 
+    <!-- Expired notice (hidden unless the quote is past its validity window) -->
+    <div id="expired-banner" class="card" style="display:none">
+      <p style="margin:0;font-size:0.9rem"><strong>This estimate has expired.</strong> Quotes are valid for 30 days — material prices move. Ask your contractor for an updated quote; they can re-send this link in minutes.</p>
+    </div>
+
     <!-- Response Actions -->
     <div id="actions-section" class="actions">
       <div class="card">
@@ -455,8 +460,16 @@
     if (typeof totalStr === 'number') totalStr = '$' + totalStr.toLocaleString();
     document.getElementById('total-cost').textContent = totalStr || '$0';
 
+    // Expired quotes stay viewable but can no longer be approved. A quote
+    // that was already responded to shows the confirmation, not the banner.
+    var responded = est.approvalStatus === 'approved' || est.approvalStatus === 'changes_requested';
+    if (est.expired && !responded) {
+      document.getElementById('expired-banner').style.display = 'block';
+      document.getElementById('actions-section').style.display = 'none';
+    }
+
     // If already responded, show confirmation instead of action buttons
-    if (est.approvalStatus === 'approved' || est.approvalStatus === 'changes_requested') {
+    if (responded) {
       document.getElementById('actions-section').style.display = 'none';
       showConfirmation(est.approvalStatus);
     }
@@ -518,7 +531,9 @@
       changesBtn.disabled = false;
       approveBtn.style.opacity = '';
       changesBtn.style.opacity = '';
-      alert('Failed to submit response. Please try again.');
+      // Surface the server's message (e.g. expired-quote 410) — a generic
+      // "try again" on an expired estimate is a retry that can never succeed.
+      alert((e && e.message) ? e.message : 'Failed to submit response. Please try again.');
     }
   }
 })();

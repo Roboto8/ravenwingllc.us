@@ -378,10 +378,18 @@ function validateInput(body) {
 // that aggregates can't identify a property, fine enough for "fences near
 // you" benchmarks. pricePerFoot is stored denormalized so the nightly rollup
 // never has to re-derive it from drifting client math.
+// Clients send fencePoints as either [lat, lng] arrays or {lat, lng} objects —
+// accept both shapes so regionKey derivation never silently drops the corpus.
+function pointToLatLng(p) {
+  if (Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number') return [p[0], p[1]];
+  if (p && typeof p === 'object' && typeof p.lat === 'number' && typeof p.lng === 'number') return [p.lat, p.lng];
+  return null;
+}
+
 function deriveMarketFields(est) {
   const out = {};
   const pts = Array.isArray(est.fencePoints)
-    ? est.fencePoints.filter(p => Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number')
+    ? est.fencePoints.map(pointToLatLng).filter(Boolean)
     : [];
   if (pts.length) {
     const lat = pts.reduce((s, p) => s + p[0], 0) / pts.length;

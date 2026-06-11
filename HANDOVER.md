@@ -18,9 +18,11 @@ npx serverless client deploy --stage prod --no-confirm && aws cloudfront create-
 ```
 
 Backend: `npm run deploy:backend` / `deploy:backend:prod` (no prompt, fine as-is).
-Cache busters: prod is at `?v=20260611c`; the manual-BOM branch bumps to
-`?v=20260611d`. preview→dist still has NO build step — every client edit must
-be copied to `client/dist/` manually (config.js is the only intentional diff).
+Cache buster is at `?v=20260611e`. preview→dist still has NO build step — every
+client edit must be copied to `client/dist/` manually (config.js is the only
+intentional diff). **NEVER edit these files with PowerShell Get-/Set-Content**
+— PS 5.1 reads UTF-8 as cp1252 and mojibakes every em-dash (it corrupted
+index.html twice on 2026-06-11; repaired + verified clean, do bumps via Node).
 
 ## 2. Shipped to prod today (master `a2dcd96`)
 
@@ -88,25 +90,35 @@ customItems); matcher behavior pinned in `tests/manual-bom-compare.test.js`.
 5. DKIM / bank DBA / Hanover County / footer address — unchanged from
    yesterday's list (see git history of this file).
 
-## 5. Review backlog (confirmed, NOT yet fixed)
+## 5. Backlog burn-down (2026-06-11 evening batch — committed, see git log)
 
-1. **Market rollup aggregates nothing** — `deriveMarketFields` expects
-   `[lat,lng]` arrays, clients send `{lat,lng}` → regionKey never set. Fix +
-   backfill (or pause per §4.1).
-2. Team invites only work for never-registered emails; member-role edit is a
+FIXED: market-rollup point-shape bug ({lat,lng} now accepted) + benchmark
+opt-out (company.benchmarkOptOut, Account checkbox, rollup exclusion, privacy
+§6.5 plain-English disclosure); share-link 30-day expiry (sharedAt, expired
+flag, respond 410, approve.html banner; re-share refreshes the window); Stripe
+webhook fail-closed secret + dispute-via-charge + checkout tier whitelist;
+outreach agent scan-before-send + claim-before-send (crash = skip, never
+double-email) + thread-based reply detection (off-address opt-outs honored) +
+classification saved before draft creation; wood corner/end post split
+(cornerPostCost price-book key, per-section vertex counts plumbed through
+calculateBOM opts); manual-BOM two-pass matcher; BOM overrides restored on
+reopen (single-section estimates only — multi-section combined BOMs repeat
+names, see code comment).
+
+## 5b. Review backlog (still open)
+
+1. Team invites only work for never-registered emails; member-role edit is a
    silent no-op (`handlers/auth.js:24`, `handlers/roles.js:127`).
-3. Outreach agent: sends before scanning (overnight opt-out gets one more
-   email); crm.json saved after Gmail send (crash window = double-send);
-   opt-outs from a different reply address missed.
-4. `STRIPE_WEBHOOK_SECRET` SSM default `''` = fail-open; checkout accepts
-   arbitrary client tier; dispute handler reads nonexistent `data.customer`.
-5. Share tokens never expire; no quote-validity window (approval price
-   snapshot + revision reset DID ship today, so the exposure is bounded).
-6. Reopening a saved estimate regenerates the BOM and silently drops manual
-   qty/price overrides (recalculated total can disagree with saved totalCost).
-7. daily-digest widget-lead exclusion dead code; prod table/pool lack
+2. daily-digest widget-lead exclusion dead code; prod table/pool lack
    DeletionPolicy + PITR; privacy.html boilerplate (§2.2, §11.1 categories)
    still needs a real legal pass.
+3. Pre-split saved estimates: post-row qty/price edits don't restore on reopen
+   (old '… posts' names don't match the new line/corner rows) and manual-BOM
+   rows naming the old post label show unmatched. Graceful, low-impact.
+4. Reply drafts are addressed to the original prospect address even when the
+   reply came from a different one (human-reviewed in Drafts, so visible).
+5. Multi-section BOM override restore unsupported (name collisions); needs
+   section-scoped matching if it ever matters.
 
 ## 6. Machines (does NOT transfer via git)
 

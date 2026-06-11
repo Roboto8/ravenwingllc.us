@@ -34,6 +34,7 @@ module.exports.get = res.wrap(async (event) => {
     base.email = company.email;
     base.address = company.address;
     base.pricebook = company.pricebook || {};
+    base.benchmarkOptOut = company.benchmarkOptOut === true;
   }
   return res.ok(base);
 });
@@ -45,7 +46,7 @@ module.exports.update = res.wrap(async (event) => {
 
   const body = res.parseBody(event);
   if (!body) return res.bad('Invalid JSON');
-  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'logo', 'region', 'pricebook', 'language', 'emailOptOut'];
+  const allowed = ['name', 'phone', 'accentColor', 'tagline', 'address', 'logoKey', 'logo', 'region', 'pricebook', 'language', 'emailOptOut', 'benchmarkOptOut'];
   const stringFields = ['name', 'phone', 'tagline', 'address', 'logoKey', 'logo', 'region', 'language'];
   const updates = {};
 
@@ -85,6 +86,12 @@ module.exports.update = res.wrap(async (event) => {
     } catch (e) {
       return res.bad('Invalid pricebook data');
     }
+  }
+
+  // benchmarkOptOut excludes this company's estimates from the anonymized
+  // market-rollup corpus — must be a real boolean, not a truthy string.
+  if (updates.benchmarkOptOut !== undefined && typeof updates.benchmarkOptOut !== 'boolean') {
+    return res.bad('benchmarkOptOut must be a boolean');
   }
 
   // Validate accentColor format

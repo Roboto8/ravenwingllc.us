@@ -30,13 +30,16 @@ function round2(n) {
 }
 
 // Pure aggregation over scanned estimate items — unit-testable without AWS.
-// Returns the list of MARKET# items to write.
-function rollup(estimates, now = new Date()) {
+// Returns the list of MARKET# items to write. optOutCompanies is the set of
+// company PKs ('COMPANY#<id>') whose profiles carry benchmarkOptOut === true;
+// their estimates never enter the corpus.
+function rollup(estimates, now = new Date(), optOutCompanies = new Set()) {
   const buckets = new Map(); // regionKey|month|fenceType -> accumulator
 
   for (const est of estimates) {
     if (!est || est.status === 'deleted') continue;
     if (est.source === 'website-widget') continue; // homeowner sketches must not pollute market data
+    if (optOutCompanies.has(est.PK)) continue; // company opted out of benchmarks
     if (!est.regionKey || !est.createdAt) continue;
     const month = est.createdAt.slice(0, 7); // yyyy-mm
     const fenceType = est.fenceType || 'unknown';
@@ -108,25 +111,34 @@ function rollup(estimates, now = new Date()) {
   });
 }
 
+// One pass over the table picks up both the estimates and the company
+// PROFILE items, so the benchmark opt-out set costs no extra scan.
 async function scanEstimates() {
   const estimates = [];
+  const optOutCompanies = new Set();
   let lastKey;
   do {
     const out = await ddb.send(new ScanCommand({
       TableName: TABLE,
-      FilterExpression: 'begins_with(SK, :est)',
-      ExpressionAttributeValues: { ':est': 'EST#' },
+      FilterExpression: 'begins_with(SK, :est) OR SK = :profile',
+      ExpressionAttributeValues: { ':est': 'EST#', ':profile': 'PROFILE' },
       ExclusiveStartKey: lastKey,
     }));
-    estimates.push(...(out.Items || []));
+    for (const item of out.Items || []) {
+      if (item.SK === 'PROFILE') {
+        if (item.benchmarkOptOut === true) optOutCompanies.add(item.PK);
+      } else {
+        estimates.push(item);
+      }
+    }
     lastKey = out.LastEvaluatedKey;
   } while (lastKey);
-  return estimates;
+  return { estimates, optOutCompanies };
 }
 
 module.exports.handler = async () => {
-  const estimates = await scanEstimates();
-  const items = rollup(estimates);
+  const { estimates, optOutCompanies } = await scanEstimates();
+  const items = rollup(estimates, new Date(), optOutCompanies);
 
   for (let i = 0; i < items.length; i += 25) {
     await ddb.send(new BatchWriteCommand({

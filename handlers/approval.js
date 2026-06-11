@@ -13,6 +13,16 @@ const RESPOND_RATE_LIMIT_MS = 10000; // 10 seconds
 const MAX_MESSAGE_LEN = 2000;
 const MAX_HISTORY_ENTRIES = 50;
 
+// The PDF prints "Valid for 30 days" — enforce it. Re-sharing refreshes
+// sharedAt (a fresh 30-day window). Estimates shared before sharedAt existed
+// have no stamp and are treated as never expiring so legacy links keep working.
+const SHARE_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000;
+
+function isShareExpired(est) {
+  if (!est.sharedAt) return false;
+  return (Date.now() - new Date(est.sharedAt).getTime()) > SHARE_VALIDITY_MS;
+}
+
 // Reset rate limiter (for testing)
 module.exports._resetRateLimit = function() {
   for (const key in _respondTimestamps) delete _respondTimestamps[key];
@@ -36,6 +46,7 @@ module.exports.share = res.wrap(async (event) => {
     approvalStatus: 'sent',
     GSI1PK: 'SHARE#' + shareToken,
     GSI1SK: 'COMPANY#' + companyId,
+    sharedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 
@@ -105,7 +116,10 @@ module.exports.getPublic = res.wrap(async (event) => {
     approvalStatus: est.approvalStatus || 'draft',
     approvalHistory: est.approvalHistory || [],
     companyName,
-    createdAt: est.createdAt || ''
+    createdAt: est.createdAt || '',
+    sharedAt: est.sharedAt || '',
+    // The page stays viewable when expired; only responding is blocked.
+    expired: isShareExpired(est)
   });
 });
 
@@ -142,6 +156,12 @@ module.exports.respond = res.wrap(async (event) => {
   if (items.length === 0) return res.notFound('Estimate not found');
 
   const est = items[0];
+
+  // Quote validity: the estimate stays viewable, but an expired quote can no
+  // longer be approved or responded to — prices drift.
+  if (isShareExpired(est)) {
+    return res.gone('This estimate has expired — ask your contractor for an updated quote.');
+  }
 
   const historyEntry = {
     action,

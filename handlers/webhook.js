@@ -2,6 +2,14 @@ const db = require('./lib/dynamo');
 const getStripe = require('./lib/stripe');
 
 module.exports.handler = async (event) => {
+  // Fail closed: the serverless SSM lookup defaults the secret to '' when the
+  // parameter is missing, which would make signature verification a no-op.
+  // Reject with 500 so Stripe retries and the operator notices.
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('STRIPE_WEBHOOK_SECRET is not configured — rejecting webhook');
+    return { statusCode: 500, body: 'Webhook not configured' };
+  }
+
   const s = getStripe();
   const sig = event.headers['stripe-signature'];
 
@@ -151,8 +159,21 @@ module.exports.handler = async (event) => {
     }
 
     case 'charge.dispute.created': {
-      // Chargeback — immediately revoke access
-      const customerId = data.customer;
+      // Chargeback — immediately revoke access. Dispute objects carry
+      // charge/payment_intent, not customer, so resolve via the charge.
+      let customerId = null;
+      try {
+        if (data.charge) {
+          const charge = await s.charges.retrieve(data.charge);
+          customerId = charge && charge.customer;
+        }
+      } catch (e) {
+        console.error('Could not resolve dispute charge ' + data.charge + ':', e.message);
+      }
+      if (!customerId) {
+        console.error('Dispute ' + (data.id || '(no id)') + ' has no resolvable customer — skipping');
+        break;
+      }
       const companyId = await findCompanyByStripeId(customerId);
       if (companyId) {
         await db.update('COMPANY#' + companyId, 'PROFILE', {

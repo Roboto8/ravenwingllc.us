@@ -50,8 +50,9 @@ describe('BOM calculations - additional edge cases', () => {
 
     test('wood at exactly 16ft (2 sections)', () => {
       const bom = calculateBOM(16, 'wood', 6);
-      const posts = bom.items.find(i => i.name.includes('posts'));
-      expect(posts.qty).toBe(3);
+      // 3 posts split across line + corner/end rows
+      const postQty = bom.items.filter(i => i.name.includes('posts')).reduce((s, i) => s + i.qty, 0);
+      expect(postQty).toBe(3);
     });
 
     test('vinyl at exactly 8ft (1 section)', () => {
